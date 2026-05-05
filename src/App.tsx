@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react"
+import { useState, useEffect, useRef } from "react"
 import { Button } from "@/components/ui/button"
 import { Separator } from "@/components/ui/separator"
 import { cn } from "@/lib/utils"
@@ -35,6 +35,66 @@ function getRoute(): Route {
 
 function navigate(r: Route) {
   window.location.hash = ROUTE_HASH[r]
+}
+
+// ── Tick Countdown ────────────────────────────────────────────────────────────
+function TickCountdown({ intervalMs = 10_000 }: { intervalMs?: number }) {
+  const [elapsed, setElapsed] = useState(0)
+  const startRef = useRef(Date.now())
+
+  useEffect(() => {
+    startRef.current = Date.now()
+    setElapsed(0)
+    const frame = setInterval(() => {
+      const e = (Date.now() - startRef.current) % intervalMs
+      setElapsed(e)
+    }, 50)
+    return () => clearInterval(frame)
+  }, [intervalMs])
+
+  const size = 18
+  const strokeWidth = 2
+  const r = (size - strokeWidth) / 2
+  const circumference = 2 * Math.PI * r
+  // progress goes 1 → 0 over the interval (draws down as time passes)
+  const progress = 1 - elapsed / intervalMs
+  const dashOffset = circumference * (1 - progress)
+  const secondsLeft = Math.ceil((intervalMs - elapsed) / 1000)
+
+  return (
+    <div className="flex items-center gap-1.5 shrink-0" title={`Next refresh in ${secondsLeft}s`}>
+      <svg
+        width={size}
+        height={size}
+        viewBox={`0 0 ${size} ${size}`}
+        className="-rotate-90"
+        aria-hidden="true"
+      >
+        {/* Track */}
+        <circle
+          cx={size / 2}
+          cy={size / 2}
+          r={r}
+          fill="none"
+          strokeWidth={strokeWidth}
+          className="stroke-border"
+        />
+        {/* Fill arc */}
+        <circle
+          cx={size / 2}
+          cy={size / 2}
+          r={r}
+          fill="none"
+          strokeWidth={strokeWidth}
+          strokeDasharray={circumference}
+          strokeDashoffset={dashOffset}
+          strokeLinecap="round"
+          className="stroke-emerald-400 transition-[stroke-dashoffset] duration-[50ms] ease-linear"
+        />
+      </svg>
+      <span className="text-[10px] text-muted-foreground tabular-nums">{secondsLeft}s</span>
+    </div>
+  )
 }
 
 // ── Navbar ────────────────────────────────────────────────────────────────────
@@ -87,9 +147,9 @@ function Navbar({ route, setRoute }: { route: Route; setRoute: (r: Route) => voi
         {/* Right actions */}
         <div className="ml-auto flex items-center gap-2">
           {isMarket && (
-            <span className="text-[10px] text-muted-foreground hidden sm:block">
-              Refreshing every 10s
-            </span>
+            <div className="hidden sm:flex">
+              <TickCountdown intervalMs={10_000} />
+            </div>
           )}
           <Button variant="outline" size="sm" className="text-xs border-border font-medium" asChild>
             <a
