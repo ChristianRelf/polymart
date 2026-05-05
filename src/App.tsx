@@ -52,25 +52,28 @@ function TickCountdown({ intervalMs = 10_000 }: { intervalMs?: number }) {
     return () => clearInterval(frame)
   }, [intervalMs])
 
-  const size = 18
-  const strokeWidth = 2
+  const size = 36
+  const strokeWidth = 2.5
   const r = (size - strokeWidth) / 2
   const circumference = 2 * Math.PI * r
-  // progress goes 1 → 0 over the interval (draws down as time passes)
   const progress = 1 - elapsed / intervalMs
   const dashOffset = circumference * (1 - progress)
   const secondsLeft = Math.ceil((intervalMs - elapsed) / 1000)
 
   return (
-    <div className="flex items-center gap-1.5 shrink-0" title={`Next refresh in ${secondsLeft}s`}>
+    <div
+      className="relative flex items-center justify-center shrink-0"
+      style={{ width: size, height: size }}
+      title={`Next refresh in ${secondsLeft}s`}
+    >
+      {/* Ring SVG */}
       <svg
         width={size}
         height={size}
         viewBox={`0 0 ${size} ${size}`}
-        className="-rotate-90"
+        className="absolute inset-0 -rotate-90"
         aria-hidden="true"
       >
-        {/* Track */}
         <circle
           cx={size / 2}
           cy={size / 2}
@@ -79,7 +82,6 @@ function TickCountdown({ intervalMs = 10_000 }: { intervalMs?: number }) {
           strokeWidth={strokeWidth}
           className="stroke-border"
         />
-        {/* Fill arc */}
         <circle
           cx={size / 2}
           cy={size / 2}
@@ -92,7 +94,14 @@ function TickCountdown({ intervalMs = 10_000 }: { intervalMs?: number }) {
           className="stroke-emerald-400 transition-[stroke-dashoffset] duration-[50ms] ease-linear"
         />
       </svg>
-      <span className="text-[10px] text-muted-foreground tabular-nums">{secondsLeft}s</span>
+      {/* Logo icon centered in ring */}
+      <img
+        src="/polymartlogo.png"
+        alt=""
+        aria-hidden="true"
+        className="relative z-10 rounded-full object-contain"
+        style={{ width: size - strokeWidth * 2 - 6, height: size - strokeWidth * 2 - 6 }}
+      />
     </div>
   )
 }
@@ -119,6 +128,7 @@ function Navbar({ route, setRoute }: { route: Route; setRoute: (r: Route) => voi
           <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
           <span className="text-[10px] text-muted-foreground uppercase tracking-widest">Live</span>
         </div>
+
 
         <Separator orientation="vertical" className="h-5 bg-border" />
 
