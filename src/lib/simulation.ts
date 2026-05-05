@@ -66,6 +66,14 @@ export const SECTORS: Record<string, { label: string; icon: string }> = {
   defence: { label: "Defence",      icon: "🛡️" },
   retail:  { label: "Retail",       icon: "🛒" },
   media:   { label: "Media",        icon: "📺" },
+  auto:    { label: "Auto",         icon: "🚗" },
+  realty:  { label: "Real Estate",  icon: "🏢" },
+  travel:  { label: "Travel",       icon: "✈️" },
+  ai:      { label: "AI & ML",      icon: "🤖" },
+  bio:     { label: "Biotech",      icon: "🧬" },
+  energy:  { label: "Energy",       icon: "⚡" },
+  logistics:{ label: "Logistics",   icon: "📦" },
+  agri:    { label: "Agriculture",  icon: "🌾" },
 }
 
 export const STOCK_DEFS: Record<string, StockDef> = {
@@ -129,6 +137,107 @@ export const STOCK_DEFS: Record<string, StockDef> = {
   CAST:{name:"CastWave Podcasts",basePrice:38,volatility:.08,trend:.002,sector:"media",mcap:"small"},
   REEL:{name:"ReelTok Studios",basePrice:95,volatility:.11,trend:.002,sector:"media",mcap:"mid"},
   NEWS:{name:"NewsForge Digital",basePrice:52,volatility:.07,trend:0,sector:"media",mcap:"mid"},
+
+  // ── Tech extras ──
+  CLOD:{name:"CloudNest Computing",basePrice:310,volatility:.09,trend:.002,sector:"tech",mcap:"large"},
+  NETX:{name:"NetX Fiber Optics",basePrice:74,volatility:.06,trend:.001,sector:"tech",mcap:"mid"},
+  SCAN:{name:"ScanSec Cyber",basePrice:142,volatility:.10,trend:.002,sector:"tech",mcap:"mid"},
+  DBYT:{name:"DataByte Analytics",basePrice:220,volatility:.08,trend:.002,sector:"tech",mcap:"large"},
+  PROX:{name:"ProxyShield VPN",basePrice:58,volatility:.07,trend:.001,sector:"tech",mcap:"small"},
+
+  // ── AI & ML ──
+  GNAI:{name:"GenAI Systems",basePrice:480,volatility:.14,trend:.004,sector:"ai",mcap:"large"},
+  LMAI:{name:"LLMart Corp",basePrice:360,volatility:.12,trend:.003,sector:"ai",mcap:"large"},
+  NRAL:{name:"NeuralPath AI",basePrice:195,volatility:.13,trend:.003,sector:"ai",mcap:"mid"},
+  VISI:{name:"VisonIQ Imaging",basePrice:108,volatility:.11,trend:.002,sector:"ai",mcap:"mid"},
+  ORCH:{name:"Orchestron Agents",basePrice:68,volatility:.15,trend:.003,sector:"ai",mcap:"small"},
+  SPKR:{name:"SpeakAI Transcription",basePrice:44,volatility:.12,trend:.002,sector:"ai",mcap:"small"},
+
+  // ── Biotech ──
+  CRSP:{name:"CrisprGen Biolab",basePrice:310,volatility:.14,trend:.003,sector:"bio",mcap:"large"},
+  PROT:{name:"ProteX Therapeutics",basePrice:175,volatility:.13,trend:.002,sector:"bio",mcap:"mid"},
+  CELL:{name:"CellForge Bio",basePrice:92,volatility:.12,trend:.002,sector:"bio",mcap:"mid"},
+  IMUN:{name:"ImmunoBoost Corp",basePrice:128,volatility:.11,trend:.002,sector:"bio",mcap:"mid"},
+  SYNT:{name:"SynthBio Labs",basePrice:56,volatility:.15,trend:.003,sector:"bio",mcap:"small"},
+  MRNA:{name:"mRNAtrix Research",basePrice:145,volatility:.13,trend:.003,sector:"bio",mcap:"mid"},
+
+  // ── Auto ──
+  EVOX:{name:"EvoX Electric Motors",basePrice:290,volatility:.10,trend:.003,sector:"auto",mcap:"large"},
+  VOLT:{name:"VoltDrive Autos",basePrice:210,volatility:.09,trend:.002,sector:"auto",mcap:"large"},
+  HYDR:{name:"HydroWheels Inc.",basePrice:88,volatility:.08,trend:.002,sector:"auto",mcap:"mid"},
+  AUTN:{name:"AutoNova Robotics",basePrice:150,volatility:.10,trend:.003,sector:"auto",mcap:"mid"},
+  PKLOT:{name:"ParkMesh Infra",basePrice:42,volatility:.06,trend:.001,sector:"auto",mcap:"small"},
+  TRKR:{name:"TruckerX Fleet",basePrice:66,volatility:.07,trend:.001,sector:"auto",mcap:"small"},
+
+  // ── Real Estate ──
+  REIT:{name:"RealCoin REIT",basePrice:95,volatility:.05,trend:.001,sector:"realty",mcap:"large"},
+  PROP:{name:"PropVault Group",basePrice:185,volatility:.04,trend:.001,sector:"realty",mcap:"large"},
+  SPCX:{name:"SpaceEx Offices",basePrice:68,volatility:.06,trend:.001,sector:"realty",mcap:"mid"},
+  LOFT:{name:"LoftDAO Residential",basePrice:38,volatility:.07,trend:.001,sector:"realty",mcap:"small"},
+  BRIK:{name:"BrickChain Infra",basePrice:52,volatility:.05,trend:.001,sector:"realty",mcap:"mid"},
+
+  // ── Travel ──
+  SOAR:{name:"SoarAir Holdings",basePrice:175,volatility:.09,trend:.001,sector:"travel",mcap:"large"},
+  CRUZ:{name:"CruzLine Cruises",basePrice:88,volatility:.10,trend:.001,sector:"travel",mcap:"mid"},
+  STAY:{name:"StayNow Hotels",basePrice:120,volatility:.08,trend:.002,sector:"travel",mcap:"mid"},
+  XPDT:{name:"XpeditionTours",basePrice:44,volatility:.11,trend:.001,sector:"travel",mcap:"small"},
+  JETT:{name:"JetTrail Charter",basePrice:210,volatility:.09,trend:.001,sector:"travel",mcap:"mid"},
+  RAIL:{name:"RailConnect Trains",basePrice:78,volatility:.06,trend:.001,sector:"travel",mcap:"mid"},
+
+  // ── Energy ──
+  PETR:{name:"PetroCrest Oil",basePrice:320,volatility:.07,trend:.001,sector:"energy",mcap:"large"},
+  NUKE:{name:"NucleoGen Power",basePrice:240,volatility:.05,trend:.002,sector:"energy",mcap:"large"},
+  GASX:{name:"GasFlex Pipelines",basePrice:112,volatility:.06,trend:.001,sector:"energy",mcap:"mid"},
+  FUSE:{name:"FusionStar Reactor",basePrice:165,volatility:.11,trend:.003,sector:"energy",mcap:"mid"},
+  HYDP:{name:"HydroPower Grid",basePrice:88,volatility:.04,trend:.001,sector:"energy",mcap:"mid"},
+  COAL:{name:"CoalSeam Mining",basePrice:48,volatility:.08,trend:-.002,sector:"energy",mcap:"small"},
+
+  // ── Logistics ──
+  SHPY:{name:"ShipYard Global",basePrice:195,volatility:.06,trend:.002,sector:"logistics",mcap:"large"},
+  DRON:{name:"DroneDelivery Net",basePrice:78,volatility:.10,trend:.003,sector:"logistics",mcap:"mid"},
+  FRTX:{name:"FreightX Express",basePrice:130,volatility:.07,trend:.002,sector:"logistics",mcap:"mid"},
+  LAST:{name:"LastMile Robotics",basePrice:55,volatility:.11,trend:.003,sector:"logistics",mcap:"small"},
+  WRHX:{name:"WareHouseX Auto",basePrice:44,volatility:.08,trend:.002,sector:"logistics",mcap:"small"},
+  COLD:{name:"ColdChain Logistics",basePrice:68,volatility:.06,trend:.001,sector:"logistics",mcap:"mid"},
+
+  // ── Agriculture ──
+  FARM:{name:"FarmTech Robotics",basePrice:88,volatility:.07,trend:.002,sector:"agri",mcap:"mid"},
+  SEED:{name:"SeedVault Genomics",basePrice:62,volatility:.09,trend:.002,sector:"agri",mcap:"mid"},
+  AQUA:{name:"AquaFarm Systems",basePrice:38,volatility:.08,trend:.002,sector:"agri",mcap:"small"},
+  FRTL:{name:"FertiLux Corp",basePrice:52,volatility:.06,trend:.001,sector:"agri",mcap:"small"},
+  HVST:{name:"HarvestAI Drones",basePrice:75,volatility:.10,trend:.003,sector:"agri",mcap:"mid"},
+  GRAI:{name:"GrainEx Trading",basePrice:44,volatility:.07,trend:.001,sector:"agri",mcap:"small"},
+
+  // ── Finance extras ──
+  NBNK:{name:"NeoBank Pulse",basePrice:88,volatility:.09,trend:.002,sector:"finance",mcap:"mid"},
+  STBL:{name:"StableX Protocol",basePrice:145,volatility:.06,trend:.001,sector:"finance",mcap:"mid"},
+  WLTH:{name:"WealthBridge Fund",basePrice:320,volatility:.05,trend:.001,sector:"finance",mcap:"large"},
+  TOKN:{name:"TokenVault Finance",basePrice:55,volatility:.12,trend:.002,sector:"finance",mcap:"small"},
+
+  // ── Health extras ──
+  TELE:{name:"TeleDoc Health",basePrice:112,volatility:.08,trend:.002,sector:"health",mcap:"mid"},
+  WLLB:{name:"WellBot AI Clinics",basePrice:68,volatility:.10,trend:.003,sector:"health",mcap:"small"},
+  DNTL:{name:"DentaChain Clinics",basePrice:44,volatility:.07,trend:.001,sector:"health",mcap:"small"},
+
+  // ── Gaming extras ──
+  METV:{name:"MetaVerse Arena",basePrice:88,volatility:.13,trend:.002,sector:"gaming",mcap:"mid"},
+  NFTR:{name:"NFT Realm Games",basePrice:22,volatility:.18,trend:0,sector:"gaming",mcap:"small"},
+  ESPT:{name:"eSport Nation",basePrice:58,volatility:.11,trend:.002,sector:"gaming",mcap:"mid"},
+
+  // ── Media extras ──
+  PODC:{name:"PodcastHub Global",basePrice:36,volatility:.09,trend:.001,sector:"media",mcap:"small"},
+  LIVE:{name:"LiveStream Inc.",basePrice:72,volatility:.10,trend:.002,sector:"media",mcap:"mid"},
+  ANIM:{name:"AnimaStudio Films",basePrice:88,volatility:.08,trend:.001,sector:"media",mcap:"mid"},
+
+  // ── Meme extras ──
+  BONK:{name:"BonkCoin Corp",basePrice:2,volatility:.35,trend:0,sector:"meme",mcap:"small"},
+  FOMO:{name:"FOMO Markets Ltd",basePrice:7,volatility:.30,trend:-.001,sector:"meme",mcap:"small"},
+  LAMBO:{name:"LamboDAO",basePrice:4,volatility:.32,trend:.001,sector:"meme",mcap:"small"},
+
+  // ── Defence extras ──
+  SATL:{name:"SatelliteGuard Corp",basePrice:280,volatility:.05,trend:.002,sector:"defence",mcap:"large"},
+  CYBX:{name:"CyberWarX Systems",basePrice:195,volatility:.07,trend:.002,sector:"defence",mcap:"mid"},
+  RADS:{name:"RadarSense Tech",basePrice:118,volatility:.05,trend:.001,sector:"defence",mcap:"mid"},
 }
 
 const EVENTS_RAW = [
@@ -180,6 +289,42 @@ const EVENTS_RAW = [
   {text:"500 store closures",effect:-.06,sector:"retail",weight:2},
   {text:"Streaming hits 500M subs",effect:.07,sector:"media",weight:2},
   {text:"Ad revenue plummets",effect:-.06,sector:"media",weight:2},
+  // AI & ML
+  {text:"AGI milestone announced",effect:.14,sector:"ai",weight:3},
+  {text:"AI regulation framework passes",effect:-.07,sector:"ai",weight:2},
+  {text:"Landmark AI safety benchmark set",effect:.06,sector:"ai",weight:2},
+  {text:"AI model copyright lawsuit",effect:-.05,sector:"ai",weight:2},
+  // Biotech
+  {text:"Universal cancer vaccine approved",effect:.12,sector:"bio",weight:3},
+  {text:"Clinical trial halt on safety",effect:-.09,sector:"bio",weight:2},
+  {text:"Longevity drug enters Phase 2",effect:.08,sector:"bio",weight:2},
+  // Auto
+  {text:"Self-driving full approval granted",effect:.09,sector:"auto",weight:3},
+  {text:"Mass EV recall issued",effect:-.08,sector:"auto",weight:2},
+  {text:"$50B EV charging deal",effect:.06,sector:"auto",weight:2},
+  {text:"Battery fire scandal",effect:-.07,sector:"auto",weight:2},
+  // Real Estate
+  {text:"Mortgage rates hit decade low",effect:.07,sector:"realty",weight:2},
+  {text:"Housing bubble fears grow",effect:-.06,sector:"realty",weight:2},
+  {text:"Remote work drives suburban boom",effect:.05,sector:"realty",weight:1},
+  // Travel
+  {text:"Tourism hits post-pandemic record",effect:.07,sector:"travel",weight:2},
+  {text:"Pandemic travel ban fears",effect:-.08,sector:"travel",weight:2},
+  {text:"Supersonic jet commercial launch",effect:.06,sector:"travel",weight:2},
+  // Energy
+  {text:"Oil cartel cuts production 20%",effect:.08,sector:"energy",weight:3},
+  {text:"Fusion reactor sustained reaction",effect:.12,sector:"energy",weight:3},
+  {text:"Carbon tax triples",effect:-.06,sector:"energy",weight:2},
+  {text:"Major refinery explosion",effect:-.07,sector:"energy",weight:2},
+  // Logistics
+  {text:"Port strike halts $500B trade",effect:-.07,sector:"logistics",weight:2},
+  {text:"Drone delivery legalized globally",effect:.09,sector:"logistics",weight:3},
+  {text:"Supply chain AI cuts costs 30%",effect:.06,sector:"logistics",weight:2},
+  // Agriculture
+  {text:"Global drought cuts yields 25%",effect:-.07,sector:"agri",weight:2},
+  {text:"Vertical farming revolution",effect:.07,sector:"agri",weight:2},
+  {text:"Fertilizer shortage crisis",effect:-.06,sector:"agri",weight:2},
+  {text:"Gene-edited crops yield record",effect:.08,sector:"agri",weight:2},
 ]
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
@@ -321,13 +466,21 @@ export function simTick(
     const sk = Math.max(-6, Math.min(6, st.streak || 0)) * .0003
 
     let cor = 0
-    if (def.sector === "crypto")   cor = ((sec.meme || {}).s || 0) * .04 + ((sec.tech || {}).s || 0) * .02
-    if (def.sector === "meme")     cor = ((sec.crypto || {}).s || 0) * .04 + ((sec.media || {}).s || 0) * .02
-    if (def.sector === "defence")  cor = (50 - m.fg) / 50 * .0015
-    if (def.sector === "green")    cor = -(m.interestRate - 5) * .0003
-    if (def.sector === "retail")   cor = (m.gdpGrowth - 2.8) * .0004 - (m.inflation - 2.5) * .0003
-    if (def.sector === "media")    cor = ((sec.tech || {}).s || 0) * .02
-    if (def.sector === "finance")  cor = rp * .5
+    if (def.sector === "crypto")    cor = ((sec.meme || {}).s || 0) * .04 + ((sec.tech || {}).s || 0) * .02
+    if (def.sector === "meme")      cor = ((sec.crypto || {}).s || 0) * .04 + ((sec.media || {}).s || 0) * .02
+    if (def.sector === "defence")   cor = (50 - m.fg) / 50 * .0015
+    if (def.sector === "green")     cor = -(m.interestRate - 5) * .0003
+    if (def.sector === "retail")    cor = (m.gdpGrowth - 2.8) * .0004 - (m.inflation - 2.5) * .0003
+    if (def.sector === "media")     cor = ((sec.tech || {}).s || 0) * .02
+    if (def.sector === "finance")   cor = rp * .5
+    if (def.sector === "ai")        cor = ((sec.tech || {}).s || 0) * .05 + ((sec.bio || {}).s || 0) * .01
+    if (def.sector === "bio")       cor = ((sec.health || {}).s || 0) * .04
+    if (def.sector === "auto")      cor = (m.gdpGrowth - 2.8) * .0005 - (m.inflation - 2.5) * .0004
+    if (def.sector === "realty")    cor = rp * .6 - (m.inflation - 2.5) * .0003
+    if (def.sector === "travel")    cor = (m.gdpGrowth - 2.8) * .0004 + ((sec.retail || {}).s || 0) * .02
+    if (def.sector === "energy")    cor = (m.inflation - 2.5) * .0005
+    if (def.sector === "logistics") cor = ((sec.retail || {}).s || 0) * .03 + (m.gdpGrowth - 2.8) * .0003
+    if (def.sector === "agri")      cor = (m.inflation - 2.5) * .0004 - (m.gdpGrowth - 2.8) * .0002
 
     const tv = def.volatility * .03 * mcm
     let np = p + p * (def.trend * .02 + tv * n * Math.abs(cm) + se * .04 + ee + nc + st.momentum * .3 + sk + gs * .08 + cor + rsiP + st.insiderBias + eE + rp + ip + gb) * (cm < 0 ? -1 : 1)
