@@ -51,7 +51,7 @@ function Navbar({ route, setRoute }: { route: Route; setRoute: (r: Route) => voi
           onClick={() => go("home")}
           className="cursor-pointer bg-transparent border-0 p-0 shrink-0 hover:opacity-80 transition-opacity"
         >
-          <img src="/polymartlogo.png" alt="POLYMART" className="h-8 w-auto" />
+          <img src="/polymartlogo.png" alt="POLYMART" className="h-11 w-auto" />
         </button>
 
         {/* Live dot */}
