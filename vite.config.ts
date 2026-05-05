@@ -14,8 +14,9 @@ export default defineConfig({
   server: {
     proxy: {
       "/api": {
-        target: "http://localhost:3000",
+        target: "https://dbihpqatusytndsbfzje.supabase.co/functions/v1/polymart-api",
         changeOrigin: true,
+        rewrite: (path) => path,
       },
     },
   },
