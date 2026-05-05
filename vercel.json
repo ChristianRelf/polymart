@@ -2,7 +2,7 @@
   "rewrites": [
     {
       "source": "/api/:path*",
-      "destination": "https://dbihpqatusytndsbfzje.supabase.co/functions/v1/polymart-api/:path*"
+      "destination": "https://dbihpqatusytndsbfzje.supabase.co/functions/v1/polymart-api/api/:path*"
     }
   ]
 }
