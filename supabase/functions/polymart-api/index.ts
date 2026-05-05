@@ -25,81 +25,180 @@ function fgLabel(v: number): string {
 }
 
 const SECTOR_META: Record<string, { label: string; icon: string }> = {
-  tech:    { label: "Tech",         icon: "💻" },
-  food:    { label: "Food & Bev",   icon: "🍔" },
-  space:   { label: "Space",        icon: "🚀" },
-  meme:    { label: "Meme",         icon: "🐸" },
-  green:   { label: "Green Energy", icon: "🌿" },
-  finance: { label: "Finance",      icon: "🏦" },
-  gaming:  { label: "Gaming",       icon: "🎮" },
-  health:  { label: "Health",       icon: "💊" },
-  crypto:  { label: "Crypto",       icon: "₿"  },
-  defence: { label: "Defence",      icon: "🛡️" },
-  retail:  { label: "Retail",       icon: "🛒" },
-  media:   { label: "Media",        icon: "📺" },
+  tech:     { label: "Tech",         icon: "💻" },
+  food:     { label: "Food & Bev",   icon: "🍔" },
+  space:    { label: "Space",        icon: "🚀" },
+  meme:     { label: "Meme",         icon: "🐸" },
+  green:    { label: "Green Energy", icon: "🌿" },
+  finance:  { label: "Finance",      icon: "🏦" },
+  gaming:   { label: "Gaming",       icon: "🎮" },
+  health:   { label: "Health",       icon: "💊" },
+  crypto:   { label: "Crypto",       icon: "₿"  },
+  defence:  { label: "Defence",      icon: "🛡️" },
+  retail:   { label: "Retail",       icon: "🛒" },
+  media:    { label: "Media",        icon: "📺" },
+  auto:     { label: "Auto",         icon: "🚗" },
+  realty:   { label: "Real Estate",  icon: "🏢" },
+  travel:   { label: "Travel",       icon: "✈️" },
+  ai:       { label: "AI & ML",      icon: "🤖" },
+  bio:      { label: "Biotech",      icon: "🧬" },
+  energy:   { label: "Energy",       icon: "⚡" },
+  logistics:{ label: "Logistics",    icon: "📦" },
+  agri:     { label: "Agriculture",  icon: "🌾" },
 };
 
 const STOCK_DEFS: Record<string, { sector: string; mcap: string; volatility: number; trend: number; basePrice: number }> = {
+  // Tech
   APEX:{basePrice:420,volatility:.11,trend:.002,sector:"tech",mcap:"large"},
   VOID:{basePrice:550,volatility:.09,trend:-.001,sector:"tech",mcap:"large"},
   ROBO:{basePrice:180,volatility:.07,trend:.003,sector:"tech",mcap:"mid"},
   CHIP:{basePrice:290,volatility:.08,trend:.002,sector:"tech",mcap:"large"},
   QBIT:{basePrice:340,volatility:.13,trend:.003,sector:"tech",mcap:"mid"},
   SYNC:{basePrice:95,volatility:.07,trend:.001,sector:"tech",mcap:"small"},
+  CLOD:{basePrice:310,volatility:.09,trend:.002,sector:"tech",mcap:"large"},
+  NETX:{basePrice:74,volatility:.06,trend:.001,sector:"tech",mcap:"mid"},
+  SCAN:{basePrice:142,volatility:.10,trend:.002,sector:"tech",mcap:"mid"},
+  DBYT:{basePrice:220,volatility:.08,trend:.002,sector:"tech",mcap:"large"},
+  PROX:{basePrice:58,volatility:.07,trend:.001,sector:"tech",mcap:"small"},
+  // Food
   NOOD:{basePrice:15,volatility:.14,trend:-.001,sector:"food",mcap:"small"},
   FIZZ:{basePrice:62,volatility:.07,trend:.001,sector:"food",mcap:"mid"},
   BURG:{basePrice:38,volatility:.09,trend:.001,sector:"food",mcap:"small"},
   BREW:{basePrice:48,volatility:.06,trend:.002,sector:"food",mcap:"mid"},
   SNAK:{basePrice:72,volatility:.05,trend:.001,sector:"food",mcap:"mid"},
+  // Space
   MOON:{basePrice:320,volatility:.08,trend:.002,sector:"space",mcap:"large"},
   ORBT:{basePrice:210,volatility:.08,trend:.001,sector:"space",mcap:"mid"},
   MARS:{basePrice:145,volatility:.12,trend:.003,sector:"space",mcap:"mid"},
   ASTR:{basePrice:88,volatility:.10,trend:.002,sector:"space",mcap:"small"},
   NOVA:{basePrice:260,volatility:.09,trend:.001,sector:"space",mcap:"large"},
+  // Meme
   DOGE:{basePrice:45,volatility:.12,trend:.001,sector:"meme",mcap:"small"},
   MEME:{basePrice:8,volatility:.22,trend:0,sector:"meme",mcap:"small"},
   YOLO:{basePrice:5,volatility:.28,trend:-.002,sector:"meme",mcap:"small"},
   PEPE:{basePrice:3,volatility:.30,trend:0,sector:"meme",mcap:"small"},
   STONK:{basePrice:12,volatility:.25,trend:.001,sector:"meme",mcap:"small"},
+  BONK:{basePrice:2,volatility:.35,trend:0,sector:"meme",mcap:"small"},
+  FOMO:{basePrice:7,volatility:.30,trend:-.001,sector:"meme",mcap:"small"},
+  LAMBO:{basePrice:4,volatility:.32,trend:.001,sector:"meme",mcap:"small"},
+  // Green Energy
   GRDN:{basePrice:95,volatility:.06,trend:.002,sector:"green",mcap:"mid"},
   SPRK:{basePrice:75,volatility:.06,trend:.003,sector:"green",mcap:"mid"},
   LEAF:{basePrice:42,volatility:.05,trend:.002,sector:"green",mcap:"small"},
   WIND:{basePrice:110,volatility:.07,trend:.002,sector:"green",mcap:"mid"},
   SOLR:{basePrice:135,volatility:.06,trend:.003,sector:"green",mcap:"large"},
+  // Finance
   BNKR:{basePrice:350,volatility:.05,trend:.001,sector:"finance",mcap:"large"},
   LEND:{basePrice:120,volatility:.07,trend:.001,sector:"finance",mcap:"mid"},
   INSR:{basePrice:85,volatility:.04,trend:.001,sector:"finance",mcap:"mid"},
   HEDG:{basePrice:480,volatility:.06,trend:.001,sector:"finance",mcap:"large"},
   PAYX:{basePrice:65,volatility:.08,trend:.002,sector:"finance",mcap:"mid"},
+  NBNK:{basePrice:88,volatility:.09,trend:.002,sector:"finance",mcap:"mid"},
+  STBL:{basePrice:145,volatility:.06,trend:.001,sector:"finance",mcap:"mid"},
+  WLTH:{basePrice:320,volatility:.05,trend:.001,sector:"finance",mcap:"large"},
+  TOKN:{basePrice:55,volatility:.12,trend:.002,sector:"finance",mcap:"small"},
+  // Gaming
   FRAG:{basePrice:110,volatility:.10,trend:.002,sector:"gaming",mcap:"mid"},
   LOOT:{basePrice:28,volatility:.13,trend:0,sector:"gaming",mcap:"small"},
   PIXEL:{basePrice:65,volatility:.09,trend:.001,sector:"gaming",mcap:"mid"},
   GGWP:{basePrice:42,volatility:.11,trend:.002,sector:"gaming",mcap:"small"},
   VRTX:{basePrice:155,volatility:.10,trend:.002,sector:"gaming",mcap:"mid"},
+  METV:{basePrice:88,volatility:.13,trend:.002,sector:"gaming",mcap:"mid"},
+  NFTR:{basePrice:22,volatility:.18,trend:0,sector:"gaming",mcap:"small"},
+  ESPT:{basePrice:58,volatility:.11,trend:.002,sector:"gaming",mcap:"mid"},
+  // Health
   CURE:{basePrice:200,volatility:.08,trend:.002,sector:"health",mcap:"large"},
   VITA:{basePrice:30,volatility:.06,trend:.001,sector:"health",mcap:"small"},
   MEDS:{basePrice:155,volatility:.10,trend:.001,sector:"health",mcap:"mid"},
   GENE:{basePrice:280,volatility:.12,trend:.003,sector:"health",mcap:"mid"},
   RXAI:{basePrice:92,volatility:.09,trend:.002,sector:"health",mcap:"small"},
+  TELE:{basePrice:112,volatility:.08,trend:.002,sector:"health",mcap:"mid"},
+  WLLB:{basePrice:68,volatility:.10,trend:.003,sector:"health",mcap:"small"},
+  DNTL:{basePrice:44,volatility:.07,trend:.001,sector:"health",mcap:"small"},
+  // Crypto
   HODL:{basePrice:90,volatility:.18,trend:0,sector:"crypto",mcap:"mid"},
   DEFI:{basePrice:55,volatility:.20,trend:.001,sector:"crypto",mcap:"small"},
   MINE:{basePrice:135,volatility:.15,trend:-.001,sector:"crypto",mcap:"mid"},
   WHAL:{basePrice:220,volatility:.16,trend:.001,sector:"crypto",mcap:"mid"},
   NFTX:{basePrice:18,volatility:.24,trend:-.001,sector:"crypto",mcap:"small"},
+  // Defence
   TANK:{basePrice:400,volatility:.04,trend:.002,sector:"defence",mcap:"large"},
   SHLD:{basePrice:175,volatility:.05,trend:.002,sector:"defence",mcap:"mid"},
   DRNE:{basePrice:250,volatility:.06,trend:.001,sector:"defence",mcap:"mid"},
   ARMO:{basePrice:130,volatility:.04,trend:.001,sector:"defence",mcap:"mid"},
+  SATL:{basePrice:280,volatility:.05,trend:.002,sector:"defence",mcap:"large"},
+  CYBX:{basePrice:195,volatility:.07,trend:.002,sector:"defence",mcap:"mid"},
+  RADS:{basePrice:118,volatility:.05,trend:.001,sector:"defence",mcap:"mid"},
+  // Retail
   SHOP:{basePrice:160,volatility:.07,trend:.002,sector:"retail",mcap:"large"},
   DLVR:{basePrice:78,volatility:.08,trend:.001,sector:"retail",mcap:"mid"},
   LUXE:{basePrice:340,volatility:.06,trend:.001,sector:"retail",mcap:"large"},
   DEAL:{basePrice:22,volatility:.10,trend:0,sector:"retail",mcap:"small"},
   CART:{basePrice:55,volatility:.07,trend:.002,sector:"retail",mcap:"mid"},
+  // Media
   STRM:{basePrice:185,volatility:.09,trend:.001,sector:"media",mcap:"large"},
   BUZZ:{basePrice:14,volatility:.16,trend:-.001,sector:"media",mcap:"small"},
   CAST:{basePrice:38,volatility:.08,trend:.002,sector:"media",mcap:"small"},
   REEL:{basePrice:95,volatility:.11,trend:.002,sector:"media",mcap:"mid"},
   NEWS:{basePrice:52,volatility:.07,trend:0,sector:"media",mcap:"mid"},
+  PODC:{basePrice:36,volatility:.09,trend:.001,sector:"media",mcap:"small"},
+  LIVE:{basePrice:72,volatility:.10,trend:.002,sector:"media",mcap:"mid"},
+  ANIM:{basePrice:88,volatility:.08,trend:.001,sector:"media",mcap:"mid"},
+  // Auto
+  EVOX:{basePrice:290,volatility:.10,trend:.003,sector:"auto",mcap:"large"},
+  VOLT:{basePrice:210,volatility:.09,trend:.002,sector:"auto",mcap:"large"},
+  HYDR:{basePrice:88,volatility:.08,trend:.002,sector:"auto",mcap:"mid"},
+  AUTN:{basePrice:150,volatility:.10,trend:.003,sector:"auto",mcap:"mid"},
+  PKLOT:{basePrice:42,volatility:.06,trend:.001,sector:"auto",mcap:"small"},
+  TRKR:{basePrice:66,volatility:.07,trend:.001,sector:"auto",mcap:"small"},
+  // Real Estate
+  REIT:{basePrice:95,volatility:.05,trend:.001,sector:"realty",mcap:"large"},
+  PROP:{basePrice:185,volatility:.04,trend:.001,sector:"realty",mcap:"large"},
+  SPCX:{basePrice:68,volatility:.06,trend:.001,sector:"realty",mcap:"mid"},
+  LOFT:{basePrice:38,volatility:.07,trend:.001,sector:"realty",mcap:"small"},
+  BRIK:{basePrice:52,volatility:.05,trend:.001,sector:"realty",mcap:"mid"},
+  // Travel
+  SOAR:{basePrice:175,volatility:.09,trend:.001,sector:"travel",mcap:"large"},
+  CRUZ:{basePrice:88,volatility:.10,trend:.001,sector:"travel",mcap:"mid"},
+  STAY:{basePrice:120,volatility:.08,trend:.002,sector:"travel",mcap:"mid"},
+  XPDT:{basePrice:44,volatility:.11,trend:.001,sector:"travel",mcap:"small"},
+  JETT:{basePrice:210,volatility:.09,trend:.001,sector:"travel",mcap:"mid"},
+  RAIL:{basePrice:78,volatility:.06,trend:.001,sector:"travel",mcap:"mid"},
+  // AI & ML
+  GNAI:{basePrice:480,volatility:.14,trend:.004,sector:"ai",mcap:"large"},
+  LMAI:{basePrice:360,volatility:.12,trend:.003,sector:"ai",mcap:"large"},
+  NRAL:{basePrice:195,volatility:.13,trend:.003,sector:"ai",mcap:"mid"},
+  VISI:{basePrice:108,volatility:.11,trend:.002,sector:"ai",mcap:"mid"},
+  ORCH:{basePrice:68,volatility:.15,trend:.003,sector:"ai",mcap:"small"},
+  SPKR:{basePrice:44,volatility:.12,trend:.002,sector:"ai",mcap:"small"},
+  // Biotech
+  CRSP:{basePrice:310,volatility:.14,trend:.003,sector:"bio",mcap:"large"},
+  PROT:{basePrice:175,volatility:.13,trend:.002,sector:"bio",mcap:"mid"},
+  CELL:{basePrice:92,volatility:.12,trend:.002,sector:"bio",mcap:"mid"},
+  IMUN:{basePrice:128,volatility:.11,trend:.002,sector:"bio",mcap:"mid"},
+  SYNT:{basePrice:56,volatility:.15,trend:.003,sector:"bio",mcap:"small"},
+  MRNA:{basePrice:145,volatility:.13,trend:.003,sector:"bio",mcap:"mid"},
+  // Energy
+  PETR:{basePrice:320,volatility:.07,trend:.001,sector:"energy",mcap:"large"},
+  NUKE:{basePrice:240,volatility:.05,trend:.002,sector:"energy",mcap:"large"},
+  GASX:{basePrice:112,volatility:.06,trend:.001,sector:"energy",mcap:"mid"},
+  FUSE:{basePrice:165,volatility:.11,trend:.003,sector:"energy",mcap:"mid"},
+  HYDP:{basePrice:88,volatility:.04,trend:.001,sector:"energy",mcap:"mid"},
+  COAL:{basePrice:48,volatility:.08,trend:-.002,sector:"energy",mcap:"small"},
+  // Logistics
+  SHPY:{basePrice:195,volatility:.06,trend:.002,sector:"logistics",mcap:"large"},
+  DRON:{basePrice:78,volatility:.10,trend:.003,sector:"logistics",mcap:"mid"},
+  FRTX:{basePrice:130,volatility:.07,trend:.002,sector:"logistics",mcap:"mid"},
+  LAST:{basePrice:55,volatility:.11,trend:.003,sector:"logistics",mcap:"small"},
+  WRHX:{basePrice:44,volatility:.08,trend:.002,sector:"logistics",mcap:"small"},
+  COLD:{basePrice:68,volatility:.06,trend:.001,sector:"logistics",mcap:"mid"},
+  // Agriculture
+  FARM:{basePrice:88,volatility:.07,trend:.002,sector:"agri",mcap:"mid"},
+  SEED:{basePrice:62,volatility:.09,trend:.002,sector:"agri",mcap:"mid"},
+  AQUA:{basePrice:38,volatility:.08,trend:.002,sector:"agri",mcap:"small"},
+  FRTL:{basePrice:52,volatility:.06,trend:.001,sector:"agri",mcap:"small"},
+  HVST:{basePrice:75,volatility:.10,trend:.003,sector:"agri",mcap:"mid"},
+  GRAI:{basePrice:44,volatility:.07,trend:.001,sector:"agri",mcap:"small"},
 };
 
 // ── Route handler ─────────────────────────────────────────────────────────────
@@ -114,7 +213,6 @@ Deno.serve(async (req: Request) => {
     );
 
     const url = new URL(req.url);
-    // Strip function prefix: /polymart-api/api/v1/getMarket -> /api/v1/getMarket
     const path = url.pathname.replace(/^\/polymart-api/, "");
 
     // ── GET /api/v1/getMarket ────────────────────────────────────────────────
@@ -330,7 +428,7 @@ Deno.serve(async (req: Request) => {
     // ── GET /api/v1/getLeaderboard ───────────────────────────────────────────
     if (path === "/api/v1/getLeaderboard") {
       const by = url.searchParams.get("by") || "change";
-      const limitParam = Math.min(parseInt(url.searchParams.get("limit") || "10"), 60);
+      const limitParam = Math.min(parseInt(url.searchParams.get("limit") || "10"), 132);
       const dir = url.searchParams.get("dir") === "asc" ? true : false;
 
       const { data: stocks } = await supabase.from("stocks_state")
