@@ -23,8 +23,8 @@ const FEATURES = [
   },
   {
     icon: BarChart2,
-    title: "60 Stocks, 12 Sectors",
-    desc: "Tech, Crypto, Space, Meme, Health, Finance, Gaming, Green Energy, Defence, Food, Retail, and Media. Each with unique character.",
+    title: "132 Stocks, 20 Sectors",
+    desc: "Tech, AI, Biotech, Crypto, Space, Meme, Energy, Auto, Real Estate, Travel, Logistics, Agriculture, and more. Each with unique character.",
   },
   {
     icon: Globe,
@@ -45,6 +45,8 @@ const FEATURES = [
 
 const SECTORS = [
   { icon: "💻", label: "Tech" },
+  { icon: "🤖", label: "AI & ML" },
+  { icon: "🧬", label: "Biotech" },
   { icon: "🚀", label: "Space" },
   { icon: "🐸", label: "Meme" },
   { icon: "💊", label: "Health" },
@@ -56,13 +58,19 @@ const SECTORS = [
   { icon: "🍔", label: "Food & Bev" },
   { icon: "🛒", label: "Retail" },
   { icon: "📺", label: "Media" },
+  { icon: "🚗", label: "Auto" },
+  { icon: "🏢", label: "Real Estate" },
+  { icon: "✈️", label: "Travel" },
+  { icon: "⚡", label: "Energy" },
+  { icon: "📦", label: "Logistics" },
+  { icon: "🌾", label: "Agriculture" },
 ]
 
 const STATS = [
-  { value: "60", label: "Simulated Stocks" },
-  { value: "12", label: "Market Sectors" },
-  { value: "3s", label: "Tick Interval" },
-  { value: "70+", label: "Event Types" },
+  { value: "132", label: "Simulated Stocks" },
+  { value: "20", label: "Market Sectors" },
+  { value: "10s", label: "Tick Interval" },
+  { value: "76", label: "Event Types" },
 ]
 
 export default function HomePage({ onNavigate }: Props) {
@@ -97,7 +105,7 @@ export default function HomePage({ onNavigate }: Props) {
         </h1>
 
         <p className="text-lg text-muted-foreground leading-relaxed max-w-2xl mb-10">
-          POLYMART runs a persistent simulated stock exchange — 60 companies, 12 sectors, live macro variables,
+          POLYMART runs a persistent simulated stock exchange — 132 companies, 20 sectors, live macro variables,
           and an open API. Built for Discord bots, browser games, and learning how markets behave.
         </p>
 
@@ -192,7 +200,7 @@ export default function HomePage({ onNavigate }: Props) {
         <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-6 mb-10">
           <div>
             <p className="text-xs text-muted-foreground uppercase tracking-widest mb-3">Coverage</p>
-            <h2 className="text-3xl font-bold tracking-tight text-foreground">12 sectors simulated</h2>
+            <h2 className="text-3xl font-bold tracking-tight text-foreground">20 sectors simulated</h2>
           </div>
           <Button variant="outline" onClick={() => onNavigate("market")} className="border-border shrink-0">
             Browse all stocks

@@ -53,7 +53,7 @@ const ENDPOINTS: Endpoint[] = [
     method: "GET",
     path: "/api/v1/getStocks",
     summary: "All stocks — summary",
-    desc: "Returns a map of all 60 stocks keyed by ticker symbol. Optionally filter by sector.",
+    desc: "Returns a map of all 132 stocks keyed by ticker symbol. Optionally filter by sector.",
     params: [
       { name: "sector", type: "string", required: false, desc: "Filter by sector key", example: "tech" },
     ],
@@ -114,7 +114,7 @@ const ENDPOINTS: Endpoint[] = [
     method: "GET",
     path: "/api/v1/getSectors",
     summary: "All sectors — summary",
-    desc: "Returns all 12 sectors with average price change, momentum, and news impact score.",
+    desc: "Returns all 20 sectors with average price change, momentum, and news impact score.",
     response: [
       { name: "<sector_key>", type: "object", desc: "Keyed by sector key (e.g. tech, crypto)" },
       { name: "  label", type: "string", desc: "Human-readable name" },
@@ -192,7 +192,7 @@ const ENDPOINTS: Endpoint[] = [
     params: [
       { name: "by", type: "string", required: false, desc: "Sort field: change | price | volume | rsi | ath | streak (default: change)", example: "volume" },
       { name: "dir", type: "string", required: false, desc: "asc | desc (default: desc)", example: "desc" },
-      { name: "limit", type: "number", required: false, desc: "Max results (1–60, default 10)", example: "10" },
+      { name: "limit", type: "number", required: false, desc: "Max results (1–132, default 10)", example: "10" },
     ],
     response: [
       { name: "sortedBy", type: "string", desc: "Field used for sorting" },
@@ -225,7 +225,7 @@ const ENDPOINTS: Endpoint[] = [
     method: "GET",
     path: "/api/v1/getHistory",
     summary: "Price history for a stock",
-    desc: "Returns raw price history for a stock. Up to 400 data points, each representing one simulation tick (~10 seconds).",
+    desc: "Returns raw price history for a stock. Up to 400 data points, each representing one simulation tick (10 seconds).",
     params: [
       { name: "ticker", type: "string", required: true, desc: "Ticker symbol", example: "VOID" },
       { name: "limit", type: "number", required: false, desc: "Data points to return (1–400, default 100)", example: "100" },
@@ -274,7 +274,7 @@ const ENDPOINTS: Endpoint[] = [
   },
 ]
 
-const SECTOR_KEYS = ["tech", "food", "space", "meme", "green", "finance", "gaming", "health", "crypto", "defence", "retail", "media"]
+const SECTOR_KEYS = ["tech", "food", "space", "meme", "green", "finance", "gaming", "health", "crypto", "defence", "retail", "media", "auto", "realty", "travel", "ai", "bio", "energy", "logistics", "agri"]
 
 // ── Components ────────────────────────────────────────────────────────────────
 

@@ -309,7 +309,7 @@ export default function MarketPage() {
         <div>
           <h1 className="text-2xl font-bold text-foreground tracking-tight mb-1">Market</h1>
           <p className="text-sm text-muted-foreground">
-            {market.totalStocks} stocks · ticks every 3s · tick #{market.tickCount}
+            {market.totalStocks} stocks · ticks every 10s · tick #{market.tickCount}
           </p>
         </div>
         <div className="flex items-center gap-2">
