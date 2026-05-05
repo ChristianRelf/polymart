@@ -1,12 +1,7 @@
 import { createContext, useContext, useEffect, useState, useCallback } from "react"
 
-const API_BASE = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/polymart-api`
-const ANON_KEY = import.meta.env.VITE_SUPABASE_ANON_KEY
-
 function apiFetch(endpoint: string) {
-  return fetch(`${API_BASE}${endpoint}`, {
-    headers: { Authorization: `Bearer ${ANON_KEY}` },
-  }).then(r => r.json())
+  return fetch(endpoint).then(r => r.json())
 }
 
 // ── Exported types ────────────────────────────────────────────────────────────
@@ -149,7 +144,7 @@ export function SimulationProvider({ children }: { children: React.ReactNode }) 
   }, [refresh])
 
   const getDetail = useCallback(async (ticker: string): Promise<StockDetail | null> => {
-    const data = await apiFetch(`/api/v1/getStock?ticker=${ticker}`)
+    const data = await apiFetch(`/api/v1/getStock?ticker=${encodeURIComponent(ticker)}`)
     if (!data || data.error) return null
     return data as StockDetail
   }, [])
