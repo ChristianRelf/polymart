@@ -3,7 +3,7 @@ import { Badge } from "@/components/ui/badge"
 import { Separator } from "@/components/ui/separator"
 import { cn } from "@/lib/utils"
 
-const BASE = "https://dbihpqatusytndsbfzje.supabase.co/functions/v1/polymart-api"
+const BASE = "https://polymart.co"
 
 type Param = { name: string; type: string; required: boolean; desc: string; example?: string }
 type Field = { name: string; type: string; desc: string }
