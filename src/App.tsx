@@ -15,7 +15,8 @@ const HASH_MAP: Record<string, Route> = {
   "": "home",
   "/": "home",
   "/market": "market",
-  "/api": "api",
+  "/docs/api": "api",
+  "/api": "api",        // legacy redirect
   "/docs/terms": "terms",
   "/docs/privacy": "privacy",
 }
@@ -23,7 +24,7 @@ const HASH_MAP: Record<string, Route> = {
 const ROUTE_HASH: Record<Route, string> = {
   home: "/",
   market: "/market",
-  api: "/api",
+  api: "/docs/api",
   terms: "/docs/terms",
   privacy: "/docs/privacy",
 }
