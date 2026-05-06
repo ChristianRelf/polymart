@@ -56,7 +56,7 @@ Replace `user@your-server-ip` with your actual server user and IP address. The `
 
 ```bash
 ssh user@your-server-ip
-git clone https://your-repo-url /home/user/polymart
+git clone https://github.com/ChristianRelf/polymart.git /home/user/polymart
 cd /home/user/polymart
 ```
 
