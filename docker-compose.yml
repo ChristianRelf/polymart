@@ -18,11 +18,11 @@ services:
       # Enable event scheduler for 7-day purge
       - ./mysql-config/polymart.cnf:/etc/mysql/conf.d/polymart.cnf:ro
     healthcheck:
-      test: ["CMD-SHELL", "mysqladmin ping -h 127.0.0.1 -u root -p$$MYSQL_ROOT_PASSWORD --silent"]
-      interval: 10s
+      test: ["CMD-SHELL", "mysqladmin ping -h 127.0.0.1 -u polymart -p$$MYSQL_PASSWORD --silent"]
+      interval: 5s
       timeout: 5s
-      retries: 10
-      start_period: 30s
+      retries: 20
+      start_period: 60s
 
   # ── Node API + simulation server ───────────────────────────────────────────
   app:
