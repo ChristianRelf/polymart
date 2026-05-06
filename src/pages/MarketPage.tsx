@@ -392,7 +392,7 @@ function StockDetailView({ detail, stocks, onBack, openDetail }: {
   const showCandles = detail.candles && detail.candles.length >= 2
 
   return (
-    <div className="max-w-6xl mx-auto px-6 py-10">
+    <div className="max-w-[1600px] mx-auto px-8 py-10">
       {/* Back */}
       <button
         onClick={onBack}
@@ -800,7 +800,7 @@ export default function MarketPage() {
   }
 
   return (
-    <div className="max-w-6xl mx-auto px-6 py-10">
+    <div className="max-w-[1600px] mx-auto px-8 py-10">
 
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4 mb-8">

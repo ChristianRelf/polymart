@@ -78,7 +78,7 @@ export default function HomePage({ onNavigate }: Props) {
     <div className="flex flex-col">
 
       {/* ── Hero ─────────────────────────────────────────────────────────── */}
-      <section className="relative flex flex-col items-center text-center pt-28 pb-24 px-6 overflow-hidden">
+      <section className="relative flex flex-col items-center text-center pt-32 pb-28 px-8 overflow-hidden">
         {/* subtle grid background */}
         <div
           className="pointer-events-none absolute inset-0 opacity-[0.03]"
@@ -89,7 +89,7 @@ export default function HomePage({ onNavigate }: Props) {
           }}
         />
         {/* glow */}
-        <div className="pointer-events-none absolute top-0 left-1/2 -translate-x-1/2 w-[600px] h-[400px] rounded-full opacity-[0.06] blur-[120px] bg-foreground" />
+        <div className="pointer-events-none absolute top-0 left-1/2 -translate-x-1/2 w-[900px] h-[500px] rounded-full opacity-[0.06] blur-[140px] bg-foreground" />
 
         <Badge
           variant="outline"
@@ -98,13 +98,13 @@ export default function HomePage({ onNavigate }: Props) {
           Simulated Stock Market Engine
         </Badge>
 
-        <h1 className="text-5xl sm:text-6xl lg:text-7xl font-extrabold tracking-tight text-balance leading-[1.05] mb-6 max-w-4xl">
+        <h1 className="text-6xl sm:text-7xl lg:text-8xl xl:text-9xl font-extrabold tracking-tight text-balance leading-[1.02] mb-8 max-w-6xl">
           Real market mechanics.
           <br />
           <span className="text-muted-foreground">Fictional data.</span>
         </h1>
 
-        <p className="text-lg text-muted-foreground leading-relaxed max-w-2xl mb-10">
+        <p className="text-xl text-muted-foreground leading-relaxed max-w-3xl mb-12">
           POLYMART runs a persistent simulated stock exchange — 132 companies, 20 sectors, live macro variables,
           and an open API. Built for Discord bots, browser games, and learning how markets behave.
         </p>
@@ -145,7 +145,7 @@ export default function HomePage({ onNavigate }: Props) {
 
       {/* ── Stats strip ──────────────────────────────────────────────────── */}
       <section className="border-y border-border bg-card/40">
-        <div className="max-w-5xl mx-auto grid grid-cols-2 sm:grid-cols-4">
+        <div className="max-w-[1600px] mx-auto grid grid-cols-2 sm:grid-cols-4">
           {STATS.map((s, i) => (
             <div
               key={i}
@@ -154,20 +154,20 @@ export default function HomePage({ onNavigate }: Props) {
                 i < STATS.length - 1 && "border-r border-border"
               )}
             >
-              <span className="text-4xl font-extrabold font-mono text-foreground mb-1 tabular-nums">
+              <span className="text-5xl lg:text-6xl font-extrabold font-mono text-foreground mb-2 tabular-nums">
                 {s.value}
               </span>
-              <span className="text-xs text-muted-foreground uppercase tracking-widest">{s.label}</span>
+              <span className="text-sm text-muted-foreground uppercase tracking-widest">{s.label}</span>
             </div>
           ))}
         </div>
       </section>
 
       {/* ── Features ─────────────────────────────────────────────────────── */}
-      <section className="max-w-6xl mx-auto w-full px-6 py-24">
+      <section className="max-w-[1600px] mx-auto w-full px-8 py-28">
         <div className="mb-14 max-w-xl">
           <p className="text-xs text-muted-foreground uppercase tracking-widest mb-3">How it works</p>
-          <h2 className="text-3xl font-bold tracking-tight text-foreground">
+          <h2 className="text-4xl font-bold tracking-tight text-foreground">
             A complete market simulation in your pocket
           </h2>
         </div>
@@ -180,11 +180,11 @@ export default function HomePage({ onNavigate }: Props) {
                 key={i}
                 className="bg-background p-8 flex flex-col gap-4 hover:bg-card transition-colors duration-200"
               >
-                <div className="w-10 h-10 rounded-lg bg-card border border-border flex items-center justify-center shrink-0">
-                  <Icon className="w-4 h-4 text-foreground" />
+                <div className="w-12 h-12 rounded-xl bg-card border border-border flex items-center justify-center shrink-0">
+                  <Icon className="w-5 h-5 text-foreground" />
                 </div>
                 <div>
-                  <h3 className="text-sm font-semibold text-foreground mb-2">{f.title}</h3>
+                  <h3 className="text-base font-semibold text-foreground mb-2">{f.title}</h3>
                   <p className="text-sm text-muted-foreground leading-relaxed">{f.desc}</p>
                 </div>
               </div>
@@ -196,11 +196,11 @@ export default function HomePage({ onNavigate }: Props) {
       <Separator className="bg-border" />
 
       {/* ── Sectors ──────────────────────────────────────────────────────── */}
-      <section className="max-w-6xl mx-auto w-full px-6 py-24">
+      <section className="max-w-[1600px] mx-auto w-full px-8 py-28">
         <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-6 mb-10">
           <div>
             <p className="text-xs text-muted-foreground uppercase tracking-widest mb-3">Coverage</p>
-            <h2 className="text-3xl font-bold tracking-tight text-foreground">20 sectors simulated</h2>
+            <h2 className="text-4xl font-bold tracking-tight text-foreground">20 sectors simulated</h2>
           </div>
           <Button variant="outline" onClick={() => onNavigate("market")} className="border-border shrink-0">
             Browse all stocks
@@ -208,14 +208,14 @@ export default function HomePage({ onNavigate }: Props) {
           </Button>
         </div>
 
-        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-3">
+        <div className="grid grid-cols-2 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-10 gap-3">
           {SECTORS.map((s, i) => (
             <button
               key={i}
               onClick={() => onNavigate("market")}
               className="flex flex-col items-center gap-2.5 py-6 px-4 bg-card border border-border rounded-xl hover:bg-accent hover:border-ring transition-all duration-150 cursor-pointer group"
             >
-              <span className="text-2xl">{s.icon}</span>
+              <span className="text-3xl">{s.icon}</span>
               <span className="text-xs font-medium text-muted-foreground group-hover:text-foreground transition-colors">
                 {s.label}
               </span>
@@ -227,14 +227,14 @@ export default function HomePage({ onNavigate }: Props) {
       <Separator className="bg-border" />
 
       {/* ── API preview ──────────────────────────────────────────────────── */}
-      <section className="max-w-6xl mx-auto w-full px-6 py-24">
+      <section className="max-w-[1600px] mx-auto w-full px-8 py-28">
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-16 items-center">
           <div>
             <p className="text-xs text-muted-foreground uppercase tracking-widest mb-3">Open API</p>
-            <h2 className="text-3xl font-bold tracking-tight text-foreground mb-4">
+            <h2 className="text-4xl font-bold tracking-tight text-foreground mb-5">
               One GET request.<br />All market data.
             </h2>
-            <p className="text-sm text-muted-foreground leading-relaxed mb-8">
+            <p className="text-base text-muted-foreground leading-relaxed mb-8">
               No authentication. No rate limits for personal use. The entire simulated market is exposed
               over REST — index, stocks, sectors, events, and health. Designed for Discord bots, games,
               and dashboards.
@@ -280,7 +280,7 @@ export default function HomePage({ onNavigate }: Props) {
       <Separator className="bg-border" />
 
       {/* ── Discord CTA ──────────────────────────────────────────────────── */}
-      <section className="max-w-6xl mx-auto w-full px-6 py-24">
+      <section className="max-w-[1600px] mx-auto w-full px-8 py-28">
         <div className="relative rounded-2xl border border-border bg-card overflow-hidden">
           {/* subtle dot pattern */}
           <div
@@ -292,10 +292,10 @@ export default function HomePage({ onNavigate }: Props) {
           />
           <div className="relative flex flex-col sm:flex-row items-center justify-between gap-8 p-10 sm:p-14">
             <div className="text-center sm:text-left">
-              <h2 className="text-2xl font-bold text-foreground mb-2 tracking-tight">
+              <h2 className="text-3xl font-bold text-foreground mb-3 tracking-tight">
                 Bring POLYMART to your Discord server
               </h2>
-              <p className="text-sm text-muted-foreground max-w-md leading-relaxed">
+              <p className="text-base text-muted-foreground max-w-lg leading-relaxed">
                 The POLYMART bot delivers live simulated market data via slash commands.
                 Query stock prices, scan sector performance, and watch events fire in real time.
               </p>

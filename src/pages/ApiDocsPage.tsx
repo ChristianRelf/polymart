@@ -404,13 +404,13 @@ export default function ApiDocsPage() {
   const toggle = (id: string) => setActive(prev => prev === id ? null : id)
 
   return (
-    <div className="max-w-5xl mx-auto px-6 py-14">
+    <div className="max-w-[1400px] mx-auto px-8 py-14">
 
       <div className="mb-12">
         <Badge variant="outline" className="mb-4 text-xs tracking-widest uppercase border-border text-muted-foreground">
           REST API
         </Badge>
-        <h1 className="text-3xl font-bold tracking-tight text-foreground mb-4">API Reference</h1>
+        <h1 className="text-4xl font-bold tracking-tight text-foreground mb-4">API Reference</h1>
         <p className="text-muted-foreground leading-relaxed max-w-2xl">
           The POLYMART API is open — no authentication required. All endpoints are GET requests returning JSON.
           Prices update every ~10 seconds via a persistent server-side simulation engine.

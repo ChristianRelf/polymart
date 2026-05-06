@@ -114,7 +114,7 @@ function Navbar({ route, setRoute }: { route: Route; setRoute: (r: Route) => voi
 
   return (
     <header className="sticky top-0 z-50 border-b border-border bg-background/80 backdrop-blur-md">
-      <div className="max-w-6xl mx-auto px-6 h-16 flex items-center gap-6">
+      <div className="max-w-[1600px] mx-auto px-8 h-16 flex items-center gap-6">
 
         {/* Logo */}
         <button
@@ -184,7 +184,7 @@ function Footer({ setRoute }: { setRoute: (r: Route) => void }) {
 
   return (
     <footer className="border-t border-border mt-auto bg-card/30">
-      <div className="max-w-6xl mx-auto px-6 py-12">
+      <div className="max-w-[1600px] mx-auto px-8 py-12">
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-10 mb-10">
 
           {/* Brand */}
