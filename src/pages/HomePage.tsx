@@ -1,8 +1,9 @@
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Separator } from "@/components/ui/separator"
-import { ArrowRight, Zap, ChartBar as BarChart2, Globe, Bot, TrendingUp, Activity } from "lucide-react"
+import { ArrowRight, Zap, ChartBar as BarChart2, Globe, Bot, TrendingUp, Activity, Monitor, Brain, FlaskConical, Rocket, Laugh, Pill, Landmark, Gamepad2, Leaf, Bitcoin, Shield, Utensils, ShoppingCart, Tv as Tv2, Car, Building2, Plane, Bolt as BoltIcon, Package, Wheat } from "lucide-react"
 import { cn } from "@/lib/utils"
+import type { LucideIcon } from "lucide-react"
 
 type Route = "home" | "market" | "api" | "terms" | "privacy"
 
@@ -43,27 +44,27 @@ const FEATURES = [
   },
 ]
 
-const SECTORS = [
-  { icon: "💻", label: "Tech" },
-  { icon: "🤖", label: "AI & ML" },
-  { icon: "🧬", label: "Biotech" },
-  { icon: "🚀", label: "Space" },
-  { icon: "🐸", label: "Meme" },
-  { icon: "💊", label: "Health" },
-  { icon: "🏦", label: "Finance" },
-  { icon: "🎮", label: "Gaming" },
-  { icon: "🌿", label: "Green Energy" },
-  { icon: "₿", label: "Crypto" },
-  { icon: "🛡️", label: "Defence" },
-  { icon: "🍔", label: "Food & Bev" },
-  { icon: "🛒", label: "Retail" },
-  { icon: "📺", label: "Media" },
-  { icon: "🚗", label: "Auto" },
-  { icon: "🏢", label: "Real Estate" },
-  { icon: "✈️", label: "Travel" },
-  { icon: "⚡", label: "Energy" },
-  { icon: "📦", label: "Logistics" },
-  { icon: "🌾", label: "Agriculture" },
+const SECTORS: { icon: LucideIcon; label: string }[] = [
+  { icon: Monitor,      label: "Tech" },
+  { icon: Brain,        label: "AI & ML" },
+  { icon: FlaskConical, label: "Biotech" },
+  { icon: Rocket,       label: "Space" },
+  { icon: Laugh,        label: "Meme" },
+  { icon: Pill,         label: "Health" },
+  { icon: Landmark,     label: "Finance" },
+  { icon: Gamepad2,     label: "Gaming" },
+  { icon: Leaf,         label: "Green Energy" },
+  { icon: Bitcoin,      label: "Crypto" },
+  { icon: Shield,       label: "Defence" },
+  { icon: Utensils,     label: "Food & Bev" },
+  { icon: ShoppingCart, label: "Retail" },
+  { icon: Tv2,          label: "Media" },
+  { icon: Car,          label: "Auto" },
+  { icon: Building2,    label: "Real Estate" },
+  { icon: Plane,        label: "Travel" },
+  { icon: BoltIcon,     label: "Energy" },
+  { icon: Package,      label: "Logistics" },
+  { icon: Wheat,        label: "Agriculture" },
 ]
 
 const STATS = [
@@ -209,18 +210,21 @@ export default function HomePage({ onNavigate }: Props) {
         </div>
 
         <div className="grid grid-cols-2 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-10 gap-3">
-          {SECTORS.map((s, i) => (
-            <button
-              key={i}
-              onClick={() => onNavigate("market")}
-              className="flex flex-col items-center gap-2.5 py-6 px-4 bg-card border border-border rounded-xl hover:bg-accent hover:border-ring transition-all duration-150 cursor-pointer group"
-            >
-              <span className="text-3xl">{s.icon}</span>
-              <span className="text-xs font-medium text-muted-foreground group-hover:text-foreground transition-colors">
-                {s.label}
-              </span>
-            </button>
-          ))}
+          {SECTORS.map((s, i) => {
+            const Icon = s.icon
+            return (
+              <button
+                key={i}
+                onClick={() => onNavigate("market")}
+                className="flex flex-col items-center gap-2.5 py-6 px-4 bg-card border border-border rounded-xl hover:bg-accent hover:border-ring transition-all duration-150 cursor-pointer group"
+              >
+                <Icon className="w-6 h-6 text-muted-foreground group-hover:text-foreground transition-colors" />
+                <span className="text-xs font-medium text-muted-foreground group-hover:text-foreground transition-colors">
+                  {s.label}
+                </span>
+              </button>
+            )
+          })}
         </div>
       </section>
 
