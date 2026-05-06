@@ -28,9 +28,17 @@ function CandleChart({ candles, price, sma20, sma50, bbUpper, bbMiddle, bbLower,
   useEffect(() => {
     const cv = ref.current
     if (!cv || candles.length < 2) return
+    const dpr = window.devicePixelRatio || 1
+    const cssW = cv.clientWidth
+    const cssH = cv.clientHeight
+    cv.width = Math.round(cssW * dpr)
+    cv.height = Math.round(cssH * dpr)
     const ctx = cv.getContext("2d")!
-    const W = cv.width, H = cv.height
-    const pad = { t: 16, r: 68, b: 32, l: 8 }
+    ctx.scale(dpr, dpr)
+    const W = cssW, H = cssH
+    const fontSize = 11
+    const priceTagW = 70
+    const pad = { t: 20, r: priceTagW + 4, b: 36, l: 8 }
     const cW = W - pad.l - pad.r
     const cH = H - pad.t - pad.b
 
@@ -52,9 +60,9 @@ function CandleChart({ candles, price, sma20, sma50, bbUpper, bbMiddle, bbLower,
       const y = pad.t + (cH / 4) * i
       ctx.beginPath(); ctx.moveTo(pad.l, y); ctx.lineTo(W - pad.r, y); ctx.stroke()
       ctx.fillStyle = DIM
-      ctx.font = "9px 'DM Mono',monospace"
+      ctx.font = `${fontSize}px 'DM Mono',monospace`
       ctx.textAlign = "left"
-      ctx.fillText((mx - (i / 4) * rng).toFixed(2), W - pad.r + 6, y + 3)
+      ctx.fillText((mx - (i / 4) * rng).toFixed(2), W - pad.r + 6, y + fontSize * 0.4)
     }
 
     const n = candles.length
@@ -118,11 +126,11 @@ function CandleChart({ candles, price, sma20, sma50, bbUpper, bbMiddle, bbLower,
     ctx.beginPath(); ctx.moveTo(pad.l, py); ctx.lineTo(W - pad.r - 2, py); ctx.stroke()
     ctx.setLineDash([])
     ctx.fillStyle = CARD
-    ctx.fillRect(W - pad.r, py - 8, pad.r - 2, 16)
-    ctx.fillStyle = "rgba(255,255,255,0.8)"
-    ctx.font = "9px 'DM Mono',monospace"
+    ctx.fillRect(W - pad.r, py - 9, pad.r - 2, 18)
+    ctx.fillStyle = "rgba(255,255,255,0.9)"
+    ctx.font = `bold ${fontSize}px 'DM Mono',monospace`
     ctx.textAlign = "left"
-    ctx.fillText(price.toFixed(2), W - pad.r + 4, py + 3)
+    ctx.fillText(price.toFixed(2), W - pad.r + 5, py + fontSize * 0.38)
 
     // Legend
     const legend = [
@@ -131,25 +139,24 @@ function CandleChart({ candles, price, sma20, sma50, bbUpper, bbMiddle, bbLower,
       { label: "SMA20", color: GAIN },
       { label: "SMA50", color: LOSS },
     ]
-    ctx.font = "9px 'DM Mono',monospace"
+    ctx.font = `${fontSize}px 'DM Mono',monospace`
     let lx = pad.l + 4
+    const legendY = pad.t - 6
     legend.forEach(l => {
       ctx.fillStyle = l.color
-      ctx.fillRect(lx, pad.t + 4, 10, 2)
-      lx += 12
-      ctx.fillStyle = "rgba(255,255,255,0.4)"
-      ctx.fillText(l.label, lx, pad.t + 8)
-      lx += ctx.measureText(l.label).width + 10
+      ctx.fillRect(lx, legendY, 12, 2)
+      lx += 14
+      ctx.fillStyle = "rgba(255,255,255,0.5)"
+      ctx.fillText(l.label, lx, legendY + fontSize * 0.5)
+      lx += ctx.measureText(l.label).width + 12
     })
   }, [candles, price, sma20, sma50, bbUpper, bbMiddle, bbLower, vwap])
 
   return (
     <canvas
       ref={ref}
-      width={900}
-      height={300}
       className="w-full rounded-t-lg block"
-      style={{ background: BG }}
+      style={{ background: BG, height: 300 }}
     />
   )
 }
@@ -162,14 +169,19 @@ function MACDChart({ candles, macd, macdSignal, macdHist }: {
   useEffect(() => {
     const cv = ref.current
     if (!cv || candles.length < 2) return
+    const dpr = window.devicePixelRatio || 1
+    const cssW = cv.clientWidth
+    const cssH = cv.clientHeight
+    cv.width = Math.round(cssW * dpr)
+    cv.height = Math.round(cssH * dpr)
     const ctx = cv.getContext("2d")!
-    const W = cv.width, H = cv.height
-    const pad = { t: 8, r: 68, b: 12, l: 8 }
+    ctx.scale(dpr, dpr)
+    const W = cssW, H = cssH
+    const fontSize = 11
+    const pad = { t: 20, r: 74, b: 8, l: 8 }
     const cW = W - pad.l - pad.r
     const cH = H - pad.t - pad.b
 
-    // Simulate MACD history roughly proportional to price history
-    // We only have the current value — visualise as bars from history using a simple approximation
     const n = candles.length
     const hists: number[] = []
     let prev = 0
@@ -201,7 +213,6 @@ function MACDChart({ candles, macd, macdSignal, macdHist }: {
       ctx.fillRect(x - bw / 2, Math.min(y, midY), bw, Math.abs(y - midY))
     })
 
-    // MACD & signal lines
     const macdLine = hists.map((_, i) => macd * (i / n))
     const sigLine = hists.map((_, i) => macdSignal * (i / n))
     macdLine[macdLine.length - 1] = macd
@@ -218,19 +229,17 @@ function MACDChart({ candles, macd, macdSignal, macdHist }: {
     drawLine2(macdLine, "rgba(124,138,244,0.8)")
     drawLine2(sigLine, "rgba(234,179,77,0.7)")
 
-    ctx.fillStyle = DIM
-    ctx.font = "8px 'DM Mono',monospace"
+    ctx.fillStyle = "rgba(255,255,255,0.45)"
+    ctx.font = `${fontSize}px 'DM Mono',monospace`
     ctx.textAlign = "left"
-    ctx.fillText(`MACD ${macd.toFixed(3)}  SIG ${macdSignal.toFixed(3)}  HIST ${macdHist.toFixed(3)}`, pad.l + 4, pad.t + 10)
+    ctx.fillText(`MACD ${macd.toFixed(3)}  SIG ${macdSignal.toFixed(3)}  HIST ${macdHist.toFixed(3)}`, pad.l + 4, pad.t - 6)
   }, [candles, macd, macdSignal, macdHist])
 
   return (
     <canvas
       ref={ref}
-      width={900}
-      height={80}
       className="w-full rounded-b-lg block border-t border-white/5"
-      style={{ background: BG }}
+      style={{ background: BG, height: 90 }}
     />
   )
 }
@@ -243,9 +252,16 @@ function PriceChart({ data, sma20, sma50, vwap, bbUpper, bbLower }: {
   useEffect(() => {
     const cv = ref.current
     if (!cv || data.length < 2) return
+    const dpr = window.devicePixelRatio || 1
+    const cssW = cv.clientWidth
+    const cssH = cv.clientHeight
+    cv.width = Math.round(cssW * dpr)
+    cv.height = Math.round(cssH * dpr)
     const ctx = cv.getContext("2d")!
-    const W = cv.width, H = cv.height
-    const pad = { t: 14, r: 68, b: 24, l: 8 }
+    ctx.scale(dpr, dpr)
+    const W = cssW, H = cssH
+    const fontSize = 11
+    const pad = { t: 14, r: 74, b: 24, l: 8 }
     const cW = W - pad.l - pad.r
     const cH = H - pad.t - pad.b
     const allVals = [...data, bbUpper, bbLower, sma20, sma50, vwap].filter(Boolean)
@@ -263,8 +279,8 @@ function PriceChart({ data, sma20, sma50, vwap, bbUpper, bbLower }: {
     for (let i = 0; i <= 4; i++) {
       const y = pad.t + (cH / 4) * i
       ctx.beginPath(); ctx.moveTo(pad.l, y); ctx.lineTo(W - pad.r, y); ctx.stroke()
-      ctx.fillStyle = DIM; ctx.font = "9px 'DM Mono',monospace"; ctx.textAlign = "left"
-      ctx.fillText((mx - (i / 4) * rng).toFixed(2), W - pad.r + 6, y + 3)
+      ctx.fillStyle = DIM; ctx.font = `${fontSize}px 'DM Mono',monospace`; ctx.textAlign = "left"
+      ctx.fillText((mx - (i / 4) * rng).toFixed(2), W - pad.r + 6, y + fontSize * 0.4)
     }
 
     const pts = data.map((v, i) => ({ x: pad.l + (i / (data.length - 1)) * cW, y: toY(v) }))
@@ -307,7 +323,7 @@ function PriceChart({ data, sma20, sma50, vwap, bbUpper, bbLower }: {
     ctx.beginPath(); ctx.arc(last.x, last.y, 3, 0, Math.PI * 2)
     ctx.fillStyle = accent; ctx.fill()
   }, [data, sma20, sma50, vwap, bbUpper, bbLower])
-  return <canvas ref={ref} width={900} height={280} className="w-full rounded-lg block" style={{ background: BG }} />
+  return <canvas ref={ref} className="w-full rounded-lg block" style={{ background: BG, height: 300 }} />
 }
 
 // ── Gauge bar (RSI / order flow) ──────────────────────────────────────────────
