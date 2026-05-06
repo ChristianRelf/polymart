@@ -155,12 +155,13 @@ type SimCtx = {
   events: MarketEvent[]
   tickCount: number
   loading: boolean
+  lastRefresh: number
   getDetail: (ticker: string) => Promise<StockDetail | null>
 }
 
 const SimContext = createContext<SimCtx>({
   market: null, stocks: {}, sectors: {}, events: [],
-  tickCount: 0, loading: true,
+  tickCount: 0, loading: true, lastRefresh: 0,
   getDetail: async () => null,
 })
 
@@ -175,8 +176,9 @@ export function SimulationProvider({ children }: { children: React.ReactNode }) 
   const [stocks,    setStocks]    = useState<Record<string, StockSummary>>({})
   const [sectors,   setSectors]   = useState<Record<string, SectorInfo>>({})
   const [events,    setEvents]    = useState<MarketEvent[]>([])
-  const [tickCount, setTickCount] = useState(0)
-  const [loading,   setLoading]   = useState(true)
+  const [tickCount,    setTickCount]    = useState(0)
+  const [loading,      setLoading]      = useState(true)
+  const [lastRefresh,  setLastRefresh]  = useState(0)
 
   const refresh = useCallback(async () => {
     try {
@@ -192,6 +194,7 @@ export function SimulationProvider({ children }: { children: React.ReactNode }) 
       if (secs && !secs.error) setSectors(secs)
       if (Array.isArray(evts)) setEvents(evts)
       setLoading(false)
+      setLastRefresh(Date.now())
     } catch {
       // silently retry on next interval
     }
@@ -210,7 +213,7 @@ export function SimulationProvider({ children }: { children: React.ReactNode }) 
   }, [])
 
   return (
-    <SimContext.Provider value={{ market, stocks, sectors, events, tickCount, loading, getDetail }}>
+    <SimContext.Provider value={{ market, stocks, sectors, events, tickCount, loading, lastRefresh, getDetail }}>
       {children}
     </SimContext.Provider>
   )

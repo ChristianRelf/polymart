@@ -2,7 +2,7 @@ import { useState, useEffect, useRef } from "react"
 import { Button } from "@/components/ui/button"
 import { Separator } from "@/components/ui/separator"
 import { cn } from "@/lib/utils"
-import { SimulationProvider } from "@/lib/SimulationContext"
+import { SimulationProvider, useSimulation } from "@/lib/SimulationContext"
 import HomePage from "@/pages/HomePage"
 import MarketPage from "@/pages/MarketPage"
 import ApiDocsPage from "@/pages/ApiDocsPage"
@@ -40,15 +40,18 @@ function navigate(r: Route) {
 
 // ── Tick Countdown ────────────────────────────────────────────────────────────
 function TickCountdown({ intervalMs = 10_000 }: { intervalMs?: number }) {
+  const { lastRefresh } = useSimulation()
   const [elapsed, setElapsed] = useState(0)
-  const startRef = useRef(Date.now())
+  const baseRef = useRef(lastRefresh || Date.now())
+
+  // Reset base whenever the context signals a fresh fetch
+  useEffect(() => {
+    if (lastRefresh > 0) baseRef.current = lastRefresh
+  }, [lastRefresh])
 
   useEffect(() => {
-    startRef.current = Date.now()
-    setElapsed(0)
     const frame = setInterval(() => {
-      const e = (Date.now() - startRef.current) % intervalMs
-      setElapsed(e)
+      setElapsed(Date.now() - baseRef.current)
     }, 50)
     return () => clearInterval(frame)
   }, [intervalMs])
@@ -57,9 +60,10 @@ function TickCountdown({ intervalMs = 10_000 }: { intervalMs?: number }) {
   const strokeWidth = 2.5
   const r = (size - strokeWidth) / 2
   const circumference = 2 * Math.PI * r
-  const progress = 1 - elapsed / intervalMs
+  const clampedElapsed = Math.min(elapsed, intervalMs)
+  const progress = 1 - clampedElapsed / intervalMs
   const dashOffset = circumference * (1 - progress)
-  const secondsLeft = Math.ceil((intervalMs - elapsed) / 1000)
+  const secondsLeft = Math.max(0, Math.ceil((intervalMs - clampedElapsed) / 1000))
 
   return (
     <div
