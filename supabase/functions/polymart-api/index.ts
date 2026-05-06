@@ -77,6 +77,7 @@ const STOCK_DEFS: Record<string, { sector: string; mcap: string; volatility: num
   BONK:{basePrice:2,volatility:.35,trend:0,sector:"meme",mcap:"small"},
   FOMO:{basePrice:7,volatility:.30,trend:-.001,sector:"meme",mcap:"small"},
   LAMBO:{basePrice:4,volatility:.32,trend:.001,sector:"meme",mcap:"small"},
+  QUAK:{basePrice:6,volatility:.28,trend:.001,sector:"meme",mcap:"small"},
   GRDN:{basePrice:95,volatility:.06,trend:.002,sector:"green",mcap:"mid"},
   SPRK:{basePrice:75,volatility:.06,trend:.003,sector:"green",mcap:"mid"},
   LEAF:{basePrice:42,volatility:.05,trend:.002,sector:"green",mcap:"small"},

@@ -4,7 +4,7 @@ import { Input } from "@/components/ui/input"
 import { Separator } from "@/components/ui/separator"
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs"
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
-import { ArrowLeft, TrendingUp, TrendingDown, Search, ChevronUp, ChevronDown, Activity, ChartBar as BarChart2, BookOpen, Zap, TriangleAlert as AlertTriangle, SlidersHorizontal, Check } from "lucide-react"
+import { ArrowLeft, TrendingUp, TrendingDown, Search, ChevronUp, ChevronDown, ChartBar as BarChart2, Zap, TriangleAlert as AlertTriangle, SlidersHorizontal, Check, LayoutDashboard, FlaskConical, Layers, Info } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { useSimulation } from "@/lib/SimulationContext"
 import type { StockDetail, Candle } from "@/lib/SimulationContext"
@@ -398,6 +398,33 @@ const fmtVol = (v: number) =>
   v > 1e6 ? `${(v / 1e6).toFixed(1)}M` :
   v > 1e3 ? `${(v / 1e3).toFixed(0)}K` : String(v)
 
+// ── Stat card ─────────────────────────────────────────────────────────────────
+function StatCard({ label, value, sub, color, wide }: {
+  label: string; value: string; sub?: string; color?: string; wide?: boolean
+}) {
+  return (
+    <div className={cn("bg-card border border-border rounded-xl p-4 flex flex-col gap-1", wide && "sm:col-span-2")}>
+      <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-widest">{label}</p>
+      <p className="text-lg font-bold font-mono tabular-nums leading-none" style={{ color: color ?? "var(--foreground)" }}>
+        {value}
+      </p>
+      {sub && <p className="text-xs text-muted-foreground font-mono tabular-nums">{sub}</p>}
+    </div>
+  )
+}
+
+// ── Signal pill ───────────────────────────────────────────────────────────────
+function Signal({ bull }: { bull: boolean }) {
+  return (
+    <span
+      className="inline-flex items-center gap-1 text-[10px] font-bold uppercase tracking-widest px-2 py-0.5 rounded"
+      style={{ color: bull ? GAIN : LOSS, background: bull ? "rgba(91,206,138,.1)" : "rgba(232,105,106,.1)" }}
+    >
+      {bull ? "▲ BULL" : "▼ BEAR"}
+    </span>
+  )
+}
+
 // ── Detail view ───────────────────────────────────────────────────────────────
 function StockDetailView({ detail, stocks, onBack, openDetail }: {
   detail: StockDetail
@@ -407,6 +434,17 @@ function StockDetailView({ detail, stocks, onBack, openDetail }: {
 }) {
   const up = detail.change >= 0
   const showCandles = detail.candles && detail.candles.length >= 2
+
+  // Derived signals
+  const maAligned = [detail.ema12, detail.ema26, detail.sma20, detail.sma50].every(v => detail.price > v)
+  const maOpposed  = [detail.ema12, detail.ema26, detail.sma20, detail.sma50].every(v => detail.price < v)
+  const bbPos = detail.bbUpper > detail.bbLower
+    ? Math.max(0, Math.min(100, (detail.price - detail.bbLower) / (detail.bbUpper - detail.bbLower) * 100))
+    : 50
+  const rsiZone = detail.rsi > 70 ? "Overbought" : detail.rsi < 30 ? "Oversold" : "Neutral"
+  const orderImbalance = detail.buyVolume + detail.sellVolume > 0
+    ? ((detail.buyVolume - detail.sellVolume) / (detail.buyVolume + detail.sellVolume) * 100)
+    : 0
 
   return (
     <div className="max-w-[1600px] mx-auto px-8 py-10">
@@ -420,9 +458,9 @@ function StockDetailView({ detail, stocks, onBack, openDetail }: {
       </button>
 
       {/* Header */}
-      <div className="flex flex-col sm:flex-row justify-between items-start gap-6 mb-6">
+      <div className="flex flex-col sm:flex-row justify-between items-start gap-6 mb-8">
         <div>
-          <div className="flex items-center gap-3 mb-3">
+          <div className="flex items-center gap-3 mb-2">
             <h1 className="text-4xl font-extrabold font-mono text-foreground tracking-tight">{detail.ticker}</h1>
             <SessionBadge session={detail.halted ? "halted" : detail.session} />
           </div>
@@ -441,7 +479,7 @@ function StockDetailView({ detail, stocks, onBack, openDetail }: {
             )}
           </div>
         </div>
-        <div className="text-right">
+        <div className="text-right shrink-0">
           <p className="text-5xl font-extrabold font-mono tabular-nums" style={{ color: up ? GAIN : LOSS }}>
             {detail.price.toFixed(2)}
           </p>
@@ -463,88 +501,99 @@ function StockDetailView({ detail, stocks, onBack, openDetail }: {
         </div>
       </div>
 
-      {/* Chart */}
-      <div className="mb-6 rounded-xl border border-border overflow-hidden">
-        {showCandles ? (
-          <>
-            <CandleChart
-              candles={detail.candles}
-              price={detail.price}
-              sma20={detail.sma20}
-              sma50={detail.sma50}
-              bbUpper={detail.bbUpper}
-              bbMiddle={detail.bbMiddle}
-              bbLower={detail.bbLower}
-              vwap={detail.vwap}
-            />
-            <MACDChart
-              candles={detail.candles}
-              macd={detail.macd}
-              macdSignal={detail.macdSignal}
-              macdHist={detail.macdHist}
-            />
-          </>
-        ) : detail.history.length > 1 ? (
-          <PriceChart
-            data={detail.history}
-            sma20={detail.sma20}
-            sma50={detail.sma50}
-            vwap={detail.vwap}
-            bbUpper={detail.bbUpper}
-            bbLower={detail.bbLower}
-          />
-        ) : null}
-      </div>
-
-      {/* Tabs: Price / Technicals / Order Flow */}
-      <Tabs defaultValue="price" className="mb-8">
-        <TabsList className="bg-card border border-border mb-4">
-          <TabsTrigger value="price" className="text-sm gap-1.5"><BarChart2 className="w-3.5 h-3.5" />Price</TabsTrigger>
-          <TabsTrigger value="technicals" className="text-sm gap-1.5"><Activity className="w-3.5 h-3.5" />Technicals</TabsTrigger>
-          <TabsTrigger value="orderflow" className="text-sm gap-1.5"><BookOpen className="w-3.5 h-3.5" />Order Flow</TabsTrigger>
+      {/* ── Tabs ── */}
+      <Tabs defaultValue="overview" className="mb-8">
+        <TabsList className="bg-card border border-border mb-6 h-auto p-1 gap-0.5">
+          <TabsTrigger value="overview"    className="text-sm gap-1.5 px-4 py-2"><LayoutDashboard className="w-3.5 h-3.5" />Overview</TabsTrigger>
+          <TabsTrigger value="chart"       className="text-sm gap-1.5 px-4 py-2"><BarChart2 className="w-3.5 h-3.5" />Chart</TabsTrigger>
+          <TabsTrigger value="technicals"  className="text-sm gap-1.5 px-4 py-2"><FlaskConical className="w-3.5 h-3.5" />Technicals</TabsTrigger>
+          <TabsTrigger value="orderflow"   className="text-sm gap-1.5 px-4 py-2"><Layers className="w-3.5 h-3.5" />Order Flow</TabsTrigger>
+          <TabsTrigger value="profile"     className="text-sm gap-1.5 px-4 py-2"><Info className="w-3.5 h-3.5" />Profile</TabsTrigger>
         </TabsList>
 
-        {/* ── Price tab ── */}
-        <TabsContent value="price">
-          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
-            {[
-              { label: "Price",       value: detail.price.toFixed(2),                                     color: undefined },
-              { label: "Prev Close",  value: detail.previousPrice.toFixed(2),                              color: undefined },
-              { label: "Open",        value: detail.openPrice.toFixed(2),                                  color: undefined },
-              { label: "VWAP",        value: detail.vwap.toFixed(2),                                       color: NEUT },
-              { label: "Change",      value: `${up ? "+" : ""}${detail.change.toFixed(2)}%`,               color: up ? GAIN : LOSS },
-              { label: "Since Open",  value: `${detail.changeSinceOpen >= 0 ? "+" : ""}${detail.changeSinceOpen.toFixed(2)}%`, color: detail.changeSinceOpen >= 0 ? GAIN : LOSS },
-              { label: "52w High",    value: detail.high52w.toFixed(2),                                    color: undefined },
-              { label: "52w Low",     value: detail.low52w.toFixed(2),                                     color: undefined },
-              { label: "All Time Hi", value: detail.allTimeHigh.toFixed(2),                                color: undefined },
-              { label: "Volume",      value: fmtVol(detail.volume),                                        color: undefined },
-              { label: "ATR (14)",    value: detail.atr.toFixed(2),                                        color: undefined },
-              { label: "Streak",      value: `${detail.streak > 0 ? "▲" : detail.streak < 0 ? "▼" : "—"} ${Math.abs(detail.streak)}`, color: detail.streak > 0 ? GAIN : detail.streak < 0 ? LOSS : undefined },
-            ].map((m, i) => (
-              <div key={i} className="bg-card border border-border rounded-xl p-4">
-                <p className="text-xs text-muted-foreground uppercase tracking-widest mb-2">{m.label}</p>
-                <p className="text-lg font-semibold font-mono tabular-nums" style={{ color: m.color ?? "var(--foreground)" }}>
-                  {m.value}
+        {/* ══ Overview ═══════════════════════════════════════════════════════════ */}
+        <TabsContent value="overview">
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+
+            {/* Left: key stats grid */}
+            <div className="lg:col-span-2 grid grid-cols-2 sm:grid-cols-3 gap-3 content-start">
+              <StatCard label="Price"      value={detail.price.toFixed(2)}                                                   color={up ? GAIN : LOSS} />
+              <StatCard label="Change"     value={`${up ? "+" : ""}${detail.change.toFixed(2)}%`}                            color={up ? GAIN : LOSS} sub={`${detail.changeSinceOpen >= 0 ? "+" : ""}${detail.changeSinceOpen.toFixed(2)}% vs open`} />
+              <StatCard label="Volume"     value={fmtVol(detail.volume)}                                                     sub={`Buy ${fmtVol(detail.buyVolume)} / Sell ${fmtVol(detail.sellVolume)}`} />
+              <StatCard label="VWAP"       value={detail.vwap.toFixed(2)}                                                    color={NEUT} sub={`${detail.price >= detail.vwap ? "+" : ""}${((detail.price - detail.vwap) / detail.vwap * 100).toFixed(2)}% vs price`} />
+              <StatCard label="ATR (14)"   value={detail.atr.toFixed(2)}                                                     sub="avg true range" />
+              <StatCard label="Streak"     value={`${detail.streak > 0 ? "▲" : detail.streak < 0 ? "▼" : "—"} ${Math.abs(detail.streak)}`} color={detail.streak > 0 ? GAIN : detail.streak < 0 ? LOSS : undefined} sub="consecutive ticks" />
+              <StatCard label="52w High"   value={detail.high52w.toFixed(2)}  sub={`ATH ${detail.allTimeHigh.toFixed(2)}`} />
+              <StatCard label="52w Low"    value={detail.low52w.toFixed(2)} />
+              <StatCard label="Open"       value={detail.openPrice.toFixed(2)} sub={`Prev ${detail.previousPrice.toFixed(2)}`} />
+            </div>
+
+            {/* Right: signal summary */}
+            <div className="flex flex-col gap-3">
+              {/* RSI signal card */}
+              <div className="bg-card border border-border rounded-xl p-5">
+                <div className="flex justify-between items-center mb-3">
+                  <p className="text-xs text-muted-foreground uppercase tracking-widest">RSI (14)</p>
+                  <p className="text-2xl font-extrabold font-mono" style={{ color: detail.rsi > 70 ? LOSS : detail.rsi < 30 ? GAIN : NEUT }}>
+                    {detail.rsi.toFixed(0)}
+                  </p>
+                </div>
+                <GaugeBar value={detail.rsi} />
+                <p className="text-xs font-semibold mt-2" style={{ color: detail.rsi > 70 ? LOSS : detail.rsi < 30 ? GAIN : NEUT }}>
+                  {rsiZone}
                 </p>
               </div>
-            ))}
+
+              {/* MA alignment */}
+              <div className="bg-card border border-border rounded-xl p-5">
+                <p className="text-xs text-muted-foreground uppercase tracking-widest mb-3">MA Alignment</p>
+                <div className="flex items-center gap-2 mb-3">
+                  <Signal bull={maAligned || (!maOpposed && detail.price > detail.sma20)} />
+                  <span className="text-xs text-muted-foreground">
+                    {maAligned ? "All above — trend up" : maOpposed ? "All below — trend down" : "Mixed signals"}
+                  </span>
+                </div>
+                {[
+                  { label: "EMA 12", val: detail.ema12 },
+                  { label: "SMA 20", val: detail.sma20 },
+                  { label: "SMA 50", val: detail.sma50 },
+                ].map((ma, i) => (
+                  <div key={i} className="flex justify-between items-center py-1.5 border-b border-border/30 last:border-0">
+                    <span className="text-xs text-muted-foreground">{ma.label}</span>
+                    <div className="flex items-center gap-2">
+                      <span className="text-xs font-mono tabular-nums text-foreground">{ma.val.toFixed(2)}</span>
+                      <span className="text-[10px] font-bold" style={{ color: detail.price > ma.val ? GAIN : LOSS }}>
+                        {detail.price > ma.val ? "▲" : "▼"}
+                      </span>
+                    </div>
+                  </div>
+                ))}
+              </div>
+
+              {/* Order flow mini */}
+              <div className="bg-card border border-border rounded-xl p-5">
+                <p className="text-xs text-muted-foreground uppercase tracking-widest mb-3">Order Flow</p>
+                <OrderFlowBar orderFlow={detail.orderFlow} buyVol={detail.buyVolume} sellVol={detail.sellVolume} />
+                <p className="text-xs text-muted-foreground mt-2">
+                  Imbalance{" "}
+                  <span className="font-mono font-semibold" style={{ color: orderImbalance >= 0 ? GAIN : LOSS }}>
+                    {orderImbalance >= 0 ? "+" : ""}{orderImbalance.toFixed(1)}%
+                  </span>
+                </p>
+              </div>
+            </div>
           </div>
 
-          {/* 52w range */}
-          <div className="bg-card border border-border rounded-xl p-5 mt-3">
-            <p className="text-xs text-muted-foreground uppercase tracking-widest mb-4">52-Week Range</p>
+          {/* 52w range bar */}
+          <div className="bg-card border border-border rounded-xl p-5 mt-4">
+            <p className="text-xs text-muted-foreground uppercase tracking-widest mb-4">52-Week Price Range</p>
             <div className="flex items-center gap-4">
               <span className="text-sm font-mono text-muted-foreground w-16 text-right tabular-nums">{detail.low52w.toFixed(2)}</span>
               <div className="flex-1 h-2 bg-background rounded-full relative">
                 {(() => {
                   const rng = detail.high52w - detail.low52w
                   const pos = rng > 0 ? Math.max(0, Math.min(100, (detail.price - detail.low52w) / rng * 100)) : 50
-                  return (
-                    <div
-                      className="absolute -top-1 w-4 h-4 rounded-full border-2 border-card shadow-md"
-                      style={{ left: `${pos}%`, background: BLUE, transform: "translateX(-50%)" }}
-                    />
-                  )
+                  return <div className="absolute -top-1 w-4 h-4 rounded-full border-2 border-card shadow-md" style={{ left: `${pos}%`, background: BLUE, transform: "translateX(-50%)" }} />
                 })()}
               </div>
               <span className="text-sm font-mono text-muted-foreground w-16 tabular-nums">{detail.high52w.toFixed(2)}</span>
@@ -552,150 +601,341 @@ function StockDetailView({ detail, stocks, onBack, openDetail }: {
           </div>
         </TabsContent>
 
-        {/* ── Technicals tab ── */}
+        {/* ══ Chart ══════════════════════════════════════════════════════════════ */}
+        <TabsContent value="chart">
+          <div className="rounded-xl border border-border overflow-hidden mb-4">
+            {showCandles ? (
+              <>
+                <CandleChart
+                  candles={detail.candles}
+                  price={detail.price}
+                  sma20={detail.sma20}
+                  sma50={detail.sma50}
+                  bbUpper={detail.bbUpper}
+                  bbMiddle={detail.bbMiddle}
+                  bbLower={detail.bbLower}
+                  vwap={detail.vwap}
+                />
+                <MACDChart
+                  candles={detail.candles}
+                  macd={detail.macd}
+                  macdSignal={detail.macdSignal}
+                  macdHist={detail.macdHist}
+                />
+              </>
+            ) : detail.history.length > 1 ? (
+              <PriceChart
+                data={detail.history}
+                sma20={detail.sma20}
+                sma50={detail.sma50}
+                vwap={detail.vwap}
+                bbUpper={detail.bbUpper}
+                bbLower={detail.bbLower}
+              />
+            ) : (
+              <div className="flex items-center justify-center h-40 text-sm text-muted-foreground">
+                Accumulating price history...
+              </div>
+            )}
+          </div>
+
+          {/* Chart legend */}
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+            {[
+              { label: "SMA 20",  val: detail.sma20,   color: GAIN,  above: detail.price > detail.sma20 },
+              { label: "SMA 50",  val: detail.sma50,   color: NEUT,  above: detail.price > detail.sma50 },
+              { label: "BB Upper",val: detail.bbUpper,  color: BLUE,  above: false },
+              { label: "BB Lower",val: detail.bbLower,  color: BLUE,  above: true },
+            ].map((item, i) => (
+              <div key={i} className="bg-card border border-border rounded-xl p-4">
+                <div className="flex items-center gap-2 mb-1">
+                  <span className="w-2.5 h-2.5 rounded-full shrink-0" style={{ background: item.color }} />
+                  <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-widest">{item.label}</p>
+                </div>
+                <p className="text-base font-bold font-mono tabular-nums text-foreground">{item.val.toFixed(2)}</p>
+              </div>
+            ))}
+          </div>
+          <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 mt-3">
+            <StatCard label="VWAP"          value={detail.vwap.toFixed(2)}            color={NEUT} />
+            <StatCard label="BB Bandwidth"  value={`${(detail.bbBw * 100).toFixed(1)}%`} sub="squeeze below 5%" />
+            <StatCard label="MACD Signal"   value={detail.macdHist >= 0 ? "Bullish" : "Bearish"} color={detail.macdHist >= 0 ? GAIN : LOSS} sub={`hist ${detail.macdHist >= 0 ? "+" : ""}${detail.macdHist.toFixed(4)}`} />
+          </div>
+        </TabsContent>
+
+        {/* ══ Technicals ═════════════════════════════════════════════════════════ */}
         <TabsContent value="technicals">
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            {/* RSI */}
+
+            {/* RSI deep-dive */}
             <div className="bg-card border border-border rounded-xl p-5">
               <div className="flex justify-between items-center mb-3">
                 <p className="text-xs text-muted-foreground uppercase tracking-widest">RSI (14)</p>
-                <p className="text-xl font-bold font-mono tabular-nums" style={{ color: detail.rsi > 70 ? LOSS : detail.rsi < 30 ? GAIN : NEUT }}>
-                  {detail.rsi.toFixed(1)}
-                </p>
+                <div className="flex items-center gap-2">
+                  <Signal bull={detail.rsi < 70} />
+                  <p className="text-2xl font-extrabold font-mono" style={{ color: detail.rsi > 70 ? LOSS : detail.rsi < 30 ? GAIN : NEUT }}>
+                    {detail.rsi.toFixed(1)}
+                  </p>
+                </div>
               </div>
               <GaugeBar value={detail.rsi} />
-              <div className="flex justify-between mt-1.5">
-                <span className="text-xs" style={{ color: GAIN }}>Oversold 30</span>
-                <span className="text-xs" style={{ color: LOSS }}>Overbought 70</span>
+              <div className="flex justify-between mt-2 mb-4">
+                <span className="text-xs" style={{ color: GAIN }}>Oversold ≤ 30</span>
+                <span className="text-xs text-muted-foreground">{rsiZone}</span>
+                <span className="text-xs" style={{ color: LOSS }}>Overbought ≥ 70</span>
+              </div>
+              <div className="grid grid-cols-3 gap-2 pt-3 border-t border-border/40">
+                {[
+                  { label: "Zone",     val: rsiZone,               color: detail.rsi > 70 ? LOSS : detail.rsi < 30 ? GAIN : NEUT },
+                  { label: "Value",    val: detail.rsi.toFixed(1), color: undefined },
+                  { label: "ATR (14)", val: detail.atr.toFixed(2), color: undefined },
+                ].map((r, i) => (
+                  <div key={i} className="text-center">
+                    <p className="text-[10px] text-muted-foreground uppercase tracking-widest mb-1">{r.label}</p>
+                    <p className="text-sm font-bold font-mono" style={{ color: r.color ?? "var(--foreground)" }}>{r.val}</p>
+                  </div>
+                ))}
               </div>
             </div>
 
-            {/* Moving Averages */}
+            {/* MACD deep-dive */}
             <div className="bg-card border border-border rounded-xl p-5">
-              <p className="text-xs text-muted-foreground uppercase tracking-widest mb-3">Moving Averages</p>
+              <div className="flex justify-between items-center mb-3">
+                <p className="text-xs text-muted-foreground uppercase tracking-widest">MACD (12,26,9)</p>
+                <Signal bull={detail.macdHist >= 0} />
+              </div>
               {[
-                { label: "EMA 12", val: detail.ema12, above: detail.price > detail.ema12 },
-                { label: "EMA 26", val: detail.ema26, above: detail.price > detail.ema26 },
-                { label: "SMA 20", val: detail.sma20, above: detail.price > detail.sma20 },
-                { label: "SMA 50", val: detail.sma50, above: detail.price > detail.sma50 },
-              ].map((ma, i) => (
-                <div key={i} className="flex justify-between items-center py-2 border-b border-border/40 last:border-0">
-                  <span className="text-sm text-muted-foreground">{ma.label}</span>
-                  <div className="flex items-center gap-2">
-                    <span className="text-sm font-mono tabular-nums text-foreground">{ma.val.toFixed(2)}</span>
-                    <span className="text-xs font-bold" style={{ color: ma.above ? GAIN : LOSS }}>
-                      {ma.above ? "ABOVE ▲" : "BELOW ▼"}
-                    </span>
-                  </div>
-                </div>
-              ))}
-            </div>
-
-            {/* MACD */}
-            <div className="bg-card border border-border rounded-xl p-5">
-              <p className="text-xs text-muted-foreground uppercase tracking-widest mb-3">MACD</p>
-              {[
-                { label: "MACD Line",    val: detail.macd,       color: BLUE },
-                { label: "Signal Line",  val: detail.macdSignal, color: NEUT },
-                { label: "Histogram",    val: detail.macdHist,   color: detail.macdHist >= 0 ? GAIN : LOSS },
+                { label: "MACD Line",   val: detail.macd,       color: BLUE },
+                { label: "Signal Line", val: detail.macdSignal, color: NEUT },
+                { label: "Histogram",   val: detail.macdHist,   color: detail.macdHist >= 0 ? GAIN : LOSS },
+                { label: "EMA 12",      val: detail.ema12,      color: undefined },
+                { label: "EMA 26",      val: detail.ema26,      color: undefined },
               ].map((r, i) => (
-                <div key={i} className="flex justify-between items-center py-2 border-b border-border/40 last:border-0">
+                <div key={i} className="flex justify-between items-center py-2 border-b border-border/30 last:border-0">
                   <span className="text-sm text-muted-foreground">{r.label}</span>
-                  <span className="text-base font-bold font-mono tabular-nums" style={{ color: r.color }}>
-                    {r.val >= 0 ? "+" : ""}{r.val.toFixed(4)}
+                  <span className="text-sm font-bold font-mono tabular-nums" style={{ color: r.color ?? "var(--foreground)" }}>
+                    {r.val >= 0 ? "+" : ""}{typeof r.val === "number" && Math.abs(r.val) < 1 ? r.val.toFixed(4) : r.val.toFixed(2)}
                   </span>
                 </div>
               ))}
-              <p className="text-xs text-muted-foreground mt-3">
-                Signal: <span className="font-semibold" style={{ color: detail.macdHist > 0 ? GAIN : LOSS }}>
-                  {detail.macdHist > 0 ? "Bullish crossover" : "Bearish crossover"}
-                </span>
-              </p>
+            </div>
+
+            {/* Moving averages */}
+            <div className="bg-card border border-border rounded-xl p-5">
+              <div className="flex justify-between items-center mb-3">
+                <p className="text-xs text-muted-foreground uppercase tracking-widest">Moving Averages</p>
+                <Signal bull={maAligned || (!maOpposed && detail.price > detail.sma20)} />
+              </div>
+              {[
+                { label: "EMA 12", val: detail.ema12 },
+                { label: "EMA 26", val: detail.ema26 },
+                { label: "SMA 20", val: detail.sma20 },
+                { label: "SMA 50", val: detail.sma50 },
+              ].map((ma, i) => {
+                const abv = detail.price > ma.val
+                const pct = ((detail.price - ma.val) / ma.val * 100)
+                return (
+                  <div key={i} className="flex justify-between items-center py-2 border-b border-border/30 last:border-0">
+                    <span className="text-sm text-muted-foreground">{ma.label}</span>
+                    <div className="flex items-center gap-3">
+                      <span className="text-sm font-mono tabular-nums text-foreground">{ma.val.toFixed(2)}</span>
+                      <span className="text-xs font-mono tabular-nums" style={{ color: abv ? GAIN : LOSS }}>
+                        {abv ? "+" : ""}{pct.toFixed(2)}%
+                      </span>
+                    </div>
+                  </div>
+                )
+              })}
             </div>
 
             {/* Bollinger Bands */}
             <div className="bg-card border border-border rounded-xl p-5">
               <div className="flex justify-between items-center mb-3">
-                <p className="text-xs text-muted-foreground uppercase tracking-widest">Bollinger Bands (20,2)</p>
+                <p className="text-xs text-muted-foreground uppercase tracking-widest">Bollinger Bands (20, 2σ)</p>
                 <span className="text-xs font-mono text-muted-foreground">BW {(detail.bbBw * 100).toFixed(1)}%</span>
               </div>
               {[
-                { label: "Upper Band",  val: detail.bbUpper,  color: BLUE },
-                { label: "Middle (SMA)",val: detail.bbMiddle, color: DIM },
-                { label: "Lower Band",  val: detail.bbLower,  color: BLUE },
+                { label: "Upper Band",    val: detail.bbUpper,  color: BLUE },
+                { label: "Middle (SMA20)",val: detail.bbMiddle, color: "var(--muted-foreground)" },
+                { label: "Lower Band",    val: detail.bbLower,  color: BLUE },
               ].map((r, i) => (
-                <div key={i} className="flex justify-between items-center py-2 border-b border-border/40 last:border-0">
+                <div key={i} className="flex justify-between items-center py-2 border-b border-border/30 last:border-0">
                   <span className="text-sm text-muted-foreground">{r.label}</span>
-                  <span className="text-base font-mono tabular-nums" style={{ color: r.color }}>{r.val.toFixed(2)}</span>
+                  <span className="text-sm font-mono tabular-nums" style={{ color: r.color }}>{r.val.toFixed(2)}</span>
                 </div>
               ))}
-              <div className="mt-3">
-                <GaugeBar
-                  value={detail.price}
-                  min={detail.bbLower}
-                  max={detail.bbUpper}
-                  label="Price position within bands"
-                />
+              <div className="mt-4">
+                <div className="flex justify-between text-xs text-muted-foreground mb-1">
+                  <span>Price within bands</span>
+                  <span className="font-mono">{bbPos.toFixed(0)}%</span>
+                </div>
+                <GaugeBar value={detail.price} min={detail.bbLower} max={detail.bbUpper} />
               </div>
             </div>
           </div>
         </TabsContent>
 
-        {/* ── Order Flow tab ── */}
+        {/* ══ Order Flow ═════════════════════════════════════════════════════════ */}
         <TabsContent value="orderflow">
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            {/* Bid / Ask */}
+
+            {/* Bid / Ask book */}
             <div className="bg-card border border-border rounded-xl p-5">
-              <p className="text-xs text-muted-foreground uppercase tracking-widest mb-4">Bid / Ask</p>
+              <p className="text-xs text-muted-foreground uppercase tracking-widest mb-4">Level 1 Quote</p>
               <div className="grid grid-cols-2 gap-3 mb-4">
-                <div className="text-center p-3 rounded-lg" style={{ background: "rgba(91,206,138,.08)", border: `1px solid ${GAIN}33` }}>
-                  <p className="text-xs text-muted-foreground mb-1">BID</p>
-                  <p className="text-2xl font-extrabold font-mono tabular-nums" style={{ color: GAIN }}>{detail.bid.toFixed(2)}</p>
+                <div className="rounded-xl p-4 text-center" style={{ background: "rgba(91,206,138,.07)", border: `1px solid ${GAIN}30` }}>
+                  <p className="text-[10px] font-bold uppercase tracking-widest mb-2" style={{ color: GAIN }}>BID</p>
+                  <p className="text-3xl font-extrabold font-mono tabular-nums" style={{ color: GAIN }}>{detail.bid.toFixed(2)}</p>
                 </div>
-                <div className="text-center p-3 rounded-lg" style={{ background: "rgba(232,105,106,.08)", border: `1px solid ${LOSS}33` }}>
-                  <p className="text-xs text-muted-foreground mb-1">ASK</p>
-                  <p className="text-2xl font-extrabold font-mono tabular-nums" style={{ color: LOSS }}>{detail.ask.toFixed(2)}</p>
+                <div className="rounded-xl p-4 text-center" style={{ background: "rgba(232,105,106,.07)", border: `1px solid ${LOSS}30` }}>
+                  <p className="text-[10px] font-bold uppercase tracking-widest mb-2" style={{ color: LOSS }}>ASK</p>
+                  <p className="text-3xl font-extrabold font-mono tabular-nums" style={{ color: LOSS }}>{detail.ask.toFixed(2)}</p>
                 </div>
               </div>
-              <div className="flex justify-between text-sm text-muted-foreground">
-                <span>Spread</span>
-                <span className="font-mono font-semibold" style={{ color: NEUT }}>
-                  {(detail.ask - detail.bid).toFixed(3)} ({detail.spreadPct.toFixed(2)}%)
-                </span>
+              <div className="grid grid-cols-2 gap-2 text-center pt-3 border-t border-border/40">
+                <div>
+                  <p className="text-[10px] text-muted-foreground uppercase tracking-widest mb-1">Spread $</p>
+                  <p className="text-sm font-bold font-mono" style={{ color: NEUT }}>{(detail.ask - detail.bid).toFixed(3)}</p>
+                </div>
+                <div>
+                  <p className="text-[10px] text-muted-foreground uppercase tracking-widest mb-1">Spread %</p>
+                  <p className="text-sm font-bold font-mono" style={{ color: NEUT }}>{detail.spreadPct.toFixed(2)}%</p>
+                </div>
               </div>
             </div>
 
-            {/* VWAP */}
+            {/* VWAP card */}
             <div className="bg-card border border-border rounded-xl p-5">
-              <p className="text-xs text-muted-foreground uppercase tracking-widest mb-3">VWAP</p>
-              <p className="text-3xl font-extrabold font-mono tabular-nums mb-2" style={{ color: NEUT }}>
+              <p className="text-xs text-muted-foreground uppercase tracking-widest mb-2">VWAP</p>
+              <p className="text-4xl font-extrabold font-mono tabular-nums mb-3" style={{ color: NEUT }}>
                 {detail.vwap.toFixed(2)}
               </p>
-              <p className="text-sm text-muted-foreground">
-                Price vs VWAP:{" "}
-                <span className="font-semibold font-mono" style={{ color: detail.price >= detail.vwap ? GAIN : LOSS }}>
-                  {detail.price >= detail.vwap ? "+" : ""}{((detail.price - detail.vwap) / detail.vwap * 100).toFixed(2)}%
-                  {detail.price >= detail.vwap ? " above" : " below"}
-                </span>
-              </p>
+              <div className="grid grid-cols-2 gap-2 pt-3 border-t border-border/40 text-center">
+                <div>
+                  <p className="text-[10px] text-muted-foreground uppercase tracking-widest mb-1">vs Price</p>
+                  <p className="text-sm font-bold font-mono" style={{ color: detail.price >= detail.vwap ? GAIN : LOSS }}>
+                    {detail.price >= detail.vwap ? "+" : ""}{((detail.price - detail.vwap) / detail.vwap * 100).toFixed(2)}%
+                  </p>
+                </div>
+                <div>
+                  <p className="text-[10px] text-muted-foreground uppercase tracking-widest mb-1">Position</p>
+                  <p className="text-sm font-bold" style={{ color: detail.price >= detail.vwap ? GAIN : LOSS }}>
+                    {detail.price >= detail.vwap ? "Above" : "Below"}
+                  </p>
+                </div>
+              </div>
             </div>
 
-            {/* Order flow */}
+            {/* Order flow imbalance — full width */}
             <div className="bg-card border border-border rounded-xl p-5 sm:col-span-2">
-              <p className="text-xs text-muted-foreground uppercase tracking-widest mb-4">Order Flow Imbalance</p>
+              <div className="flex justify-between items-center mb-4">
+                <p className="text-xs text-muted-foreground uppercase tracking-widest">Order Flow Imbalance</p>
+                <Signal bull={orderImbalance >= 0} />
+              </div>
               <OrderFlowBar orderFlow={detail.orderFlow} buyVol={detail.buyVolume} sellVol={detail.sellVolume} />
-              <div className="grid grid-cols-3 gap-3 mt-4">
-                <div className="text-center">
-                  <p className="text-xs text-muted-foreground mb-1">Buy Vol</p>
+              <div className="grid grid-cols-4 gap-3 mt-5 pt-4 border-t border-border/40 text-center">
+                <div>
+                  <p className="text-[10px] text-muted-foreground uppercase tracking-widest mb-1">Buy Vol</p>
                   <p className="text-base font-bold font-mono tabular-nums" style={{ color: GAIN }}>{fmtVol(detail.buyVolume)}</p>
                 </div>
-                <div className="text-center">
-                  <p className="text-xs text-muted-foreground mb-1">Total Vol</p>
+                <div>
+                  <p className="text-[10px] text-muted-foreground uppercase tracking-widest mb-1">Sell Vol</p>
+                  <p className="text-base font-bold font-mono tabular-nums" style={{ color: LOSS }}>{fmtVol(detail.sellVolume)}</p>
+                </div>
+                <div>
+                  <p className="text-[10px] text-muted-foreground uppercase tracking-widest mb-1">Total Vol</p>
                   <p className="text-base font-bold font-mono tabular-nums text-foreground">{fmtVol(detail.volume)}</p>
                 </div>
-                <div className="text-center">
-                  <p className="text-xs text-muted-foreground mb-1">Sell Vol</p>
-                  <p className="text-base font-bold font-mono tabular-nums" style={{ color: LOSS }}>{fmtVol(detail.sellVolume)}</p>
+                <div>
+                  <p className="text-[10px] text-muted-foreground uppercase tracking-widest mb-1">Imbalance</p>
+                  <p className="text-base font-bold font-mono tabular-nums" style={{ color: orderImbalance >= 0 ? GAIN : LOSS }}>
+                    {orderImbalance >= 0 ? "+" : ""}{orderImbalance.toFixed(1)}%
+                  </p>
+                </div>
+              </div>
+            </div>
+          </div>
+        </TabsContent>
+
+        {/* ══ Profile ════════════════════════════════════════════════════════════ */}
+        <TabsContent value="profile">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+
+            {/* Identity */}
+            <div className="bg-card border border-border rounded-xl p-5">
+              <p className="text-xs text-muted-foreground uppercase tracking-widest mb-4">Stock Identity</p>
+              {[
+                { label: "Ticker",     val: detail.ticker },
+                { label: "Full Name",  val: detail.name },
+                { label: "Sector",     val: detail.sector },
+                { label: "Market Cap", val: `${detail.mcap.charAt(0).toUpperCase()}${detail.mcap.slice(1)} Cap` },
+                { label: "Session",    val: detail.halted ? "HALTED" : detail.session.charAt(0).toUpperCase() + detail.session.slice(1) },
+              ].map((r, i) => (
+                <div key={i} className="flex justify-between items-center py-2.5 border-b border-border/30 last:border-0">
+                  <span className="text-sm text-muted-foreground">{r.label}</span>
+                  <span className="text-sm font-semibold text-foreground">{r.val}</span>
+                </div>
+              ))}
+            </div>
+
+            {/* Risk metrics */}
+            <div className="bg-card border border-border rounded-xl p-5">
+              <p className="text-xs text-muted-foreground uppercase tracking-widest mb-4">Risk Metrics</p>
+              {[
+                { label: "Beta (β)",         val: detail.beta.toFixed(2),                                      hint: detail.beta > 1.2 ? "High market sensitivity" : detail.beta < 0.8 ? "Low sensitivity" : "Near market beta" },
+                { label: "Volatility (σ)",   val: detail.volatility != null ? `${(detail.volatility * 100).toFixed(0)}%` : "N/A", hint: detail.volatility != null && detail.volatility > 0.15 ? "High vol" : "Moderate vol" },
+                { label: "ATR (14)",         val: detail.atr.toFixed(2),                                       hint: `${(detail.atr / detail.price * 100).toFixed(1)}% of price` },
+                { label: "BB Bandwidth",     val: `${(detail.bbBw * 100).toFixed(1)}%`,                        hint: detail.bbBw * 100 < 5 ? "Squeeze — breakout risk" : "Normal range" },
+                { label: "Spread",           val: `${detail.spreadPct.toFixed(2)}%`,                           hint: detail.spreadPct > 0.5 ? "Wide — low liquidity" : "Tight — liquid" },
+              ].map((r, i) => (
+                <div key={i} className="flex justify-between items-start py-2.5 border-b border-border/30 last:border-0 gap-3">
+                  <span className="text-sm text-muted-foreground shrink-0">{r.label}</span>
+                  <div className="text-right">
+                    <p className="text-sm font-bold font-mono text-foreground">{r.val}</p>
+                    <p className="text-[10px] text-muted-foreground">{r.hint}</p>
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            {/* Price history summary */}
+            <div className="bg-card border border-border rounded-xl p-5 sm:col-span-2">
+              <p className="text-xs text-muted-foreground uppercase tracking-widest mb-4">Price History Summary</p>
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+                {[
+                  { label: "Current Price",  val: detail.price.toFixed(2),       color: up ? GAIN : LOSS },
+                  { label: "All-Time High",  val: detail.allTimeHigh.toFixed(2), color: undefined },
+                  { label: "52w High",       val: detail.high52w.toFixed(2),     color: undefined },
+                  { label: "52w Low",        val: detail.low52w.toFixed(2),      color: undefined },
+                ].map((r, i) => (
+                  <div key={i} className="text-center p-3 rounded-xl bg-background/60">
+                    <p className="text-[10px] text-muted-foreground uppercase tracking-widest mb-2">{r.label}</p>
+                    <p className="text-xl font-extrabold font-mono tabular-nums" style={{ color: r.color ?? "var(--foreground)" }}>{r.val}</p>
+                  </div>
+                ))}
+              </div>
+
+              {/* 52w range */}
+              <div className="mt-5 pt-4 border-t border-border/40">
+                <div className="flex justify-between text-xs text-muted-foreground mb-2">
+                  <span>52-Week Position</span>
+                  <span className="font-mono">
+                    {(() => {
+                      const rng = detail.high52w - detail.low52w
+                      return rng > 0 ? `${((detail.price - detail.low52w) / rng * 100).toFixed(0)}th percentile` : "—"
+                    })()}
+                  </span>
+                </div>
+                <div className="flex items-center gap-4">
+                  <span className="text-xs font-mono text-muted-foreground w-14 text-right">{detail.low52w.toFixed(2)}</span>
+                  <div className="flex-1 h-2 bg-background rounded-full relative">
+                    {(() => {
+                      const rng = detail.high52w - detail.low52w
+                      const pos = rng > 0 ? Math.max(0, Math.min(100, (detail.price - detail.low52w) / rng * 100)) : 50
+                      return <div className="absolute -top-1 w-4 h-4 rounded-full border-2 border-card shadow-md" style={{ left: `${pos}%`, background: BLUE, transform: "translateX(-50%)" }} />
+                    })()}
+                  </div>
+                  <span className="text-xs font-mono text-muted-foreground w-14">{detail.high52w.toFixed(2)}</span>
                 </div>
               </div>
             </div>
