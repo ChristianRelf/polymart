@@ -10,6 +10,8 @@ services:
       MYSQL_DATABASE: polymart
       MYSQL_USER: polymart
       MYSQL_PASSWORD: ${DB_PASSWORD:-polymart_password}
+    ports:
+      - "${DB_PORT_EXTERNAL:-3306}:3306"
     volumes:
       # Persist database data across restarts
       - polymart-db-data:/var/lib/mysql
