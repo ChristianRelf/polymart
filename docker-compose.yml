@@ -1,0 +1,49 @@
+services:
+
+  # ── MySQL database ─────────────────────────────────────────────────────────
+  db:
+    image: mysql:8.0
+    container_name: polymart-db
+    restart: unless-stopped
+    environment:
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:-rootpassword}
+      MYSQL_DATABASE: polymart
+      MYSQL_USER: polymart
+      MYSQL_PASSWORD: ${DB_PASSWORD:-polymart_password}
+    volumes:
+      # Persist database data across restarts
+      - polymart-db-data:/var/lib/mysql
+      # Run schema on first start
+      - ./server/schema.sql:/docker-entrypoint-initdb.d/01-schema.sql:ro
+      # Enable event scheduler for 7-day purge
+      - ./mysql-config/polymart.cnf:/etc/mysql/conf.d/polymart.cnf:ro
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "127.0.0.1", "-u", "polymart", "--password=${DB_PASSWORD:-polymart_password}"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 30s
+
+  # ── Node API + simulation server ───────────────────────────────────────────
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: polymart-app
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      PORT: 3000
+      DB_HOST: db
+      DB_PORT: 3306
+      DB_USER: polymart
+      DB_PASSWORD: ${DB_PASSWORD:-polymart_password}
+      DB_NAME: polymart
+    ports:
+      - "${APP_PORT:-3000}:3000"
+
+volumes:
+  polymart-db-data:
+    driver: local

@@ -2,6 +2,7 @@ import express from "express";
 import path from "path";
 import { fileURLToPath } from "url";
 import dotenv from "dotenv";
+import pool from "./db.js";
 import apiRouter from "./api.js";
 import { startTickLoop } from "./tick.js";
 
@@ -11,21 +12,39 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const app = express();
 
 app.use(express.json());
-
-// API routes
 app.use("/api/v1", apiRouter);
 
-// Serve built frontend from dist/
+// Serve built frontend
 const distPath = path.join(__dirname, "..", "dist");
 app.use(express.static(distPath));
-app.get("*", (req, res) => {
+app.get("*", (_req, res) => {
   res.sendFile(path.join(distPath, "index.html"));
 });
 
-const PORT = parseInt(process.env.PORT || "3000");
-app.listen(PORT, "0.0.0.0", () => {
-  console.log(`[polymart] API + frontend running on port ${PORT}`);
-});
+// Wait for MySQL to accept connections before starting the server
+async function waitForDb(retries = 30, delayMs = 2000) {
+  for (let i = 1; i <= retries; i++) {
+    try {
+      const conn = await pool.getConnection();
+      conn.release();
+      console.log("[polymart] Database connection established.");
+      return;
+    } catch (err) {
+      console.log(`[polymart] Waiting for database... (attempt ${i}/${retries})`);
+      await new Promise(r => setTimeout(r, delayMs));
+    }
+  }
+  throw new Error("Could not connect to MySQL after multiple retries. Exiting.");
+}
 
-// Start simulation tick loop (every 10 seconds)
-startTickLoop(10000);
+const PORT = parseInt(process.env.PORT || "3000");
+
+waitForDb().then(() => {
+  app.listen(PORT, "0.0.0.0", () => {
+    console.log(`[polymart] API + frontend running on port ${PORT}`);
+  });
+  startTickLoop(10000);
+}).catch(err => {
+  console.error(err.message);
+  process.exit(1);
+});
