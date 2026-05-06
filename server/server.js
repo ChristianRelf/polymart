@@ -30,7 +30,7 @@ async function waitForDb(retries = 30, delayMs = 2000) {
       console.log("[polymart] Database connection established.");
       return;
     } catch (err) {
-      console.log(`[polymart] Waiting for database... (attempt ${i}/${retries})`);
+      console.log(`[polymart] Waiting for database... (attempt ${i}/${retries}): ${err.code} ${err.message}`);
       await new Promise(r => setTimeout(r, delayMs));
     }
   }
