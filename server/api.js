@@ -14,6 +14,58 @@ function setCors(res) {
   for (const [k, v] of Object.entries(CORS)) res.setHeader(k, v);
 }
 
+// ── Rate limiter (in-memory sliding window) ───────────────────────────────────
+// 60 requests per 60-second window per IP.
+// Expensive endpoints (getStocks, getHistory, getLeaderboard) count as 3 tokens.
+const RATE_WINDOW_MS = 60_000;
+const RATE_LIMIT     = 60;
+const HEAVY_COST     = 3;
+const HEAVY_ROUTES   = new Set(["/getStocks", "/getHistory", "/getLeaderboard"]);
+
+// Map<ip, { tokens: number, windowStart: number }>
+const rateBuckets = new Map();
+
+// Prune stale buckets every 5 minutes to prevent unbounded memory growth
+setInterval(() => {
+  const cutoff = Date.now() - RATE_WINDOW_MS;
+  for (const [ip, bucket] of rateBuckets) {
+    if (bucket.windowStart < cutoff) rateBuckets.delete(ip);
+  }
+}, 5 * 60_000);
+
+function rateLimit(req, res, next) {
+  const ip   = req.headers["x-forwarded-for"]?.split(",")[0].trim() || req.socket.remoteAddress || "unknown";
+  const now  = Date.now();
+  const cost = HEAVY_ROUTES.has(req.path) ? HEAVY_COST : 1;
+
+  let bucket = rateBuckets.get(ip);
+  if (!bucket || now - bucket.windowStart >= RATE_WINDOW_MS) {
+    bucket = { tokens: 0, windowStart: now };
+    rateBuckets.set(ip, bucket);
+  }
+
+  bucket.tokens += cost;
+
+  const remaining = Math.max(0, RATE_LIMIT - bucket.tokens);
+  const resetSecs = Math.ceil((bucket.windowStart + RATE_WINDOW_MS - now) / 1000);
+
+  res.setHeader("X-RateLimit-Limit",     RATE_LIMIT);
+  res.setHeader("X-RateLimit-Remaining", remaining);
+  res.setHeader("X-RateLimit-Reset",     resetSecs);
+
+  if (bucket.tokens > RATE_LIMIT) {
+    setCors(res);
+    return res.status(429).json({
+      error: "Too many requests. Please slow down.",
+      retryAfter: resetSecs,
+    });
+  }
+
+  next();
+}
+
+router.use(rateLimit);
+
 function fgLabel(v) {
   if (v <= 12) return "Extreme Fear";
   if (v <= 25) return "Fear";
