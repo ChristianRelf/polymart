@@ -73,11 +73,11 @@ nano .env
 Fill in the following. Choose strong, unique passwords — these are used to secure the MySQL database:
 
 ```env
-# Port the Node server listens on inside the container (leave as 3000)
-PORT=3000
+# Port the Node server listens on inside the container (leave as 4000)
+PORT=4000
 
-# Host port Docker exposes (change if 3000 is already in use on your server)
-APP_PORT=3000
+# Host port Docker exposes (change if 4000 is already in use on your server)
+APP_PORT=4000
 
 # MySQL connection — these must match what you set in MYSQL_* below
 DB_HOST=db
@@ -125,7 +125,7 @@ MYSQL_PASSWORD=same_as_DB_PASSWORD_above
    | `DB_PASSWORD` | your chosen database password |
    | `MYSQL_ROOT_PASSWORD` | your chosen root password |
    | `MYSQL_PASSWORD` | same as `DB_PASSWORD` |
-   | `APP_PORT` | `3000` (or your chosen host port) |
+   | `APP_PORT` | `4000` (or your chosen host port) |
 
    These override the `.env` file values when deploying via Portainer's stack UI.
 
@@ -147,7 +147,7 @@ A healthy startup looks like this (in order):
 [polymart] Waiting for database... (attempt 1/30)
 [polymart] Waiting for database... (attempt 2/30)
 [polymart] Database connection established.
-[polymart] API + frontend running on port 3000
+[polymart] API + frontend running on port 4000
 [tick] Starting simulation loop every 10s
 [tick] First-run: no market_state found — initialising...
 [tick] First-run initialisation complete, 60 warm-up ticks applied.
@@ -159,7 +159,7 @@ The `Waiting for database...` lines are expected — the app retries up to 30 ti
 
 The `First-run initialisation complete` message means MySQL had no data, so the app seeded all 132 stocks, 20 sectors, and the market state, then ran 60 warm-up ticks to generate a realistic starting state.
 
-Open `http://your-server-ip:3000` in a browser to confirm the frontend loads.
+Open `http://your-server-ip:4000` in a browser to confirm the frontend loads.
 
 ---
 
@@ -192,7 +192,7 @@ docker compose down -v
 
 ## Nginx Reverse Proxy
 
-By default Polymart is reachable on `http://your-server-ip:3000`. To serve it on port 80 (HTTP) or 443 (HTTPS), put Nginx in front as a reverse proxy.
+By default Polymart is reachable on `http://your-server-ip:4000`. To serve it on port 80 (HTTP) or 443 (HTTPS), put Nginx in front as a reverse proxy.
 
 ### Option 1 — Nginx Proxy Manager (easiest, Portainer-friendly)
 
@@ -230,7 +230,7 @@ Once deployed, open `http://your-server-ip:81` and log in (default: `admin@examp
    - **Domain Names**: your domain name (e.g. `polymart.yourdomain.com`) or your server's local hostname
    - **Scheme**: `http`
    - **Forward Hostname / IP**: your server's IP address (or `polymart-app` if NPM is on the same Docker network)
-   - **Forward Port**: `3000`
+   - **Forward Port**: `4000`
    - Enable **Block Common Exploits**
 3. On the **SSL** tab (optional, requires a domain):
    - Select **Request a new SSL certificate**
@@ -261,7 +261,7 @@ server {
 
     # Pass all requests to the Node container
     location / {
-        proxy_pass         http://127.0.0.1:3000;
+        proxy_pass         http://127.0.0.1:4000;
         proxy_http_version 1.1;
 
         # Required headers for correct proxying
@@ -303,8 +303,8 @@ Certbot automatically edits your Nginx config to add SSL and sets up an auto-ren
 
 | Variable | Default | Required | Description |
 |---|---|---|---|
-| `PORT` | `3000` | No | Port the Node.js server binds to inside the container |
-| `APP_PORT` | `3000` | No | Host port Docker maps to the container's `PORT` |
+| `PORT` | `4000` | No | Port the Node.js server binds to inside the container |
+| `APP_PORT` | `4000` | No | Host port Docker maps to the container's `PORT` |
 | `DB_HOST` | `db` | Yes | MySQL hostname. Use `db` inside Docker, `127.0.0.1` for bare metal |
 | `DB_PORT` | `3306` | No | MySQL port |
 | `DB_USER` | `polymart` | Yes | MySQL user the app connects as |
@@ -621,7 +621,7 @@ nano .env
 ```
 
 ```env
-PORT=3000
+PORT=4000
 DB_HOST=127.0.0.1
 DB_PORT=3306
 DB_USER=polymart
@@ -671,7 +671,7 @@ server {
     server_name _;  # Replace _ with your domain name if you have one
 
     location / {
-        proxy_pass         http://127.0.0.1:3000;
+        proxy_pass         http://127.0.0.1:4000;
         proxy_http_version 1.1;
         proxy_set_header   Host              $host;
         proxy_set_header   X-Real-IP         $remote_addr;
