@@ -175,7 +175,7 @@ function Footer({ setRoute }: { setRoute: (r: Route) => void }) {
 
           {/* Brand */}
           <div>
-            <p className="text-sm font-extrabold text-foreground tracking-tight mb-3">POLYMART</p>
+            <img src="/polymartlogo.png" alt="POLYMART" className="h-8 w-auto mb-3" />
             <p className="text-xs text-muted-foreground leading-relaxed">
               A persistent simulated stock exchange engine. All data is entirely fictional.
               Not financial advice.
