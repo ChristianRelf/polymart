@@ -100,13 +100,7 @@ docker compose down
 
 ---
 
-## Option C — Bare Metal (without Docker)
-
-See the bottom of this document for manual installation without Docker.
-
----
-
-## Nginx Reverse Proxy (Optional)
+## Nginx Reverse Proxy 
 
 If you want to serve Polymart on port 80/443, add an Nginx proxy in front. You can do this as another Portainer stack, or configure your existing Nginx.
 
