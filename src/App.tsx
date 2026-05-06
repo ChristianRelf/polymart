@@ -94,15 +94,6 @@ function TickCountdown({ intervalMs = 10_000 }: { intervalMs?: number }) {
           strokeLinecap="round"
           className="stroke-emerald-400 transition-[stroke-dashoffset] duration-[50ms] ease-linear"
         />
-      </svg>
-      {/* Logo icon centered in ring */}
-      <img
-        src="/polymartlogo.png"
-        alt=""
-        aria-hidden="true"
-        className="relative z-10 rounded-full object-contain"
-        style={{ width: size - strokeWidth * 2 - 6, height: size - strokeWidth * 2 - 6 }}
-      />
     </div>
   )
 }
