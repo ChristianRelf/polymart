@@ -335,7 +335,7 @@ function GaugeBar({ value, min = 0, max = 100, lowColor = LOSS, highColor = GAIN
   const col = pct < 30 ? lowColor : pct > 70 ? highColor : midColor
   return (
     <div className="w-full">
-      {label && <p className="text-[9px] text-muted-foreground uppercase tracking-widest mb-1">{label}</p>}
+      {label && <p className="text-xs text-muted-foreground uppercase tracking-widest mb-1">{label}</p>}
       <div className="relative h-1.5 bg-background rounded-full overflow-hidden">
         <div className="h-full rounded-full transition-all duration-500" style={{ width: `${pct}%`, background: col }} />
       </div>
@@ -349,9 +349,9 @@ function StatTile({ label, value, sub, subColor }: {
 }) {
   return (
     <div className="bg-card border border-border rounded-xl px-5 py-4">
-      <p className="text-[10px] text-muted-foreground uppercase tracking-widest mb-2">{label}</p>
-      <p className="text-2xl font-bold font-mono text-foreground tabular-nums">{value}</p>
-      {sub && <p className="text-xs font-semibold font-mono mt-1" style={{ color: subColor }}>{sub}</p>}
+      <p className="text-xs text-muted-foreground uppercase tracking-widest mb-2">{label}</p>
+      <p className="text-3xl font-bold font-mono text-foreground tabular-nums">{value}</p>
+      {sub && <p className="text-sm font-semibold font-mono mt-1" style={{ color: subColor }}>{sub}</p>}
     </div>
   )
 }
@@ -367,7 +367,7 @@ function SessionBadge({ session }: { session: string }) {
   }
   const c = cfg[session] ?? cfg.open
   return (
-    <span className="text-[10px] font-bold tracking-widest px-2 py-0.5 rounded" style={{ color: c.color, background: c.bg }}>
+    <span className="text-xs font-bold tracking-widest px-2.5 py-1 rounded" style={{ color: c.color, background: c.bg }}>
       {c.label}
     </span>
   )
@@ -378,7 +378,7 @@ function OrderFlowBar({ orderFlow, buyVol, sellVol }: { orderFlow: number; buyVo
   const buyPct = buyVol + sellVol > 0 ? (buyVol / (buyVol + sellVol)) * 100 : 50
   return (
     <div>
-      <div className="flex justify-between text-[9px] font-mono mb-1">
+      <div className="flex justify-between text-xs font-mono mb-1">
         <span style={{ color: GAIN }}>BUY {buyPct.toFixed(0)}%</span>
         <span className="text-muted-foreground">{orderFlow > 0 ? "+" : ""}{orderFlow.toFixed(1)} net</span>
         <span style={{ color: LOSS }}>SELL {(100 - buyPct).toFixed(0)}%</span>
@@ -425,7 +425,7 @@ function StockDetailView({ detail, stocks, onBack, openDetail }: {
             <h1 className="text-4xl font-extrabold font-mono text-foreground tracking-tight">{detail.ticker}</h1>
             <SessionBadge session={detail.halted ? "halted" : detail.session} />
           </div>
-          <p className="text-muted-foreground mb-3">{detail.name}</p>
+          <p className="text-base text-muted-foreground mb-3">{detail.name}</p>
           <div className="flex flex-wrap gap-2">
             <Badge variant="outline" className="text-xs border-border capitalize">{detail.sector}</Badge>
             <Badge variant="outline" className="text-xs border-border">{detail.mcap} cap</Badge>
@@ -448,14 +448,14 @@ function StockDetailView({ detail, stocks, onBack, openDetail }: {
             {up ? "+" : ""}{detail.change.toFixed(2)}%
           </p>
           <div className="flex items-center gap-3 mt-2 justify-end">
-            <span className="text-xs font-mono text-muted-foreground">
+            <span className="text-sm font-mono text-muted-foreground">
               Bid <span className="text-foreground">{detail.bid.toFixed(2)}</span>
             </span>
             <span className="text-muted-foreground/40">|</span>
-            <span className="text-xs font-mono text-muted-foreground">
+            <span className="text-sm font-mono text-muted-foreground">
               Ask <span className="text-foreground">{detail.ask.toFixed(2)}</span>
             </span>
-            <span className="text-[10px] font-mono px-1.5 py-0.5 rounded" style={{ color: NEUT, background: "rgba(234,179,77,.1)" }}>
+            <span className="text-xs font-mono px-1.5 py-0.5 rounded" style={{ color: NEUT, background: "rgba(234,179,77,.1)" }}>
               {detail.spreadPct.toFixed(2)}%
             </span>
           </div>
@@ -498,9 +498,9 @@ function StockDetailView({ detail, stocks, onBack, openDetail }: {
       {/* Tabs: Price / Technicals / Order Flow */}
       <Tabs defaultValue="price" className="mb-8">
         <TabsList className="bg-card border border-border mb-4">
-          <TabsTrigger value="price" className="text-xs gap-1.5"><BarChart2 className="w-3 h-3" />Price</TabsTrigger>
-          <TabsTrigger value="technicals" className="text-xs gap-1.5"><Activity className="w-3 h-3" />Technicals</TabsTrigger>
-          <TabsTrigger value="orderflow" className="text-xs gap-1.5"><BookOpen className="w-3 h-3" />Order Flow</TabsTrigger>
+          <TabsTrigger value="price" className="text-sm gap-1.5"><BarChart2 className="w-3.5 h-3.5" />Price</TabsTrigger>
+          <TabsTrigger value="technicals" className="text-sm gap-1.5"><Activity className="w-3.5 h-3.5" />Technicals</TabsTrigger>
+          <TabsTrigger value="orderflow" className="text-sm gap-1.5"><BookOpen className="w-3.5 h-3.5" />Order Flow</TabsTrigger>
         </TabsList>
 
         {/* ── Price tab ── */}
@@ -521,8 +521,8 @@ function StockDetailView({ detail, stocks, onBack, openDetail }: {
               { label: "Streak",      value: `${detail.streak > 0 ? "▲" : detail.streak < 0 ? "▼" : "—"} ${Math.abs(detail.streak)}`, color: detail.streak > 0 ? GAIN : detail.streak < 0 ? LOSS : undefined },
             ].map((m, i) => (
               <div key={i} className="bg-card border border-border rounded-xl p-4">
-                <p className="text-[10px] text-muted-foreground uppercase tracking-widest mb-2">{m.label}</p>
-                <p className="text-base font-semibold font-mono tabular-nums" style={{ color: m.color ?? "var(--foreground)" }}>
+                <p className="text-xs text-muted-foreground uppercase tracking-widest mb-2">{m.label}</p>
+                <p className="text-lg font-semibold font-mono tabular-nums" style={{ color: m.color ?? "var(--foreground)" }}>
                   {m.value}
                 </p>
               </div>
@@ -531,7 +531,7 @@ function StockDetailView({ detail, stocks, onBack, openDetail }: {
 
           {/* 52w range */}
           <div className="bg-card border border-border rounded-xl p-5 mt-3">
-            <p className="text-[10px] text-muted-foreground uppercase tracking-widest mb-4">52-Week Range</p>
+            <p className="text-xs text-muted-foreground uppercase tracking-widest mb-4">52-Week Range</p>
             <div className="flex items-center gap-4">
               <span className="text-sm font-mono text-muted-foreground w-16 text-right tabular-nums">{detail.low52w.toFixed(2)}</span>
               <div className="flex-1 h-2 bg-background rounded-full relative">
@@ -557,32 +557,32 @@ function StockDetailView({ detail, stocks, onBack, openDetail }: {
             {/* RSI */}
             <div className="bg-card border border-border rounded-xl p-5">
               <div className="flex justify-between items-center mb-3">
-                <p className="text-[10px] text-muted-foreground uppercase tracking-widest">RSI (14)</p>
-                <p className="text-lg font-bold font-mono tabular-nums" style={{ color: detail.rsi > 70 ? LOSS : detail.rsi < 30 ? GAIN : NEUT }}>
+                <p className="text-xs text-muted-foreground uppercase tracking-widest">RSI (14)</p>
+                <p className="text-xl font-bold font-mono tabular-nums" style={{ color: detail.rsi > 70 ? LOSS : detail.rsi < 30 ? GAIN : NEUT }}>
                   {detail.rsi.toFixed(1)}
                 </p>
               </div>
               <GaugeBar value={detail.rsi} />
               <div className="flex justify-between mt-1.5">
-                <span className="text-[9px]" style={{ color: GAIN }}>Oversold 30</span>
-                <span className="text-[9px]" style={{ color: LOSS }}>Overbought 70</span>
+                <span className="text-xs" style={{ color: GAIN }}>Oversold 30</span>
+                <span className="text-xs" style={{ color: LOSS }}>Overbought 70</span>
               </div>
             </div>
 
             {/* Moving Averages */}
             <div className="bg-card border border-border rounded-xl p-5">
-              <p className="text-[10px] text-muted-foreground uppercase tracking-widest mb-3">Moving Averages</p>
+              <p className="text-xs text-muted-foreground uppercase tracking-widest mb-3">Moving Averages</p>
               {[
                 { label: "EMA 12", val: detail.ema12, above: detail.price > detail.ema12 },
                 { label: "EMA 26", val: detail.ema26, above: detail.price > detail.ema26 },
                 { label: "SMA 20", val: detail.sma20, above: detail.price > detail.sma20 },
                 { label: "SMA 50", val: detail.sma50, above: detail.price > detail.sma50 },
               ].map((ma, i) => (
-                <div key={i} className="flex justify-between items-center py-1.5 border-b border-border/40 last:border-0">
-                  <span className="text-xs text-muted-foreground">{ma.label}</span>
+                <div key={i} className="flex justify-between items-center py-2 border-b border-border/40 last:border-0">
+                  <span className="text-sm text-muted-foreground">{ma.label}</span>
                   <div className="flex items-center gap-2">
-                    <span className="text-xs font-mono tabular-nums text-foreground">{ma.val.toFixed(2)}</span>
-                    <span className="text-[10px] font-bold" style={{ color: ma.above ? GAIN : LOSS }}>
+                    <span className="text-sm font-mono tabular-nums text-foreground">{ma.val.toFixed(2)}</span>
+                    <span className="text-xs font-bold" style={{ color: ma.above ? GAIN : LOSS }}>
                       {ma.above ? "ABOVE ▲" : "BELOW ▼"}
                     </span>
                   </div>
@@ -592,20 +592,20 @@ function StockDetailView({ detail, stocks, onBack, openDetail }: {
 
             {/* MACD */}
             <div className="bg-card border border-border rounded-xl p-5">
-              <p className="text-[10px] text-muted-foreground uppercase tracking-widest mb-3">MACD</p>
+              <p className="text-xs text-muted-foreground uppercase tracking-widest mb-3">MACD</p>
               {[
                 { label: "MACD Line",    val: detail.macd,       color: BLUE },
                 { label: "Signal Line",  val: detail.macdSignal, color: NEUT },
                 { label: "Histogram",    val: detail.macdHist,   color: detail.macdHist >= 0 ? GAIN : LOSS },
               ].map((r, i) => (
-                <div key={i} className="flex justify-between items-center py-1.5 border-b border-border/40 last:border-0">
-                  <span className="text-xs text-muted-foreground">{r.label}</span>
-                  <span className="text-sm font-bold font-mono tabular-nums" style={{ color: r.color }}>
+                <div key={i} className="flex justify-between items-center py-2 border-b border-border/40 last:border-0">
+                  <span className="text-sm text-muted-foreground">{r.label}</span>
+                  <span className="text-base font-bold font-mono tabular-nums" style={{ color: r.color }}>
                     {r.val >= 0 ? "+" : ""}{r.val.toFixed(4)}
                   </span>
                 </div>
               ))}
-              <p className="text-[10px] text-muted-foreground mt-3">
+              <p className="text-xs text-muted-foreground mt-3">
                 Signal: <span className="font-semibold" style={{ color: detail.macdHist > 0 ? GAIN : LOSS }}>
                   {detail.macdHist > 0 ? "Bullish crossover" : "Bearish crossover"}
                 </span>
@@ -615,17 +615,17 @@ function StockDetailView({ detail, stocks, onBack, openDetail }: {
             {/* Bollinger Bands */}
             <div className="bg-card border border-border rounded-xl p-5">
               <div className="flex justify-between items-center mb-3">
-                <p className="text-[10px] text-muted-foreground uppercase tracking-widest">Bollinger Bands (20,2)</p>
-                <span className="text-[10px] font-mono text-muted-foreground">BW {(detail.bbBw * 100).toFixed(1)}%</span>
+                <p className="text-xs text-muted-foreground uppercase tracking-widest">Bollinger Bands (20,2)</p>
+                <span className="text-xs font-mono text-muted-foreground">BW {(detail.bbBw * 100).toFixed(1)}%</span>
               </div>
               {[
                 { label: "Upper Band",  val: detail.bbUpper,  color: BLUE },
                 { label: "Middle (SMA)",val: detail.bbMiddle, color: DIM },
                 { label: "Lower Band",  val: detail.bbLower,  color: BLUE },
               ].map((r, i) => (
-                <div key={i} className="flex justify-between items-center py-1.5 border-b border-border/40 last:border-0">
-                  <span className="text-xs text-muted-foreground">{r.label}</span>
-                  <span className="text-sm font-mono tabular-nums" style={{ color: r.color }}>{r.val.toFixed(2)}</span>
+                <div key={i} className="flex justify-between items-center py-2 border-b border-border/40 last:border-0">
+                  <span className="text-sm text-muted-foreground">{r.label}</span>
+                  <span className="text-base font-mono tabular-nums" style={{ color: r.color }}>{r.val.toFixed(2)}</span>
                 </div>
               ))}
               <div className="mt-3">
@@ -645,18 +645,18 @@ function StockDetailView({ detail, stocks, onBack, openDetail }: {
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             {/* Bid / Ask */}
             <div className="bg-card border border-border rounded-xl p-5">
-              <p className="text-[10px] text-muted-foreground uppercase tracking-widest mb-4">Bid / Ask</p>
+              <p className="text-xs text-muted-foreground uppercase tracking-widest mb-4">Bid / Ask</p>
               <div className="grid grid-cols-2 gap-3 mb-4">
                 <div className="text-center p-3 rounded-lg" style={{ background: "rgba(91,206,138,.08)", border: `1px solid ${GAIN}33` }}>
-                  <p className="text-[10px] text-muted-foreground mb-1">BID</p>
-                  <p className="text-xl font-extrabold font-mono tabular-nums" style={{ color: GAIN }}>{detail.bid.toFixed(2)}</p>
+                  <p className="text-xs text-muted-foreground mb-1">BID</p>
+                  <p className="text-2xl font-extrabold font-mono tabular-nums" style={{ color: GAIN }}>{detail.bid.toFixed(2)}</p>
                 </div>
                 <div className="text-center p-3 rounded-lg" style={{ background: "rgba(232,105,106,.08)", border: `1px solid ${LOSS}33` }}>
-                  <p className="text-[10px] text-muted-foreground mb-1">ASK</p>
-                  <p className="text-xl font-extrabold font-mono tabular-nums" style={{ color: LOSS }}>{detail.ask.toFixed(2)}</p>
+                  <p className="text-xs text-muted-foreground mb-1">ASK</p>
+                  <p className="text-2xl font-extrabold font-mono tabular-nums" style={{ color: LOSS }}>{detail.ask.toFixed(2)}</p>
                 </div>
               </div>
-              <div className="flex justify-between text-xs text-muted-foreground">
+              <div className="flex justify-between text-sm text-muted-foreground">
                 <span>Spread</span>
                 <span className="font-mono font-semibold" style={{ color: NEUT }}>
                   {(detail.ask - detail.bid).toFixed(3)} ({detail.spreadPct.toFixed(2)}%)
@@ -666,11 +666,11 @@ function StockDetailView({ detail, stocks, onBack, openDetail }: {
 
             {/* VWAP */}
             <div className="bg-card border border-border rounded-xl p-5">
-              <p className="text-[10px] text-muted-foreground uppercase tracking-widest mb-3">VWAP</p>
+              <p className="text-xs text-muted-foreground uppercase tracking-widest mb-3">VWAP</p>
               <p className="text-3xl font-extrabold font-mono tabular-nums mb-2" style={{ color: NEUT }}>
                 {detail.vwap.toFixed(2)}
               </p>
-              <p className="text-xs text-muted-foreground">
+              <p className="text-sm text-muted-foreground">
                 Price vs VWAP:{" "}
                 <span className="font-semibold font-mono" style={{ color: detail.price >= detail.vwap ? GAIN : LOSS }}>
                   {detail.price >= detail.vwap ? "+" : ""}{((detail.price - detail.vwap) / detail.vwap * 100).toFixed(2)}%
@@ -681,20 +681,20 @@ function StockDetailView({ detail, stocks, onBack, openDetail }: {
 
             {/* Order flow */}
             <div className="bg-card border border-border rounded-xl p-5 sm:col-span-2">
-              <p className="text-[10px] text-muted-foreground uppercase tracking-widest mb-4">Order Flow Imbalance</p>
+              <p className="text-xs text-muted-foreground uppercase tracking-widest mb-4">Order Flow Imbalance</p>
               <OrderFlowBar orderFlow={detail.orderFlow} buyVol={detail.buyVolume} sellVol={detail.sellVolume} />
               <div className="grid grid-cols-3 gap-3 mt-4">
                 <div className="text-center">
-                  <p className="text-[10px] text-muted-foreground mb-1">Buy Vol</p>
-                  <p className="text-sm font-bold font-mono tabular-nums" style={{ color: GAIN }}>{fmtVol(detail.buyVolume)}</p>
+                  <p className="text-xs text-muted-foreground mb-1">Buy Vol</p>
+                  <p className="text-base font-bold font-mono tabular-nums" style={{ color: GAIN }}>{fmtVol(detail.buyVolume)}</p>
                 </div>
                 <div className="text-center">
-                  <p className="text-[10px] text-muted-foreground mb-1">Total Vol</p>
-                  <p className="text-sm font-bold font-mono tabular-nums text-foreground">{fmtVol(detail.volume)}</p>
+                  <p className="text-xs text-muted-foreground mb-1">Total Vol</p>
+                  <p className="text-base font-bold font-mono tabular-nums text-foreground">{fmtVol(detail.volume)}</p>
                 </div>
                 <div className="text-center">
-                  <p className="text-[10px] text-muted-foreground mb-1">Sell Vol</p>
-                  <p className="text-sm font-bold font-mono tabular-nums" style={{ color: LOSS }}>{fmtVol(detail.sellVolume)}</p>
+                  <p className="text-xs text-muted-foreground mb-1">Sell Vol</p>
+                  <p className="text-base font-bold font-mono tabular-nums" style={{ color: LOSS }}>{fmtVol(detail.sellVolume)}</p>
                 </div>
               </div>
             </div>
@@ -705,7 +705,7 @@ function StockDetailView({ detail, stocks, onBack, openDetail }: {
       {/* Sector peers */}
       {detail.sectorPeers && detail.sectorPeers.length > 0 && (
         <div>
-          <p className="text-[10px] text-muted-foreground uppercase tracking-widest mb-4">Sector Peers</p>
+          <p className="text-xs text-muted-foreground uppercase tracking-widest mb-4">Sector Peers</p>
           <div className="flex flex-wrap gap-2">
             {detail.sectorPeers.map(pt => {
               const s = stocks[pt]
@@ -716,9 +716,9 @@ function StockDetailView({ detail, stocks, onBack, openDetail }: {
                   className="bg-card border border-border rounded-xl px-4 py-3 text-left hover:bg-accent hover:border-ring transition-all cursor-pointer"
                 >
                   <div className="flex items-center justify-between gap-6 mb-1">
-                    <span className="text-sm font-bold font-mono text-foreground">{pt}</span>
+                    <span className="text-base font-bold font-mono text-foreground">{pt}</span>
                     {s && (
-                      <span className="text-xs font-semibold font-mono tabular-nums" style={{ color: s.change >= 0 ? GAIN : LOSS }}>
+                      <span className="text-sm font-semibold font-mono tabular-nums" style={{ color: s.change >= 0 ? GAIN : LOSS }}>
                         {s.change >= 0 ? "+" : ""}{s.change.toFixed(2)}%
                       </span>
                     )}
@@ -726,7 +726,7 @@ function StockDetailView({ detail, stocks, onBack, openDetail }: {
                   {s && (
                     <div className="flex items-center gap-2">
                       <p className="text-sm font-mono text-muted-foreground tabular-nums">{s.price.toFixed(2)}</p>
-                      {s.halted && <span className="text-[9px] font-bold" style={{ color: LOSS }}>HALTED</span>}
+                      {s.halted && <span className="text-xs font-bold" style={{ color: LOSS }}>HALTED</span>}
                     </div>
                   )}
                 </button>
@@ -821,15 +821,15 @@ export default function MarketPage() {
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4 mb-8">
         <div>
-          <h1 className="text-2xl font-bold text-foreground tracking-tight mb-1">Market</h1>
-          <p className="text-sm text-muted-foreground">
+          <h1 className="text-3xl font-bold text-foreground tracking-tight mb-1">Market</h1>
+          <p className="text-base text-muted-foreground">
             {market.totalStocks} stocks · tick #{market.tickCount}
           </p>
         </div>
         <div className="flex items-center gap-3">
           <SessionBadge session={market.marketSession ?? "open"} />
           <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
-          <span className="text-xs text-muted-foreground">Live</span>
+          <span className="text-sm text-muted-foreground">Live</span>
         </div>
       </div>
 
@@ -844,20 +844,20 @@ export default function MarketPage() {
       {/* Secondary stat row */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-6">
         <div className="bg-card border border-border rounded-xl px-4 py-3 flex justify-between items-center">
-          <span className="text-xs text-muted-foreground">52w Highs</span>
-          <span className="text-sm font-bold font-mono" style={{ color: GAIN }}>{market.newHighs ?? 0}</span>
+          <span className="text-sm text-muted-foreground">52w Highs</span>
+          <span className="text-base font-bold font-mono" style={{ color: GAIN }}>{market.newHighs ?? 0}</span>
         </div>
         <div className="bg-card border border-border rounded-xl px-4 py-3 flex justify-between items-center">
-          <span className="text-xs text-muted-foreground">52w Lows</span>
-          <span className="text-sm font-bold font-mono" style={{ color: LOSS }}>{market.newLows ?? 0}</span>
+          <span className="text-sm text-muted-foreground">52w Lows</span>
+          <span className="text-base font-bold font-mono" style={{ color: LOSS }}>{market.newLows ?? 0}</span>
         </div>
         <div className="bg-card border border-border rounded-xl px-4 py-3 flex justify-between items-center">
-          <span className="text-xs text-muted-foreground">Interest Rate</span>
-          <span className="text-sm font-bold font-mono text-foreground tabular-nums">{market.interestRate?.toFixed(2) ?? "—"}%</span>
+          <span className="text-sm text-muted-foreground">Interest Rate</span>
+          <span className="text-base font-bold font-mono text-foreground tabular-nums">{market.interestRate?.toFixed(2) ?? "—"}%</span>
         </div>
         <div className="bg-card border border-border rounded-xl px-4 py-3 flex justify-between items-center">
-          <span className="text-xs text-muted-foreground">Inflation / GDP</span>
-          <span className="text-sm font-bold font-mono text-foreground tabular-nums">
+          <span className="text-sm text-muted-foreground">Inflation / GDP</span>
+          <span className="text-base font-bold font-mono text-foreground tabular-nums">
             {market.inflation?.toFixed(1) ?? "—"}% / {market.gdpGrowth?.toFixed(1) ?? "—"}%
           </span>
         </div>
@@ -867,24 +867,24 @@ export default function MarketPage() {
       {events.length > 0 && (
         <div className="bg-card border border-border rounded-xl px-6 py-3 mb-6 overflow-hidden">
           <div className="flex items-center gap-8 overflow-x-auto">
-            <span className="text-[10px] font-semibold text-muted-foreground uppercase tracking-widest shrink-0 flex items-center gap-1.5">
-              <Zap className="w-3 h-3" /> Events
+            <span className="text-xs font-semibold text-muted-foreground uppercase tracking-widest shrink-0 flex items-center gap-1.5">
+              <Zap className="w-3.5 h-3.5" /> Events
             </span>
             {events.slice(-6).reverse().map((e, i) => (
               <div key={e.id ?? i} className="flex items-center gap-2 shrink-0" style={{ opacity: 1 - i * 0.15 }}>
                 <span
-                  className="text-xs font-bold px-2 py-0.5 rounded"
+                  className="text-sm font-bold px-2 py-0.5 rounded"
                   style={{ color: e.effect >= 0 ? GAIN : LOSS, background: e.effect >= 0 ? "rgba(91,206,138,.1)" : "rgba(232,105,106,.1)" }}
                 >
                   {e.effect >= 0 ? "▲" : "▼"}
                 </span>
                 <span className="text-sm text-foreground whitespace-nowrap">{e.text}</span>
                 {e.category && (
-                  <span className="text-[9px] font-bold uppercase tracking-widest px-1.5 py-0.5 rounded" style={{ color: BLUE, background: "rgba(124,138,244,.1)" }}>
+                  <span className="text-xs font-bold uppercase tracking-widest px-1.5 py-0.5 rounded" style={{ color: BLUE, background: "rgba(124,138,244,.1)" }}>
                     {e.category}
                   </span>
                 )}
-                {e.weight >= 3 && <span className="text-[9px] font-bold tracking-wider" style={{ color: NEUT }}>HIGH IMPACT</span>}
+                {e.weight >= 3 && <span className="text-xs font-bold tracking-wider" style={{ color: NEUT }}>HIGH IMPACT</span>}
               </div>
             ))}
           </div>
@@ -933,7 +933,7 @@ export default function MarketPage() {
                     <th
                       key={col.key}
                       className={cn(
-                        "px-3 py-3 text-[10px] font-medium text-muted-foreground uppercase tracking-widest select-none",
+                        "px-3 py-3 text-xs font-medium text-muted-foreground uppercase tracking-widest select-none",
                         col.align === "right" && "text-right",
                         col.align === "left"  && "text-left",
                         !["name","spread"].includes(col.key) && "cursor-pointer hover:text-foreground transition-colors"
@@ -964,40 +964,40 @@ export default function MarketPage() {
                         s.halted && "opacity-60"
                       )}
                     >
-                      <td className="px-3 py-3">
+                      <td className="px-3 py-3.5">
                         <div className="flex items-center gap-1.5">
-                          <span className="font-bold font-mono text-xs text-foreground">{t}</span>
-                          {s.halted && <AlertTriangle className="w-3 h-3" style={{ color: LOSS }} />}
+                          <span className="font-bold font-mono text-sm text-foreground">{t}</span>
+                          {s.halted && <AlertTriangle className="w-3.5 h-3.5" style={{ color: LOSS }} />}
                         </div>
                       </td>
-                      <td className="px-3 py-3 text-muted-foreground text-xs max-w-[140px] truncate">{s.name}</td>
-                      <td className="px-3 py-3 text-right">
-                        <div className="font-semibold font-mono text-sm tabular-nums text-foreground">{s.price.toFixed(2)}</div>
-                        <div className="text-[9px] font-mono text-muted-foreground tabular-nums">
+                      <td className="px-3 py-3.5 text-muted-foreground text-sm max-w-[180px] truncate">{s.name}</td>
+                      <td className="px-3 py-3.5 text-right">
+                        <div className="font-semibold font-mono text-base tabular-nums text-foreground">{s.price.toFixed(2)}</div>
+                        <div className="text-xs font-mono text-muted-foreground tabular-nums">
                           {s.bid.toFixed(2)}/{s.ask.toFixed(2)}
                         </div>
                       </td>
-                      <td className="px-3 py-3 text-right">
-                        <span className="inline-flex items-center gap-1 font-semibold font-mono text-xs tabular-nums" style={{ color: up ? GAIN : LOSS }}>
-                          {up ? <TrendingUp className="w-3 h-3" /> : <TrendingDown className="w-3 h-3" />}
+                      <td className="px-3 py-3.5 text-right">
+                        <span className="inline-flex items-center gap-1 font-semibold font-mono text-sm tabular-nums" style={{ color: up ? GAIN : LOSS }}>
+                          {up ? <TrendingUp className="w-3.5 h-3.5" /> : <TrendingDown className="w-3.5 h-3.5" />}
                           {up ? "+" : ""}{s.change.toFixed(2)}%
                         </span>
                       </td>
-                      <td className="px-3 py-3 text-right font-mono text-xs text-muted-foreground tabular-nums">
+                      <td className="px-3 py-3.5 text-right font-mono text-sm text-muted-foreground tabular-nums">
                         {fmtVol(s.volume)}
                       </td>
-                      <td className="px-3 py-3 text-right">
-                        <span className="text-xs font-mono tabular-nums" style={{ color: s.rsi > 70 ? LOSS : s.rsi < 30 ? GAIN : NEUT }}>
+                      <td className="px-3 py-3.5 text-right">
+                        <span className="text-sm font-mono tabular-nums" style={{ color: s.rsi > 70 ? LOSS : s.rsi < 30 ? GAIN : NEUT }}>
                           {s.rsi.toFixed(0)}
                         </span>
                       </td>
-                      <td className="px-3 py-3 text-right">
-                        <span className="text-[10px] font-mono tabular-nums" style={{ color: s.spreadPct > 0.5 ? LOSS : DIM }}>
+                      <td className="px-3 py-3.5 text-right">
+                        <span className="text-xs font-mono tabular-nums" style={{ color: s.spreadPct > 0.5 ? LOSS : DIM }}>
                           {(s.spreadPct || 0).toFixed(2)}%
                         </span>
                       </td>
-                      <td className="px-3 py-3 text-right">
-                        <span className="text-muted-foreground text-xs">›</span>
+                      <td className="px-3 py-3.5 text-right">
+                        <span className="text-muted-foreground text-sm">›</span>
                       </td>
                     </tr>
                   )
@@ -1008,10 +1008,10 @@ export default function MarketPage() {
         </div>
 
         {/* Right sidebar */}
-        <div className="w-52 shrink-0 space-y-5">
+        <div className="w-64 shrink-0 space-y-5">
           {/* Sectors */}
           <div>
-            <p className="text-[10px] text-muted-foreground uppercase tracking-widest mb-3">Sectors</p>
+            <p className="text-xs text-muted-foreground uppercase tracking-widest mb-3">Sectors</p>
             <div className="space-y-1.5">
               {sectorList.map(([k, v]) => {
                 const up = v.avgChange >= 0
@@ -1022,13 +1022,13 @@ export default function MarketPage() {
                     key={k}
                     onClick={() => { setFilter(k === filter ? "all" : k); setSearch("") }}
                     className={cn(
-                      "w-full p-2 rounded-lg border text-left transition-all cursor-pointer",
+                      "w-full p-2.5 rounded-lg border text-left transition-all cursor-pointer",
                       filter === k ? "bg-card border-ring/40" : "bg-card/40 border-border hover:bg-card"
                     )}
                   >
                     <div className="flex justify-between items-center mb-1">
-                      <span className="text-xs text-foreground">{v.icon} {v.label}</span>
-                      <span className="text-[10px] font-semibold font-mono tabular-nums" style={{ color: up ? GAIN : LOSS }}>
+                      <span className="text-sm text-foreground">{v.icon} {v.label}</span>
+                      <span className="text-xs font-semibold font-mono tabular-nums" style={{ color: up ? GAIN : LOSS }}>
                         {up ? "+" : ""}{v.avgChange.toFixed(2)}%
                       </span>
                     </div>
@@ -1045,14 +1045,14 @@ export default function MarketPage() {
 
           {/* Top movers */}
           <div>
-            <p className="text-[10px] text-muted-foreground uppercase tracking-widest mb-3">Top Movers</p>
+            <p className="text-xs text-muted-foreground uppercase tracking-widest mb-3">Top Movers</p>
             <div className="space-y-1.5">
               <button
                 onClick={() => openDetail(market.topGainer.ticker)}
                 className="w-full flex justify-between items-center px-3 py-2.5 bg-card/40 border border-border rounded-lg hover:bg-card transition-colors cursor-pointer"
               >
-                <span className="text-xs text-muted-foreground">Gainer</span>
-                <span className="text-xs font-semibold font-mono" style={{ color: GAIN }}>
+                <span className="text-sm text-muted-foreground">Gainer</span>
+                <span className="text-sm font-semibold font-mono" style={{ color: GAIN }}>
                   {market.topGainer.ticker} +{market.topGainer.pct}%
                 </span>
               </button>
@@ -1060,8 +1060,8 @@ export default function MarketPage() {
                 onClick={() => openDetail(market.topLoser.ticker)}
                 className="w-full flex justify-between items-center px-3 py-2.5 bg-card/40 border border-border rounded-lg hover:bg-card transition-colors cursor-pointer"
               >
-                <span className="text-xs text-muted-foreground">Loser</span>
-                <span className="text-xs font-semibold font-mono" style={{ color: LOSS }}>
+                <span className="text-sm text-muted-foreground">Loser</span>
+                <span className="text-sm font-semibold font-mono" style={{ color: LOSS }}>
                   {market.topLoser.ticker} {market.topLoser.pct}%
                 </span>
               </button>
@@ -1072,7 +1072,7 @@ export default function MarketPage() {
 
           {/* Macro */}
           <div>
-            <p className="text-[10px] text-muted-foreground uppercase tracking-widest mb-3">Macro</p>
+            <p className="text-xs text-muted-foreground uppercase tracking-widest mb-3">Macro</p>
             <div className="space-y-1.5">
               {[
                 ["Rate",      `${market.interestRate?.toFixed(2) ?? "—"}%`],
@@ -1080,9 +1080,9 @@ export default function MarketPage() {
                 ["GDP",       `${market.gdpGrowth?.toFixed(2) ?? "—"}%`],
                 ["VIX",       (market.vix ?? 18).toFixed(1)],
               ].map(([label, val], i) => (
-                <div key={i} className="flex justify-between items-center px-3 py-2 bg-card/40 border border-border rounded-lg">
-                  <span className="text-xs text-muted-foreground">{label}</span>
-                  <span className="text-xs font-semibold font-mono text-foreground tabular-nums">{val}</span>
+                <div key={i} className="flex justify-between items-center px-3 py-2.5 bg-card/40 border border-border rounded-lg">
+                  <span className="text-sm text-muted-foreground">{label}</span>
+                  <span className="text-sm font-semibold font-mono text-foreground tabular-nums">{val}</span>
                 </div>
               ))}
             </div>
