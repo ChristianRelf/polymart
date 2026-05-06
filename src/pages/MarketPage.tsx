@@ -3,7 +3,8 @@ import { Badge } from "@/components/ui/badge"
 import { Input } from "@/components/ui/input"
 import { Separator } from "@/components/ui/separator"
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs"
-import { ArrowLeft, TrendingUp, TrendingDown, Search, ChevronUp, ChevronDown, Activity, ChartBar as BarChart2, BookOpen, Zap, TriangleAlert as AlertTriangle } from "lucide-react"
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
+import { ArrowLeft, TrendingUp, TrendingDown, Search, ChevronUp, ChevronDown, Activity, ChartBar as BarChart2, BookOpen, Zap, TriangleAlert as AlertTriangle, SlidersHorizontal, Check } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { useSimulation } from "@/lib/SimulationContext"
 import type { StockDetail, Candle } from "@/lib/SimulationContext"
@@ -749,6 +750,12 @@ export default function MarketPage() {
   const [filter, setFilter]   = useState("all")
   const [sort, setSort]       = useState("ticker")
   const [sortDir, setSortDir] = useState<"asc" | "desc">("asc")
+  const [visibleCols, setVisibleCols] = useState<Record<string, boolean>>({
+    name: true, price: true, change: true, volume: true, rsi: true, spread: true,
+  })
+
+  const toggleCol = (key: string) =>
+    setVisibleCols(prev => ({ ...prev, [key]: !prev[key] }))
 
   useEffect(() => {
     if (detail && view === "detail") {
@@ -914,6 +921,37 @@ export default function MarketPage() {
                 <option key={k} value={k}>{v.icon} {v.label}</option>
               ))}
             </select>
+
+            {/* Column visibility toggle */}
+            <Popover>
+              <PopoverTrigger asChild>
+                <button className="h-9 px-3 flex items-center gap-1.5 bg-card border border-border rounded-lg text-xs text-muted-foreground hover:text-foreground transition-colors cursor-pointer">
+                  <SlidersHorizontal className="w-3.5 h-3.5" />
+                  <span>Columns</span>
+                </button>
+              </PopoverTrigger>
+              <PopoverContent align="start" className="w-44 p-2 bg-card border-border">
+                <p className="text-[10px] text-muted-foreground uppercase tracking-widest px-2 pb-2">Toggle columns</p>
+                {[
+                  { key: "name",   label: "Name" },
+                  { key: "price",  label: "Price" },
+                  { key: "change", label: "Change %" },
+                  { key: "volume", label: "Volume" },
+                  { key: "rsi",    label: "RSI" },
+                  { key: "spread", label: "Spread" },
+                ].map(col => (
+                  <button
+                    key={col.key}
+                    onClick={() => toggleCol(col.key)}
+                    className="w-full flex items-center justify-between px-2 py-1.5 rounded text-sm text-foreground hover:bg-accent transition-colors cursor-pointer bg-transparent border-0"
+                  >
+                    <span>{col.label}</span>
+                    {visibleCols[col.key] && <Check className="w-3.5 h-3.5 text-emerald-400" />}
+                  </button>
+                ))}
+              </PopoverContent>
+            </Popover>
+
             <span className="text-xs text-muted-foreground ml-auto">{sortedStocks.length} stocks</span>
           </div>
 
@@ -922,14 +960,14 @@ export default function MarketPage() {
               <thead>
                 <tr className="border-b border-border bg-card/60">
                   {[
-                    { key: "ticker", label: "Ticker", align: "left" },
-                    { key: "name",   label: "Name",   align: "left" },
-                    { key: "price",  label: "Price",  align: "right" },
-                    { key: "change", label: "Chg%",   align: "right" },
-                    { key: "volume", label: "Volume", align: "right" },
-                    { key: "rsi",    label: "RSI",    align: "right" },
-                    { key: "spread", label: "Spread", align: "right" },
-                  ].map(col => (
+                    { key: "ticker", label: "Ticker", align: "left",  always: true },
+                    { key: "name",   label: "Name",   align: "left",  always: false },
+                    { key: "price",  label: "Price",  align: "right", always: false },
+                    { key: "change", label: "Chg%",   align: "right", always: false },
+                    { key: "volume", label: "Volume", align: "right", always: false },
+                    { key: "rsi",    label: "RSI",    align: "right", always: false },
+                    { key: "spread", label: "Spread", align: "right", always: false },
+                  ].filter(col => col.always || visibleCols[col.key]).map(col => (
                     <th
                       key={col.key}
                       className={cn(
@@ -970,32 +1008,42 @@ export default function MarketPage() {
                           {s.halted && <AlertTriangle className="w-3.5 h-3.5" style={{ color: LOSS }} />}
                         </div>
                       </td>
-                      <td className="px-3 py-3.5 text-muted-foreground text-sm max-w-[180px] truncate">{s.name}</td>
-                      <td className="px-3 py-3.5 text-right">
-                        <div className="font-semibold font-mono text-base tabular-nums text-foreground">{s.price.toFixed(2)}</div>
-                        <div className="text-xs font-mono text-muted-foreground tabular-nums">
-                          {s.bid.toFixed(2)}/{s.ask.toFixed(2)}
-                        </div>
-                      </td>
-                      <td className="px-3 py-3.5 text-right">
-                        <span className="inline-flex items-center gap-1 font-semibold font-mono text-sm tabular-nums" style={{ color: up ? GAIN : LOSS }}>
-                          {up ? <TrendingUp className="w-3.5 h-3.5" /> : <TrendingDown className="w-3.5 h-3.5" />}
-                          {up ? "+" : ""}{s.change.toFixed(2)}%
-                        </span>
-                      </td>
-                      <td className="px-3 py-3.5 text-right font-mono text-sm text-muted-foreground tabular-nums">
-                        {fmtVol(s.volume)}
-                      </td>
-                      <td className="px-3 py-3.5 text-right">
-                        <span className="text-sm font-mono tabular-nums" style={{ color: s.rsi > 70 ? LOSS : s.rsi < 30 ? GAIN : NEUT }}>
-                          {s.rsi.toFixed(0)}
-                        </span>
-                      </td>
-                      <td className="px-3 py-3.5 text-right">
-                        <span className="text-xs font-mono tabular-nums" style={{ color: s.spreadPct > 0.5 ? LOSS : DIM }}>
-                          {(s.spreadPct || 0).toFixed(2)}%
-                        </span>
-                      </td>
+                      {visibleCols.name    && <td className="px-3 py-3.5 text-muted-foreground text-sm max-w-[180px] truncate">{s.name}</td>}
+                      {visibleCols.price   && (
+                        <td className="px-3 py-3.5 text-right">
+                          <div className="font-semibold font-mono text-base tabular-nums text-foreground">{s.price.toFixed(2)}</div>
+                          <div className="text-xs font-mono text-muted-foreground tabular-nums">
+                            {s.bid.toFixed(2)}/{s.ask.toFixed(2)}
+                          </div>
+                        </td>
+                      )}
+                      {visibleCols.change  && (
+                        <td className="px-3 py-3.5 text-right">
+                          <span className="inline-flex items-center gap-1 font-semibold font-mono text-sm tabular-nums" style={{ color: up ? GAIN : LOSS }}>
+                            {up ? <TrendingUp className="w-3.5 h-3.5" /> : <TrendingDown className="w-3.5 h-3.5" />}
+                            {up ? "+" : ""}{s.change.toFixed(2)}%
+                          </span>
+                        </td>
+                      )}
+                      {visibleCols.volume  && (
+                        <td className="px-3 py-3.5 text-right font-mono text-sm text-muted-foreground tabular-nums">
+                          {fmtVol(s.volume)}
+                        </td>
+                      )}
+                      {visibleCols.rsi     && (
+                        <td className="px-3 py-3.5 text-right">
+                          <span className="text-sm font-mono tabular-nums" style={{ color: s.rsi > 70 ? LOSS : s.rsi < 30 ? GAIN : NEUT }}>
+                            {s.rsi.toFixed(0)}
+                          </span>
+                        </td>
+                      )}
+                      {visibleCols.spread  && (
+                        <td className="px-3 py-3.5 text-right">
+                          <span className="text-xs font-mono tabular-nums" style={{ color: s.spreadPct > 0.5 ? LOSS : DIM }}>
+                            {(s.spreadPct || 0).toFixed(2)}%
+                          </span>
+                        </td>
+                      )}
                       <td className="px-3 py-3.5 text-right">
                         <span className="text-muted-foreground text-sm">›</span>
                       </td>

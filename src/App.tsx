@@ -7,9 +7,10 @@ import HomePage from "@/pages/HomePage"
 import MarketPage from "@/pages/MarketPage"
 import ApiDocsPage from "@/pages/ApiDocsPage"
 import LegalPage from "@/pages/LegalPage"
+import ChangelogPage from "@/pages/ChangelogPage"
 
 // ── Routing ───────────────────────────────────────────────────────────────────
-export type Route = "home" | "market" | "api" | "terms" | "privacy"
+export type Route = "home" | "market" | "api" | "terms" | "privacy" | "changelog"
 
 const HASH_MAP: Record<string, Route> = {
   "": "home",
@@ -19,6 +20,7 @@ const HASH_MAP: Record<string, Route> = {
   "/api": "api",        // legacy redirect
   "/docs/terms": "terms",
   "/docs/privacy": "privacy",
+  "/changelog": "changelog",
 }
 
 const ROUTE_HASH: Record<Route, string> = {
@@ -27,6 +29,7 @@ const ROUTE_HASH: Record<Route, string> = {
   api: "/docs/api",
   terms: "/docs/terms",
   privacy: "/docs/privacy",
+  changelog: "/changelog",
 }
 
 function getRoute(): Route {
@@ -175,7 +178,7 @@ function Footer({ setRoute }: { setRoute: (r: Route) => void }) {
   return (
     <footer className="border-t border-border mt-auto bg-card/30">
       <div className="max-w-[1600px] mx-auto px-8 py-12">
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-10 mb-10">
+        <div className="grid grid-cols-1 sm:grid-cols-4 gap-10 mb-10">
 
           {/* Brand */}
           <div>
@@ -203,6 +206,19 @@ function Footer({ setRoute }: { setRoute: (r: Route) => void }) {
                   {label}
                 </button>
               ))}
+            </div>
+          </div>
+
+          {/* Updates */}
+          <div>
+            <p className="text-[10px] text-muted-foreground uppercase tracking-widest mb-4">Updates</p>
+            <div className="flex flex-col gap-2.5">
+              <button
+                onClick={() => go("changelog")}
+                className="text-xs text-muted-foreground hover:text-foreground transition-colors text-left cursor-pointer bg-transparent border-0 p-0 w-fit"
+              >
+                Changelog
+              </button>
             </div>
           </div>
 
@@ -234,6 +250,12 @@ function Footer({ setRoute }: { setRoute: (r: Route) => void }) {
             © 2026 POLYMART. All simulation data is fictional.
           </p>
           <div className="flex gap-4">
+            <button
+              onClick={() => go("changelog")}
+              className="text-xs text-muted-foreground hover:text-foreground transition-colors cursor-pointer bg-transparent border-0 p-0"
+            >
+              Changelog
+            </button>
             <button
               onClick={() => go("terms")}
               className="text-xs text-muted-foreground hover:text-foreground transition-colors cursor-pointer bg-transparent border-0 p-0"
@@ -274,8 +296,9 @@ export default function App() {
           {route === "home"    && <HomePage    onNavigate={go} />}
           {route === "market"  && <MarketPage  />}
           {route === "api"     && <ApiDocsPage />}
-          {route === "terms"   && <LegalPage   type="terms"   onNavigate={go} />}
-          {route === "privacy" && <LegalPage   type="privacy" onNavigate={go} />}
+          {route === "terms"     && <LegalPage      type="terms"   onNavigate={go} />}
+          {route === "privacy"   && <LegalPage      type="privacy" onNavigate={go} />}
+          {route === "changelog" && <ChangelogPage  onNavigate={go} />}
         </main>
 
         <Footer setRoute={setRoute} />
