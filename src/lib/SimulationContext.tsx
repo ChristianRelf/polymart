@@ -12,6 +12,11 @@ export type MarketOverview = {
   indexChangePct: number
   fearGreed: number
   fearGreedLabel: string
+  vix: number
+  marketSession: string
+  advanceDecline: number
+  newHighs: number
+  newLows: number
   interestRate: number
   inflation: number
   gdpGrowth: number
@@ -34,12 +39,41 @@ export type StockSummary = {
   price: number
   change: number
   volume: number
+  buyVolume: number
+  sellVolume: number
+  orderFlow: number
   rsi: number
   streak: number
   hi52w: number
   lo52w: number
+  bid: number
+  ask: number
+  spreadPct: number
+  vwap: number
+  session: string
+  halted: boolean
+  atr: number
+  beta: number
+  macd: number
+  macdSignal: number
+  macdHist: number
+  bbUpper: number
+  bbMiddle: number
+  bbLower: number
+  bbBw: number
+  sma20: number
+  sma50: number
   volatility: number | null
   trend: number | null
+}
+
+export type Candle = {
+  o: number
+  h: number
+  l: number
+  c: number
+  v: number
+  t: number
 }
 
 export type StockDetail = {
@@ -56,13 +90,36 @@ export type StockDetail = {
   low52w: number
   allTimeHigh: number
   volume: number
+  buyVolume: number
+  sellVolume: number
+  orderFlow: number
+  bid: number
+  ask: number
+  spreadPct: number
+  vwap: number
+  session: string
+  halted: boolean
   rsi: number
   momentum: number
   streak: number
   insiderBias: number
+  beta: number
+  atr: number
+  ema12: number
+  ema26: number
+  macd: number
+  macdSignal: number
+  macdHist: number
+  bbUpper: number
+  bbMiddle: number
+  bbLower: number
+  bbBw: number
+  sma20: number
+  sma50: number
   volatility: number | null
   trend: number | null
   history: number[]
+  candles: Candle[]
   sectorPeers: string[]
   updatedAt: string
 }
@@ -71,6 +128,8 @@ export type SectorInfo = {
   label: string
   icon: string
   avgChange: number
+  avgRsi: number
+  avgBeta: number
   newsStack: number
   momentum: number
   tickers: string[]
@@ -82,6 +141,7 @@ export type MarketEvent = {
   text: string
   effect: number
   sector: string | null
+  category: string | null
   weight: number
   firedAt: string
 }
