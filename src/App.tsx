@@ -94,6 +94,8 @@ function TickCountdown({ intervalMs = 10_000 }: { intervalMs?: number }) {
           strokeLinecap="round"
           className="stroke-emerald-400 transition-[stroke-dashoffset] duration-[50ms] ease-linear"
         />
+       </svg>
+    </div>
   )
 }
 
