@@ -43,9 +43,19 @@ async function applySchema() {
     });
   const conn = await pool.getConnection();
   try {
+    // Log current user and grants for diagnosis
+    const [[userRow]] = await conn.query("SELECT CURRENT_USER() AS u");
+    console.log("[polymart] Connected as:", userRow.u);
+    const [grants] = await conn.query("SHOW GRANTS FOR CURRENT_USER()");
+    console.log("[polymart] Grants:", grants.map(r => Object.values(r)[0]).join(" | "));
+
     for (const stmt of statements) {
       await conn.query(stmt);
     }
+
+    // Confirm tables exist
+    const [tables] = await conn.query("SHOW TABLES");
+    console.log("[polymart] Tables after schema:", tables.map(r => Object.values(r)[0]).join(", "));
     console.log("[polymart] Schema applied.");
   } catch (err) {
     console.error("[polymart] Schema error:", err.message);
