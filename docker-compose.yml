@@ -18,7 +18,7 @@ services:
       # Enable event scheduler for 7-day purge
       - ./mysql-config/polymart.cnf:/etc/mysql/conf.d/polymart.cnf:ro
     healthcheck:
-      test: ["CMD", "mysqladmin", "ping", "-h", "127.0.0.1", "-u", "polymart", "--password=${DB_PASSWORD:-polymart_password}"]
+      test: ["CMD-SHELL", "mysqladmin ping -h 127.0.0.1 -u root -p$$MYSQL_ROOT_PASSWORD --silent"]
       interval: 10s
       timeout: 5s
       retries: 10

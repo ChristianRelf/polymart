@@ -37,7 +37,7 @@ async function waitForDb(retries = 30, delayMs = 2000) {
   throw new Error("Could not connect to MySQL after multiple retries. Exiting.");
 }
 
-const PORT = parseInt(process.env.PORT || "3000");
+const PORT = parseInt(process.env.PORT || "4000");
 
 waitForDb().then(() => {
   app.listen(PORT, "0.0.0.0", () => {
