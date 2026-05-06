@@ -866,7 +866,7 @@ export default function MarketPage() {
       {/* Events ticker */}
       {events.length > 0 && (
         <div className="bg-card border border-border rounded-xl px-6 py-3 mb-6 overflow-hidden">
-          <div className="flex items-center gap-8 overflow-x-auto">
+          <div className="flex items-center gap-8 overflow-x-auto" style={{ msOverflowStyle: "none", scrollbarWidth: "none" }}>
             <span className="text-xs font-semibold text-muted-foreground uppercase tracking-widest shrink-0 flex items-center gap-1.5">
               <Zap className="w-3.5 h-3.5" /> Events
             </span>

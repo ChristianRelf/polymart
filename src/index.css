@@ -166,5 +166,8 @@
 ::-webkit-scrollbar-track { background: transparent; }
 ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
 
+/* Hide scrollbar on events ticker */
+.scrollbar-none::-webkit-scrollbar { display: none; }
+
 /* details summary arrow hide */
 details > summary::-webkit-details-marker { display: none; }
