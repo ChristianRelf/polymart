@@ -22,21 +22,34 @@ app.get("*", (_req, res) => {
   res.sendFile(path.join(distPath, "index.html"));
 });
 
-// Apply schema.sql idempotently so tables always exist regardless of initdb.d
+// Apply only the CREATE TABLE statements idempotently.
+// Skips DDL that requires elevated privileges (CREATE DATABASE, USE, CREATE EVENT).
 async function applySchema() {
   const schemaPath = path.join(__dirname, "schema.sql");
   const sql = fs.readFileSync(schemaPath, "utf8");
-  // Split on semicolons, skip empty/comment-only statements
   const statements = sql
     .split(";")
     .map(s => s.trim())
-    .filter(s => s.length > 0 && !s.startsWith("--"));
+    .filter(s => {
+      if (!s || s.startsWith("--")) return false;
+      const upper = s.toUpperCase();
+      // Skip anything that needs root/elevated privileges or switches DB context
+      if (upper.startsWith("CREATE DATABASE")) return false;
+      if (upper.startsWith("USE ")) return false;
+      if (upper.startsWith("DROP EVENT")) return false;
+      if (upper.startsWith("CREATE EVENT")) return false;
+      if (upper.startsWith("SET GLOBAL")) return false;
+      return true;
+    });
   const conn = await pool.getConnection();
   try {
     for (const stmt of statements) {
       await conn.query(stmt);
     }
     console.log("[polymart] Schema applied.");
+  } catch (err) {
+    console.error("[polymart] Schema error:", err.message);
+    throw err;
   } finally {
     conn.release();
   }
