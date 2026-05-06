@@ -22,18 +22,20 @@ app.get("*", (_req, res) => {
   res.sendFile(path.join(distPath, "index.html"));
 });
 
-// Apply only the CREATE TABLE statements idempotently.
-// Skips DDL that requires elevated privileges (CREATE DATABASE, USE, CREATE EVENT).
+// Apply schema by stripping -- comments then splitting on ; to get real statements.
 async function applySchema() {
   const schemaPath = path.join(__dirname, "schema.sql");
-  const sql = fs.readFileSync(schemaPath, "utf8");
-  const statements = sql
+  const raw = fs.readFileSync(schemaPath, "utf8");
+
+  // Remove single-line comments (-- ...) so they don't pollute statement detection
+  const stripped = raw.replace(/--[^\n]*/g, "");
+
+  const statements = stripped
     .split(";")
     .map(s => s.trim())
     .filter(s => {
-      if (!s || s.startsWith("--")) return false;
+      if (!s) return false;
       const upper = s.toUpperCase();
-      // Skip anything that needs root/elevated privileges or switches DB context
       if (upper.startsWith("CREATE DATABASE")) return false;
       if (upper.startsWith("USE ")) return false;
       if (upper.startsWith("DROP EVENT")) return false;
@@ -41,22 +43,14 @@ async function applySchema() {
       if (upper.startsWith("SET GLOBAL")) return false;
       return true;
     });
+
   const conn = await pool.getConnection();
   try {
-    // Log current user and grants for diagnosis
-    const [[userRow]] = await conn.query("SELECT CURRENT_USER() AS u");
-    console.log("[polymart] Connected as:", userRow.u);
-    const [grants] = await conn.query("SHOW GRANTS FOR CURRENT_USER()");
-    console.log("[polymart] Grants:", grants.map(r => Object.values(r)[0]).join(" | "));
-
     for (const stmt of statements) {
       await conn.query(stmt);
     }
-
-    // Confirm tables exist
     const [tables] = await conn.query("SHOW TABLES");
-    console.log("[polymart] Tables after schema:", tables.map(r => Object.values(r)[0]).join(", "));
-    console.log("[polymart] Schema applied.");
+    console.log("[polymart] Schema applied. Tables:", tables.map(r => Object.values(r)[0]).join(", "));
   } catch (err) {
     console.error("[polymart] Schema error:", err.message);
     throw err;
