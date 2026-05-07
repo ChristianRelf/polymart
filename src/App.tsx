@@ -213,7 +213,7 @@ function Footer({ setRoute }: { setRoute: (r: Route) => void }) {
     <footer className="border-t border-border mt-auto">
       {/* Main footer body */}
       <div className="max-w-[1600px] mx-auto px-8 py-12">
-        <div className="grid grid-cols-1 lg:grid-cols-[1fr_auto] gap-12">
+        <div className="grid grid-cols-1 lg:grid-cols-[1fr_auto] gap-2">
 
           {/* Left: brand + nav columns */}
           <div className="grid grid-cols-1 sm:grid-cols-[auto_1fr_1fr_1fr] gap-10">
