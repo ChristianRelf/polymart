@@ -1,0 +1,328 @@
+# Polymart API — AI-Readable Reference
+# https://polymart.co/llms.txt
+# Format: llms.txt v1 (https://llmstxt.org)
+#
+# Polymart is a persistent simulated stock market with 132 fictional tickers
+# across 20 sectors. All data is entirely fictional — not financial advice.
+# The simulation ticks every 3 seconds. No API key or authentication required.
+
+> Polymart is a simulated stock exchange accessible via an open REST API.
+> All endpoints are GET requests returning JSON. Base URL: https://polymart.co
+> No authentication. No rate limit for normal usage (60 req/min per IP).
+> Prices update every 3 seconds via a server-side simulation engine.
+
+---
+
+## Overview
+
+- Base URL: https://polymart.co
+- All endpoints: GET, returning JSON
+- Authentication: none required
+- Tick interval: 3 seconds (prices update every tick)
+- Stocks: 132 tickers across 20 sectors
+- History: up to 400 price points per stock (oldest first)
+
+---
+
+## Endpoints
+
+### GET /api/v1/getMarket
+Global market snapshot — index value, fear & greed, macro variables, movers.
+
+Response fields:
+- index (number): Current market index value
+- indexChange (number): Absolute change from previous tick
+- indexChangePct (number): Percentage change from previous tick
+- fearGreed (number): Fear & Greed score, 0–100
+- fearGreedLabel (string): One of: Extreme Fear, Fear, Cautious, Neutral, Greed, High Greed, Extreme Greed
+- interestRate (number): Simulated interest rate (%)
+- inflation (number): Simulated inflation rate (%)
+- gdpGrowth (number): Simulated GDP growth rate (%)
+- gainers (number): Stocks with positive tick change
+- losers (number): Stocks with negative tick change
+- unchanged (number): Flat stocks this tick
+- totalStocks (number): Total stocks in the simulation
+- topGainer (object {ticker, pct}): Biggest gainer this tick
+- topLoser (object {ticker, pct}): Biggest loser this tick
+- upStreak (number): Consecutive index up-ticks
+- downStreak (number): Consecutive index down-ticks
+- tickCount (number): Total ticks since simulation started
+- updatedAt (ISO 8601): Timestamp of last tick
+
+Example: https://polymart.co/api/v1/getMarket
+
+---
+
+### GET /api/v1/getStocks
+All 132 stocks as a map keyed by ticker symbol. Optional sector filter.
+
+Query parameters:
+- sector (string, optional): Filter by sector key (e.g. tech, crypto, ai)
+
+Response: object keyed by ticker symbol (e.g. "APEX"), each value containing:
+- name (string): Company name
+- sector (string): Sector key
+- mcap (string): Market cap tier — large | mid | small
+- price (number): Current price
+- change (number): % change from previous tick
+- volume (number): Cumulative simulated volume
+- rsi (number): Relative Strength Index, 0–100
+- streak (number): Consecutive up (+) or down (−) ticks
+- hi52w (number): 52-week simulated high
+- lo52w (number): 52-week simulated low
+- volatility (number): Base volatility coefficient
+- trend (number): Directional trend bias
+
+Example: https://polymart.co/api/v1/getStocks
+Example (filtered): https://polymart.co/api/v1/getStocks?sector=crypto
+
+---
+
+### GET /api/v1/getStock
+Full detail for a single stock, including price history and sector peers.
+
+Query parameters:
+- ticker (string, required): Ticker symbol, case-insensitive (e.g. APEX)
+
+Response fields:
+- ticker (string): Ticker symbol
+- name (string): Company name
+- sector (string): Sector key
+- mcap (string): Market cap tier
+- price (number): Current price
+- previousPrice (number): Price at previous tick
+- openPrice (number): Price at simulation open
+- change (number): % change tick-over-tick
+- changeSinceOpen (number): % change from open price
+- high52w (number): 52-week high
+- low52w (number): 52-week low
+- allTimeHigh (number): All-time simulated high
+- volume (number): Cumulative volume
+- rsi (number): RSI, 0–100
+- momentum (number): Price momentum factor
+- streak (number): Consecutive tick direction
+- insiderBias (number): Hidden insider pressure, −0.01 to 0.01
+- volatility (number): Volatility coefficient
+- trend (number): Directional trend bias
+- history (number[]): Price history, up to 400 entries, oldest first
+- sectorPeers (string[]): Tickers of other stocks in the same sector
+- updatedAt (ISO 8601): Timestamp of last update
+
+Example: https://polymart.co/api/v1/getStock?ticker=APEX
+
+---
+
+### GET /api/v1/getSectors
+All 20 sectors with average change, momentum, and news impact.
+
+Response: object keyed by sector key (e.g. "tech"), each value containing:
+- label (string): Human-readable sector name
+- icon (string): Emoji icon
+- avgChange (number): Average % change across sector stocks
+- newsStack (number): Accumulated news impact score (decays over time)
+- momentum (number): Sector price momentum
+- tickers (string[]): All ticker symbols in this sector
+- tickerCount (number): Number of stocks in sector
+
+Example: https://polymart.co/api/v1/getSectors
+
+---
+
+### GET /api/v1/getSector
+Full detail for a single sector including constituent stocks.
+
+Query parameters:
+- sector (string, required): Sector key (e.g. crypto)
+
+Response fields:
+- key (string): Sector key
+- label (string): Sector name
+- icon (string): Emoji icon
+- avgChange (number): Average % change
+- newsStack (number): News impact score
+- momentum (number): Sector momentum
+- stocks (object[]): Array of {ticker, name, price, change, volume, rsi}
+- updatedAt (ISO 8601): Timestamp of last update
+
+Example: https://polymart.co/api/v1/getSector?sector=crypto
+
+---
+
+### GET /api/v1/getEvents
+Recent market events — flash crashes, sector booms, FDA approvals, meme frenzies, etc.
+
+Query parameters:
+- limit (number, optional): Max events to return, 1–30, default 10
+- sector (string, optional): Filter to events for a specific sector
+
+Response: array of event objects, each containing:
+- id (uuid): Unique event ID
+- text (string): Event description
+- effect (number): Price effect magnitude; negative = bearish
+- sector (string | null): Affected sector, or null for market-wide events
+- weight (number): Impact weight, 1–3
+- firedAt (ISO 8601): When the event fired
+
+Example: https://polymart.co/api/v1/getEvents?limit=5
+
+---
+
+### GET /api/v1/getTopMovers
+Top N gainers and top N losers by tick-over-tick % change.
+
+Query parameters:
+- limit (number, optional): Stocks per list, 1–20, default 5
+
+Response fields:
+- gainers (object[]): {ticker, name, sector, price, change, volume, rsi}, best first
+- losers (object[]): Same shape, worst first
+
+Example: https://polymart.co/api/v1/getTopMovers?limit=5
+
+---
+
+### GET /api/v1/getLeaderboard
+All stocks ranked by any numeric field. Good for Discord bot leaderboard commands.
+
+Query parameters:
+- by (string, optional): Sort field — change | price | volume | rsi | ath | streak; default: change
+- dir (string, optional): asc | desc; default: desc
+- limit (number, optional): Max results, 1–132; default: 10
+
+Response fields:
+- sortedBy (string): Field used for sorting
+- direction (string): asc or desc
+- count (number): Number of results returned
+- stocks (object[]): {ticker, name, sector, mcap, price, change, volume, rsi, ath, streak}
+
+Example: https://polymart.co/api/v1/getLeaderboard?by=change&limit=10
+
+---
+
+### GET /api/v1/getMacro
+Current macroeconomic environment variables.
+
+Response fields:
+- interestRate (number): Interest rate (%)
+- inflation (number): Inflation rate (%)
+- gdpGrowth (number): GDP growth rate (%)
+- fearGreed (number): Fear & Greed score, 0–100
+- fearGreedLabel (string): Sentiment label
+- crashCooldown (number): Ticks until next crash is possible; 0 = ready
+- boomCooldown (number): Ticks until next boom is possible; 0 = ready
+- updatedAt (ISO 8601): Timestamp of last update
+
+Example: https://polymart.co/api/v1/getMacro
+
+---
+
+### GET /api/v1/getHistory
+Raw price history for a single stock.
+
+Query parameters:
+- ticker (string, required): Ticker symbol (e.g. VOID)
+- limit (number, optional): Data points to return, 1–400; default: 100
+
+Response fields:
+- ticker (string): Ticker symbol
+- name (string): Company name
+- count (number): Number of data points returned
+- history (number[]): Price array, oldest first
+- updatedAt (ISO 8601): Timestamp of last update
+
+Example: https://polymart.co/api/v1/getHistory?ticker=VOID&limit=50
+
+---
+
+### GET /api/v1/search
+Full-text search across ticker symbols, company names, and sector keys.
+
+Query parameters:
+- q (string, required): Search query (matches ticker, name, or sector)
+
+Response fields:
+- query (string): The search query as submitted
+- count (number): Number of matching results
+- results (object[]): {ticker, name, sector, price, change}
+
+Example: https://polymart.co/api/v1/search?q=moon
+
+---
+
+### GET /api/v1/getHealth
+API health check — confirms simulation is running and reports data freshness.
+
+Response fields:
+- status (string): ok | uninitialised
+- tickCount (number): Total ticks completed
+- secondsSinceLastTick (number | null): Seconds elapsed since last tick wrote to DB
+- stale (boolean): true if last tick was more than 30 seconds ago
+- totalStocks (number): Total stocks defined in the simulation
+- totalSectors (number): Total sectors defined
+- updatedAt (ISO 8601 | null): Timestamp of last successful tick
+
+Example: https://polymart.co/api/v1/getHealth
+
+---
+
+## Valid Sector Keys
+
+tech, food, space, meme, green, finance, gaming, health, crypto, defence,
+retail, media, auto, realty, travel, ai, bio, energy, logistics, agri
+
+---
+
+## Usage Examples
+
+### Get the current price of a stock
+```
+GET https://polymart.co/api/v1/getStock?ticker=APEX
+```
+Returns full stock detail including history and sector peers.
+
+### Get a market overview
+```
+GET https://polymart.co/api/v1/getMarket
+```
+Returns index value, fear & greed score, macro variables, and top movers.
+
+### Get all crypto sector stocks
+```
+GET https://polymart.co/api/v1/getStocks?sector=crypto
+```
+
+### Get the top 5 gainers today
+```
+GET https://polymart.co/api/v1/getTopMovers?limit=5
+```
+
+### Search for a stock by name
+```
+GET https://polymart.co/api/v1/search?q=moon
+```
+
+### Get the last 50 price points for a stock
+```
+GET https://polymart.co/api/v1/getHistory?ticker=VOID&limit=50
+```
+
+### Rank all stocks by RSI descending
+```
+GET https://polymart.co/api/v1/getLeaderboard?by=rsi&dir=desc&limit=20
+```
+
+---
+
+## Notes for AI Assistants
+
+- All data is fictional simulation data. Do not present it as real financial data.
+- Prices update every 3 seconds. Responses are always the latest tick.
+- Tickers are uppercase strings (e.g. APEX, VOID, LUNATEK).
+- Sector keys are lowercase strings (e.g. tech, crypto, ai).
+- The `history` array in getStock and getHistory is ordered oldest-first.
+- RSI values follow standard interpretation: below 30 = oversold, above 70 = overbought.
+- The `streak` field: positive = consecutive up-ticks, negative = consecutive down-ticks.
+- `insiderBias` is a hidden simulation variable — it subtly nudges price direction.
+- `fearGreedLabel` maps to: 0–10 Extreme Fear, 11–25 Fear, 26–40 Cautious,
+  41–59 Neutral, 60–74 Greed, 75–89 High Greed, 90–100 Extreme Greed.
+- The human-readable API docs are at: https://polymart.co/#/docs/api

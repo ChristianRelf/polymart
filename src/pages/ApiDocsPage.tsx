@@ -4,7 +4,7 @@ import { Separator } from "@/components/ui/separator"
 import { cn } from "@/lib/utils"
 import {
   TrendingUp, Puzzle, Webhook, Bot, BookOpen, ChevronRight,
-  Circle, ArrowUpRight, Package, Zap,
+  Circle, ArrowUpRight, Package, Zap, Brain,
 } from "lucide-react"
 
 const BASE = "https://polymart.co"
@@ -797,14 +797,37 @@ function OverviewPanel({ onSelect }: { onSelect: (id: string) => void }) {
         })}
       </div>
 
-      <div className="bg-card border border-border rounded-xl p-6">
-        <p className="text-[10px] text-muted-foreground uppercase tracking-widest mb-1">Open by default</p>
-        <p className="text-sm font-semibold text-foreground mb-2">No API key required</p>
-        <p className="text-sm text-muted-foreground leading-relaxed">
-          The Polymart REST API is completely open. All endpoints are GET requests returning JSON —
-          no authentication headers, no rate limit tiers, no signup required.
-          Point any HTTP client at <code className="text-foreground font-mono text-xs bg-muted/50 px-1.5 py-0.5 rounded">https://polymart.co/api/v1</code> and go.
-        </p>
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+        <div className="bg-card border border-border rounded-xl p-6">
+          <p className="text-[10px] text-muted-foreground uppercase tracking-widest mb-1">Open by default</p>
+          <p className="text-sm font-semibold text-foreground mb-2">No API key required</p>
+          <p className="text-sm text-muted-foreground leading-relaxed">
+            The Polymart REST API is completely open. All endpoints are GET requests returning JSON —
+            no authentication headers, no rate limit tiers, no signup required.
+            Point any HTTP client at <code className="text-foreground font-mono text-xs bg-muted/50 px-1.5 py-0.5 rounded">https://polymart.co/api/v1</code> and go.
+          </p>
+        </div>
+
+        <a
+          href="/llms.txt"
+          target="_blank"
+          rel="noopener noreferrer"
+          className="group bg-card border border-border hover:border-ring/40 rounded-xl p-6 transition-colors no-underline flex flex-col gap-3"
+        >
+          <div className="flex items-center justify-between">
+            <div className="w-8 h-8 rounded-lg bg-muted/60 border border-border flex items-center justify-center">
+              <Brain className="w-4 h-4 text-muted-foreground group-hover:text-foreground transition-colors" />
+            </div>
+            <ArrowUpRight className="w-4 h-4 text-muted-foreground group-hover:text-foreground transition-colors" />
+          </div>
+          <div>
+            <p className="text-sm font-semibold text-foreground mb-1">AI-Readable Docs</p>
+            <p className="text-xs text-muted-foreground leading-relaxed">
+              Machine-readable <code className="text-foreground font-mono bg-muted/50 px-1 py-0.5 rounded">llms.txt</code> covering all endpoints, parameters, response fields, and usage examples — formatted for AI assistants and chatbots.
+            </p>
+          </div>
+          <p className="text-[10px] text-muted-foreground font-mono mt-auto">/llms.txt</p>
+        </a>
       </div>
     </div>
   )

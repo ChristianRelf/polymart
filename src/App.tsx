@@ -2,7 +2,7 @@ import { useState, useEffect, useRef } from "react"
 import { Button } from "@/components/ui/button"
 import { Separator } from "@/components/ui/separator"
 import { cn } from "@/lib/utils"
-import { Hop as Home, TrendingUp, Code as Code2, Layers, GraduationCap, Circle as HelpCircle, ShieldCheck, FileText, Bot, ArrowUpRight, Activity, X } from "lucide-react"
+import { Hop as Home, TrendingUp, Code as Code2, Layers, GraduationCap, Circle as HelpCircle, ShieldCheck, FileText, Bot, ArrowUpRight, Activity, X, Brain } from "lucide-react"
 import { SimulationProvider, useSimulation } from "@/lib/SimulationContext"
 import HomePage from "@/pages/HomePage"
 import MarketPage from "@/pages/MarketPage"
@@ -160,6 +160,12 @@ function Navbar({ route, setRoute }: { route: Route; setRoute: (r: Route) => voi
             </button>
           ))}
         </nav>
+
+        {isMarket && (
+          <div className="ml-auto hidden sm:flex">
+            <TickCountdown intervalMs={3_000} />
+          </div>
+        )}
       </div>
     </header>
   )
@@ -183,6 +189,28 @@ function FooterLink({
       <Icon className="w-3.5 h-3.5 shrink-0 text-muted-foreground/60 group-hover:text-foreground transition-colors" />
       {label}
     </button>
+  )
+}
+
+function FooterExternalLink({
+  icon: Icon,
+  label,
+  href,
+}: {
+  icon: React.ElementType
+  label: string
+  href: string
+}) {
+  return (
+    <a
+      href={href}
+      target="_blank"
+      rel="noopener noreferrer"
+      className="group flex items-center gap-2.5 text-sm text-muted-foreground hover:text-foreground transition-colors w-fit no-underline"
+    >
+      <Icon className="w-3.5 h-3.5 shrink-0 text-muted-foreground/60 group-hover:text-foreground transition-colors" />
+      {label}
+    </a>
   )
 }
 
@@ -226,6 +254,7 @@ function Footer({ setRoute }: { setRoute: (r: Route) => void }) {
                 <FooterLink icon={Code2}       label="API Reference" onClick={() => go("api")} />
                 <FooterLink icon={HelpCircle}  label="Help Center"   onClick={() => go("help")} />
                 <FooterLink icon={Activity}    label="Changelog"     onClick={() => go("changelog")} />
+                <FooterExternalLink icon={Brain} label="AI Docs (llms.txt)" href="/llms.txt" />
               </div>
             </div>
 
