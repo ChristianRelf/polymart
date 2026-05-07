@@ -71,7 +71,7 @@ const STATS = [
   { value: "132", label: "Simulated Stocks" },
   { value: "20", label: "Market Sectors" },
   { value: "10s", label: "Tick Interval" },
-  { value: "76", label: "Event Types" },
+  { value: "240+", label: "Event Types" },
 ]
 
 export default function HomePage({ onNavigate }: Props) {
