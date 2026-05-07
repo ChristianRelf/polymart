@@ -220,7 +220,7 @@ function Footer({ setRoute }: { setRoute: (r: Route) => void }) {
 
             {/* Brand */}
             <div className="flex flex-col gap-4 max-w-[200px]">
-              <img src="/polymartlogo.png" alt="POLYMART" className="block h-15 w-auto" />
+              <img src="/polymartlogo.png" alt="POLYMART" className="block h-auto w-auto" />
               <p className="text-xs text-muted-foreground leading-relaxed">
                 A persistent simulated stock exchange. All data is entirely fictional.
                 Not financial advice.
