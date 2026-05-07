@@ -9,9 +9,11 @@ import ApiDocsPage from "@/pages/ApiDocsPage"
 import LegalPage from "@/pages/LegalPage"
 import ChangelogPage from "@/pages/ChangelogPage"
 import EducationPage from "@/pages/EducationPage"
+import ProductsPage from "@/pages/ProductsPage"
+import HelpCenterPage from "@/pages/HelpCenterPage"
 
 // ── Routing ───────────────────────────────────────────────────────────────────
-export type Route = "home" | "market" | "api" | "terms" | "privacy" | "changelog" | "education"
+export type Route = "home" | "market" | "api" | "terms" | "privacy" | "changelog" | "education" | "products" | "help"
 
 const HASH_MAP: Record<string, Route> = {
   "": "home",
@@ -23,6 +25,8 @@ const HASH_MAP: Record<string, Route> = {
   "/docs/privacy": "privacy",
   "/changelog": "changelog",
   "/education": "education",
+  "/products": "products",
+  "/help": "help",
 }
 
 const ROUTE_HASH: Record<Route, string> = {
@@ -33,6 +37,8 @@ const ROUTE_HASH: Record<Route, string> = {
   privacy: "/docs/privacy",
   changelog: "/changelog",
   education: "/education",
+  products: "/products",
+  help: "/help",
 }
 
 function getRoute(): Route {
@@ -135,7 +141,9 @@ function Navbar({ route, setRoute }: { route: Route; setRoute: (r: Route) => voi
             ["home", "Home"],
             ["market", "Market"],
             ["api", "API Docs"],
+            ["products", "Products"],
             ["education", "Education"],
+            ["help", "Help"],
           ] as [Route, string][]).map(([r, label]) => (
             <button
               key={r}
@@ -201,7 +209,9 @@ function Footer({ setRoute }: { setRoute: (r: Route) => void }) {
                 ["home", "Home"],
                 ["market", "Market"],
                 ["api", "API Reference"],
+                ["products", "Products"],
                 ["education", "Education"],
+                ["help", "Help Center"],
               ] as [Route, string][]).map(([r, label]) => (
                 <button
                   key={r}
@@ -276,6 +286,8 @@ export default function App() {
           {route === "privacy"   && <LegalPage      type="privacy" onNavigate={go} />}
           {route === "changelog" && <ChangelogPage  onNavigate={go} />}
           {route === "education" && <EducationPage  onNavigate={go} />}
+          {route === "products"  && <ProductsPage   onNavigate={go} />}
+          {route === "help"      && <HelpCenterPage onNavigate={go} />}
         </main>
 
         <Footer setRoute={setRoute} />
