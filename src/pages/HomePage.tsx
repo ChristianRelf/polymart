@@ -19,8 +19,8 @@ const FEATURES = [
   },
   {
     icon: GraduationCap,
-    title: "Dynamic Market Events",
-    desc: "Weighted random events fire continuously with flash crashes, FDA approvals, meme frenzies, and geopolitical shocks move entire sectors.",
+    title: "Perfect for Education",
+    desc: "Learning stock trading, or interested in how the market works. This simulation helps people learn.",
   },
   {
     icon: BarChart2,
