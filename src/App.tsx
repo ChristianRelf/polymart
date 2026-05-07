@@ -141,7 +141,7 @@ function Navbar({ route, setRoute }: { route: Route; setRoute: (r: Route) => voi
           {([
             ["home", "Home"],
             ["market", "Market"],
-            ["api", "API Docs"],
+            ["api", "Developer Docs"],
             ["products", "Products"],
             ["education", "Education"],
             ["help", "Help"],
