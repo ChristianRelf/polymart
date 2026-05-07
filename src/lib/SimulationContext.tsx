@@ -202,7 +202,7 @@ export function SimulationProvider({ children }: { children: React.ReactNode }) 
 
   useEffect(() => {
     refresh()
-    const id = setInterval(refresh, 10_000)
+    const id = setInterval(refresh, 5_000)
     return () => clearInterval(id)
   }, [refresh])
 

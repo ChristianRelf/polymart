@@ -225,7 +225,7 @@ const ENDPOINTS: Endpoint[] = [
     method: "GET",
     path: "/api/v1/getHistory",
     summary: "Price history for a stock",
-    desc: "Returns raw price history for a stock. Up to 400 data points, each representing one simulation tick (10 seconds).",
+    desc: "Returns raw price history for a stock. Up to 400 data points, each representing one simulation tick (5 seconds).",
     params: [
       { name: "ticker", type: "string", required: true, desc: "Ticker symbol", example: "VOID" },
       { name: "limit", type: "number", required: false, desc: "Data points to return (1–400, default 100)", example: "100" },
@@ -413,7 +413,7 @@ export default function ApiDocsPage() {
         <h1 className="text-4xl font-bold tracking-tight text-foreground mb-4">API Reference</h1>
         <p className="text-muted-foreground leading-relaxed max-w-2xl">
           The PolyAPI is open, no authentication required. All endpoints are GET requests returning JSON.
-          Prices update every ~10 seconds via a persistent server-side simulation engine.
+          Prices update every ~5 seconds via a persistent server-side simulation engine.
         </p>
       </div>
 

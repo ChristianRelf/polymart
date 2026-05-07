@@ -51,7 +51,7 @@ function navigate(r: Route) {
 }
 
 // ── Tick Countdown ────────────────────────────────────────────────────────────
-function TickCountdown({ intervalMs = 10_000 }: { intervalMs?: number }) {
+function TickCountdown({ intervalMs = 5_000 }: { intervalMs?: number }) {
   const { lastRefresh } = useSimulation()
   const [elapsed, setElapsed] = useState(0)
   const baseRef = useRef(lastRefresh || Date.now())
@@ -164,7 +164,7 @@ function Navbar({ route, setRoute }: { route: Route; setRoute: (r: Route) => voi
         <div className="ml-auto flex items-center gap-2">
           {isMarket && (
             <div className="hidden sm:flex">
-              <TickCountdown intervalMs={10_000} />
+              <TickCountdown intervalMs={5_000} />
             </div>
           )}
           <Button variant="outline" size="sm" className="text-xs border-border font-medium" asChild>
