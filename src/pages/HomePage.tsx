@@ -18,7 +18,7 @@ const FEATURES = [
     desc: "Prices tick every 3 seconds driven by volatility, momentum, RSI, insider bias, earnings cycles, and macro sensitivity.",
   },
   {
-    icon: Zap,
+    icon: graducationCap,
     title: "Dynamic Market Events",
     desc: "Weighted random events fire continuously with flash crashes, FDA approvals, meme frenzies, and geopolitical shocks move entire sectors.",
   },
