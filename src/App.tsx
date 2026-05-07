@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from "react"
 import { Button } from "@/components/ui/button"
 import { Separator } from "@/components/ui/separator"
 import { cn } from "@/lib/utils"
+import { Hop as Home, TrendingUp, Code as Code2, Layers, GraduationCap, Circle as HelpCircle, ShieldCheck, FileText, Bot, ArrowUpRight, Activity } from "lucide-react"
 import { SimulationProvider, useSimulation } from "@/lib/SimulationContext"
 import HomePage from "@/pages/HomePage"
 import MarketPage from "@/pages/MarketPage"
@@ -183,77 +184,126 @@ function Navbar({ route, setRoute }: { route: Route; setRoute: (r: Route) => voi
   )
 }
 
+// ── Footer nav link ───────────────────────────────────────────────────────────
+function FooterLink({
+  icon: Icon,
+  label,
+  onClick,
+}: {
+  icon: React.ElementType
+  label: string
+  onClick: () => void
+}) {
+  return (
+    <button
+      onClick={onClick}
+      className="group flex items-center gap-2.5 text-sm text-muted-foreground hover:text-foreground transition-colors cursor-pointer bg-transparent border-0 p-0 w-fit"
+    >
+      <Icon className="w-3.5 h-3.5 shrink-0 text-muted-foreground/60 group-hover:text-foreground transition-colors" />
+      {label}
+    </button>
+  )
+}
+
 // ── Footer ────────────────────────────────────────────────────────────────────
 function Footer({ setRoute }: { setRoute: (r: Route) => void }) {
   const go = (r: Route) => { navigate(r); setRoute(r) }
 
   return (
-    <footer className="border-t border-border mt-auto bg-card/30">
+    <footer className="border-t border-border mt-auto">
+      {/* Main footer body */}
       <div className="max-w-[1600px] mx-auto px-8 py-12">
-        <div className="grid grid-cols-1 sm:grid-cols-4 gap-10 mb-10">
+        <div className="grid grid-cols-1 lg:grid-cols-[1fr_auto] gap-12">
 
-          {/* Brand */}
-          <div>
-            <img src="/polymartlogo.png" alt="POLYMART" className="h-8 w-auto mb-3" />
-            <p className="text-xs text-muted-foreground leading-relaxed">
-              A persistent simulated stock exchange engine. All data is entirely fictional.
-              Not financial advice.
-            </p>
-          </div>
+          {/* Left: brand + nav columns */}
+          <div className="grid grid-cols-1 sm:grid-cols-[auto_1fr_1fr_1fr] gap-10">
 
-          {/* Platform */}
-          <div>
-            <p className="text-[10px] text-muted-foreground uppercase tracking-widest mb-4">Platform</p>
-            <div className="flex flex-col gap-2.5">
-              {([
-                ["home", "Home"],
-                ["market", "Market"],
-                ["api", "API Reference"],
-                ["products", "Products"],
-                ["education", "Education"],
-                ["help", "Help Center"],
-              ] as [Route, string][]).map(([r, label]) => (
-                <button
-                  key={r}
-                  onClick={() => go(r)}
-                  className="text-xs text-muted-foreground hover:text-foreground transition-colors text-left cursor-pointer bg-transparent border-0 p-0 w-fit"
-                >
-                  {label}
-                </button>
-              ))}
+            {/* Brand */}
+            <div className="flex flex-col gap-4 max-w-[200px]">
+              <img src="/polymartlogo.png" alt="POLYMART" className="h-8 w-auto" />
+              <p className="text-xs text-muted-foreground leading-relaxed">
+                A persistent simulated stock exchange. All data is entirely fictional.
+                Not financial advice.
+              </p>
+            </div>
+
+            {/* Explore */}
+            <div>
+              <p className="text-[10px] font-bold text-muted-foreground/50 uppercase tracking-[0.15em] mb-4">Explore</p>
+              <div className="flex flex-col gap-3">
+                <FooterLink icon={Home}         label="Home"          onClick={() => go("home")} />
+                <FooterLink icon={TrendingUp}   label="Market"        onClick={() => go("market")} />
+                <FooterLink icon={Layers}       label="Products"      onClick={() => go("products")} />
+                <FooterLink icon={GraduationCap} label="Education"   onClick={() => go("education")} />
+              </div>
+            </div>
+
+            {/* Developers */}
+            <div>
+              <p className="text-[10px] font-bold text-muted-foreground/50 uppercase tracking-[0.15em] mb-4">Developers</p>
+              <div className="flex flex-col gap-3">
+                <FooterLink icon={Code2}       label="API Reference" onClick={() => go("api")} />
+                <FooterLink icon={HelpCircle}  label="Help Center"   onClick={() => go("help")} />
+                <FooterLink icon={Activity}    label="Changelog"     onClick={() => go("changelog")} />
+              </div>
+            </div>
+
+            {/* Legal */}
+            <div>
+              <p className="text-[10px] font-bold text-muted-foreground/50 uppercase tracking-[0.15em] mb-4">Legal</p>
+              <div className="flex flex-col gap-3">
+                <FooterLink icon={FileText}    label="Terms of Service" onClick={() => go("terms")} />
+                <FooterLink icon={ShieldCheck} label="Privacy Policy"   onClick={() => go("privacy")} />
+              </div>
             </div>
           </div>
 
-          {/* Updates */}
-          <div>
-            <p className="text-[10px] text-muted-foreground uppercase tracking-widest mb-4">Updates</p>
-            <div className="flex flex-col gap-2.5">
-              <button
-                onClick={() => go("changelog")}
-                className="text-xs text-muted-foreground hover:text-foreground transition-colors text-left cursor-pointer bg-transparent border-0 p-0 w-fit"
+          {/* Right: Discord CTA */}
+          <div className="flex items-start">
+            <div className="bg-card border border-border rounded-xl p-5 flex flex-col gap-4 w-full lg:w-[220px] shrink-0">
+              <div className="w-9 h-9 rounded-lg bg-foreground/5 border border-border flex items-center justify-center">
+                <Bot className="w-4 h-4 text-foreground" />
+              </div>
+              <div>
+                <p className="text-sm font-semibold text-foreground mb-1">Add to Discord</p>
+                <p className="text-xs text-muted-foreground leading-relaxed">
+                  Live market data, slash commands, and price alerts in your server.
+                </p>
+              </div>
+              <a
+                href="https://discord.com/api/oauth2/authorize?client_id=POLYMART_BOT&permissions=2147483648&scope=bot+applications.commands"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex items-center justify-between px-3 py-2 bg-foreground text-background rounded-lg text-xs font-semibold hover:opacity-90 transition-opacity no-underline"
               >
-                Changelog
-              </button>
+                Add Bot
+                <ArrowUpRight className="w-3 h-3" />
+              </a>
             </div>
           </div>
 
-          {/* Legal */}
-          <div>
-            <p className="text-[10px] text-muted-foreground uppercase tracking-widest mb-4">Legal</p>
-            <div className="flex flex-col gap-2.5">
-              {([
-                ["terms", "Terms of Service"],
-                ["privacy", "Privacy Policy"],
-              ] as [Route, string][]).map(([r, label]) => (
-                <button
-                  key={r}
-                  onClick={() => go(r)}
-                  className="text-xs text-muted-foreground hover:text-foreground transition-colors text-left cursor-pointer bg-transparent border-0 p-0 w-fit"
-                >
-                  {label}
-                </button>
-              ))}
-            </div>
+        </div>
+      </div>
+
+      {/* Bottom bar */}
+      <div className="border-t border-border">
+        <div className="max-w-[1600px] mx-auto px-8 py-4 flex flex-col sm:flex-row items-center justify-between gap-3">
+          <p className="text-xs text-muted-foreground/60">
+            &copy; {new Date().getFullYear()} Polymart. Simulation only — not real financial data.
+          </p>
+          <div className="flex items-center gap-5">
+            <button
+              onClick={() => go("terms")}
+              className="text-xs text-muted-foreground/60 hover:text-muted-foreground transition-colors cursor-pointer bg-transparent border-0 p-0"
+            >
+              Terms
+            </button>
+            <button
+              onClick={() => go("privacy")}
+              className="text-xs text-muted-foreground/60 hover:text-muted-foreground transition-colors cursor-pointer bg-transparent border-0 p-0"
+            >
+              Privacy
+            </button>
           </div>
         </div>
       </div>
