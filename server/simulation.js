@@ -53,6 +53,7 @@ export const STOCK_DEFS = {
   BONK: {name:"BonkCoin Corp",basePrice:2,volatility:.35,trend:0,sector:"meme",mcap:"small"},
   FOMO: {name:"FOMO Markets Ltd",basePrice:7,volatility:.30,trend:-.001,sector:"meme",mcap:"small"},
   LAMBO:{name:"LamboDAO",basePrice:4,volatility:.32,trend:.001,sector:"meme",mcap:"small"},
+  QUAK: {name:"DuckPond Holdings",basePrice:6,volatility:.28,trend:.001,sector:"meme",mcap:"small"},
   GRDN: {name:"GreenGarden Bio",basePrice:95,volatility:.06,trend:.002,sector:"green",mcap:"mid"},
   SPRK: {name:"SparkEnergy Green",basePrice:75,volatility:.06,trend:.003,sector:"green",mcap:"mid"},
   LEAF: {name:"LeafWater Eco",basePrice:42,volatility:.05,trend:.002,sector:"green",mcap:"small"},

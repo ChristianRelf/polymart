@@ -432,6 +432,7 @@ function StockDetailView({ detail, stocks, onBack, openDetail }: {
   onBack: () => void
   openDetail: (t: string) => void
 }) {
+  const [chartMode, setChartMode] = useState<"candle" | "line">("candle")
   const up = detail.change >= 0
   const showCandles = detail.candles && detail.candles.length >= 2
 
@@ -502,14 +503,42 @@ function StockDetailView({ detail, stocks, onBack, openDetail }: {
       </div>
 
       {/* ── Tabs ── */}
-      <Tabs defaultValue="overview" className="mb-8">
-        <TabsList className="bg-card border border-border mb-6 h-auto p-1 gap-0.5">
-          <TabsTrigger value="overview"    className="text-sm gap-1.5 px-4 py-2"><LayoutDashboard className="w-3.5 h-3.5" />Overview</TabsTrigger>
-          <TabsTrigger value="chart"       className="text-sm gap-1.5 px-4 py-2"><BarChart2 className="w-3.5 h-3.5" />Chart</TabsTrigger>
-          <TabsTrigger value="technicals"  className="text-sm gap-1.5 px-4 py-2"><FlaskConical className="w-3.5 h-3.5" />Technicals</TabsTrigger>
-          <TabsTrigger value="orderflow"   className="text-sm gap-1.5 px-4 py-2"><Layers className="w-3.5 h-3.5" />Order Flow</TabsTrigger>
-          <TabsTrigger value="profile"     className="text-sm gap-1.5 px-4 py-2"><Info className="w-3.5 h-3.5" />Profile</TabsTrigger>
-        </TabsList>
+      <Tabs defaultValue="chart" className="mb-8">
+        <div className="flex items-center gap-3 mb-6 flex-wrap">
+          <TabsList className="bg-card border border-border h-auto p-1 gap-0.5">
+            <TabsTrigger value="chart"       className="text-sm gap-1.5 px-4 py-2"><BarChart2 className="w-3.5 h-3.5" />Chart</TabsTrigger>
+            <TabsTrigger value="overview"    className="text-sm gap-1.5 px-4 py-2"><LayoutDashboard className="w-3.5 h-3.5" />Overview</TabsTrigger>
+            <TabsTrigger value="technicals"  className="text-sm gap-1.5 px-4 py-2"><FlaskConical className="w-3.5 h-3.5" />Technicals</TabsTrigger>
+            <TabsTrigger value="orderflow"   className="text-sm gap-1.5 px-4 py-2"><Layers className="w-3.5 h-3.5" />Order Flow</TabsTrigger>
+            <TabsTrigger value="profile"     className="text-sm gap-1.5 px-4 py-2"><Info className="w-3.5 h-3.5" />Profile</TabsTrigger>
+          </TabsList>
+
+          {/* Chart type toggle — only relevant on chart tab but always visible */}
+          <div className="ml-auto flex items-center gap-1 bg-card border border-border rounded-lg p-1">
+            <button
+              onClick={() => setChartMode("candle")}
+              className={cn(
+                "px-3 py-1.5 rounded text-xs font-medium transition-colors cursor-pointer border-0",
+                chartMode === "candle"
+                  ? "bg-foreground text-background"
+                  : "text-muted-foreground hover:text-foreground bg-transparent"
+              )}
+            >
+              Candles
+            </button>
+            <button
+              onClick={() => setChartMode("line")}
+              className={cn(
+                "px-3 py-1.5 rounded text-xs font-medium transition-colors cursor-pointer border-0",
+                chartMode === "line"
+                  ? "bg-foreground text-background"
+                  : "text-muted-foreground hover:text-foreground bg-transparent"
+              )}
+            >
+              Line
+            </button>
+          </div>
+        </div>
 
         {/* ══ Overview ═══════════════════════════════════════════════════════════ */}
         <TabsContent value="overview">
@@ -604,7 +633,7 @@ function StockDetailView({ detail, stocks, onBack, openDetail }: {
         {/* ══ Chart ══════════════════════════════════════════════════════════════ */}
         <TabsContent value="chart">
           <div className="rounded-xl border border-border overflow-hidden mb-4">
-            {showCandles ? (
+            {chartMode === "candle" && showCandles ? (
               <>
                 <CandleChart
                   candles={detail.candles}
