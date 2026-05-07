@@ -220,7 +220,7 @@ function Footer({ setRoute }: { setRoute: (r: Route) => void }) {
 
             {/* Brand */}
             <div className="flex flex-col gap-4 max-w-[200px]">
-              <img src="/polymartlogo.png" alt="POLYMART" className="block h-6 w-auto" />
+              <img src="/polymartlogo.png" alt="POLYMART" className="block h-10 w-auto" />
               <p className="text-xs text-muted-foreground leading-relaxed">
                 A persistent simulated stock exchange. All data is entirely fictional.
                 Not financial advice.
@@ -282,29 +282,6 @@ function Footer({ setRoute }: { setRoute: (r: Route) => void }) {
             </div>
           </div>
 
-        </div>
-      </div>
-
-      {/* Bottom bar */}
-      <div className="border-t border-border">
-        <div className="max-w-[1600px] mx-auto px-8 py-4 flex flex-col sm:flex-row items-center justify-between gap-3">
-          <p className="text-xs text-muted-foreground/60">
-            &copy; {new Date().getFullYear()} Polymart. Simulation only — not real financial data.
-          </p>
-          <div className="flex items-center gap-5">
-            <button
-              onClick={() => go("terms")}
-              className="text-xs text-muted-foreground/60 hover:text-muted-foreground transition-colors cursor-pointer bg-transparent border-0 p-0"
-            >
-              Terms
-            </button>
-            <button
-              onClick={() => go("privacy")}
-              className="text-xs text-muted-foreground/60 hover:text-muted-foreground transition-colors cursor-pointer bg-transparent border-0 p-0"
-            >
-              Privacy
-            </button>
-          </div>
         </div>
       </div>
     </footer>
