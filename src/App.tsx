@@ -1,8 +1,9 @@
 import { useState, useEffect, useRef } from "react"
 import { Button } from "@/components/ui/button"
 import { Separator } from "@/components/ui/separator"
+import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet"
 import { cn } from "@/lib/utils"
-import { Hop as Home, TrendingUp, Code as Code2, Layers, GraduationCap, Circle as HelpCircle, ShieldCheck, FileText, Bot, ArrowUpRight, Activity, X, Brain } from "lucide-react"
+import { Hop as Home, TrendingUp, Code as Code2, Layers, GraduationCap, Circle as HelpCircle, ShieldCheck, FileText, Bot, ArrowUpRight, Activity, X, Brain, Menu } from "lucide-react"
 import { SimulationProvider, useSimulation } from "@/lib/SimulationContext"
 import HomePage from "@/pages/HomePage"
 import MarketPage from "@/pages/MarketPage"
@@ -117,35 +118,37 @@ function TickCountdown({ intervalMs = 3_000 }: { intervalMs?: number }) {
 }
 
 // ── Navbar ────────────────────────────────────────────────────────────────────
+const NAV_LINKS: [Route, string][] = [
+  ["home", "Home"],
+  ["market", "Market"],
+  ["api", "Developer Docs"],
+  ["products", "Products"],
+  ["education", "Education"],
+  ["help", "Help"],
+]
+
 function Navbar({ route, setRoute }: { route: Route; setRoute: (r: Route) => void }) {
-  const go = (r: Route) => { navigate(r); setRoute(r) }
+  const [mobileOpen, setMobileOpen] = useState(false)
+  const go = (r: Route) => { navigate(r); setRoute(r); setMobileOpen(false) }
   const isMarket = route === "market"
 
   return (
     <header className="sticky top-0 z-50 border-b border-border bg-background/80 backdrop-blur-md">
-      <div className="max-w-[1600px] mx-auto px-8 h-16 flex items-center gap-6">
+      <div className="max-w-[1600px] mx-auto px-4 sm:px-8 h-16 flex items-center gap-4 sm:gap-6">
 
         {/* Logo */}
         <button
           onClick={() => go("home")}
           className="cursor-pointer bg-transparent border-0 p-0 shrink-0 hover:opacity-80 transition-opacity"
         >
-          <img src="/polymartlogo.png" alt="POLYMART" className="h-11 w-auto" />
+          <img src="/polymartlogo.png" alt="POLYMART" className="h-9 sm:h-11 w-auto" />
         </button>
 
+        <Separator orientation="vertical" className="h-5 bg-border hidden sm:block" />
 
-        <Separator orientation="vertical" className="h-5 bg-border" />
-
-        {/* Nav links */}
-        <nav className="flex items-stretch h-16 gap-0">
-          {([
-            ["home", "Home"],
-            ["market", "Market"],
-            ["api", "Developer Docs"],
-            ["products", "Products"],
-            ["education", "Education"],
-            ["help", "Help"],
-          ] as [Route, string][]).map(([r, label]) => (
+        {/* Desktop nav links */}
+        <nav className="hidden md:flex items-stretch h-16 gap-0">
+          {NAV_LINKS.map(([r, label]) => (
             <button
               key={r}
               onClick={() => go(r)}
@@ -162,10 +165,45 @@ function Navbar({ route, setRoute }: { route: Route; setRoute: (r: Route) => voi
         </nav>
 
         {isMarket && (
-          <div className="ml-auto hidden sm:flex">
+          <div className="hidden sm:flex ml-auto md:ml-0">
             <TickCountdown intervalMs={3_000} />
           </div>
         )}
+
+        {/* Mobile: right-side controls */}
+        <div className="ml-auto flex items-center gap-2 md:hidden">
+          <Sheet open={mobileOpen} onOpenChange={setMobileOpen}>
+            <SheetTrigger asChild>
+              <Button variant="ghost" size="icon" className="h-9 w-9">
+                <Menu className="w-5 h-5" />
+                <span className="sr-only">Open menu</span>
+              </Button>
+            </SheetTrigger>
+            <SheetContent side="right" className="w-72 p-0 bg-background border-border">
+              <div className="flex flex-col h-full">
+                <div className="flex items-center justify-between px-5 h-16 border-b border-border">
+                  <img src="/polymartlogo.png" alt="POLYMART" className="h-8 w-auto" />
+                </div>
+                <nav className="flex flex-col p-4 gap-1">
+                  {NAV_LINKS.map(([r, label]) => (
+                    <button
+                      key={r}
+                      onClick={() => go(r)}
+                      className={cn(
+                        "flex items-center px-4 py-3 rounded-lg text-sm font-medium transition-colors cursor-pointer bg-transparent border-0 text-left w-full",
+                        route === r
+                          ? "bg-accent text-foreground"
+                          : "text-muted-foreground hover:bg-accent/60 hover:text-foreground"
+                      )}
+                    >
+                      {label}
+                    </button>
+                  ))}
+                </nav>
+              </div>
+            </SheetContent>
+          </Sheet>
+        </div>
       </div>
     </header>
   )
@@ -221,14 +259,14 @@ function Footer({ setRoute }: { setRoute: (r: Route) => void }) {
   return (
     <footer className="border-t border-border mt-auto">
       {/* Main footer body */}
-      <div className="max-w-[1600px] mx-auto px-8 py-12">
-        <div className="grid grid-cols-1 lg:grid-cols-[1fr_auto] gap-12">
+      <div className="max-w-[1600px] mx-auto px-4 sm:px-8 py-10 sm:py-12">
+        <div className="grid grid-cols-1 lg:grid-cols-[1fr_auto] gap-8 lg:gap-12">
 
           {/* Left: brand + nav columns */}
-          <div className="grid grid-cols-1 sm:grid-cols-[auto_1fr_1fr_1fr] gap-10">
+          <div className="grid grid-cols-2 sm:grid-cols-[auto_1fr_1fr_1fr] gap-6 sm:gap-10">
 
             {/* Brand */}
-            <div className="flex flex-col gap-4 max-w-[200px]">
+            <div className="flex flex-col gap-4 max-w-[200px] col-span-2 sm:col-span-1">
               <img src="/polymartlogo.png" alt="POLYMART" className="block h-auto w-auto" />
               <p className="text-xs text-muted-foreground leading-relaxed">
                 A persistent simulated stock exchange. All data is entirely fictional.
@@ -347,7 +385,7 @@ function MarketNudge({
     <div
       className={cn(
         "fixed top-14 left-1/2 -translate-x-1/2 z-50",
-        "w-full max-w-3xl px-4",
+        "w-full max-w-3xl px-3 sm:px-4",
         "transition-all duration-400 ease-out",
         visible ? "opacity-100 translate-y-0" : "opacity-0 -translate-y-2 pointer-events-none",
       )}

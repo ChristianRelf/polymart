@@ -4,7 +4,8 @@ import { Input } from "@/components/ui/input"
 import { Separator } from "@/components/ui/separator"
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs"
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
-import { ArrowLeft, TrendingUp, TrendingDown, Search, ChevronUp, ChevronDown, ChartBar as BarChart2, Zap, TriangleAlert as AlertTriangle, SlidersHorizontal, Check, LayoutDashboard, FlaskConical, Layers, Info } from "lucide-react"
+import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet"
+import { ArrowLeft, TrendingUp, TrendingDown, Search, ChevronUp, ChevronDown, ChartBar as BarChart2, Zap, TriangleAlert as AlertTriangle, SlidersHorizontal, Check, LayoutDashboard, FlaskConical, Layers, Info, PanelRight, Loader as Loader2 } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { useSimulation } from "@/lib/SimulationContext"
 import type { StockDetail, Candle } from "@/lib/SimulationContext"
@@ -349,10 +350,10 @@ function StatTile({ label, value, sub, subColor }: {
   label: string; value: string; sub?: string; subColor?: string
 }) {
   return (
-    <div className="bg-card border border-border rounded-xl px-5 py-4">
-      <p className="text-xs text-muted-foreground uppercase tracking-widest mb-2">{label}</p>
-      <p className="text-3xl font-bold font-mono text-foreground tabular-nums">{value}</p>
-      {sub && <p className="text-sm font-semibold font-mono mt-1" style={{ color: subColor }}>{sub}</p>}
+    <div className="bg-card border border-border rounded-xl px-3 sm:px-5 py-3 sm:py-4">
+      <p className="text-[10px] sm:text-xs text-muted-foreground uppercase tracking-widest mb-1 sm:mb-2">{label}</p>
+      <p className="text-2xl sm:text-3xl font-bold font-mono text-foreground tabular-nums">{value}</p>
+      {sub && <p className="text-xs sm:text-sm font-semibold font-mono mt-0.5 sm:mt-1 truncate" style={{ color: subColor }}>{sub}</p>}
     </div>
   )
 }
@@ -448,73 +449,81 @@ function StockDetailView({ detail, stocks, onBack, openDetail }: {
     : 0
 
   return (
-    <div className="max-w-[1600px] mx-auto px-8 py-10">
+    <div className="max-w-[1600px] mx-auto px-4 sm:px-8 py-6 sm:py-10">
       {/* Back */}
       <button
         onClick={onBack}
-        className="flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground transition-colors mb-8 cursor-pointer bg-transparent border-0 p-0"
+        className="flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground transition-colors mb-6 sm:mb-8 cursor-pointer bg-transparent border-0 p-0"
       >
         <ArrowLeft className="w-4 h-4" />
         Back to market
       </button>
 
       {/* Header */}
-      <div className="flex flex-col sm:flex-row justify-between items-start gap-6 mb-8">
-        <div>
-          <div className="flex items-center gap-3 mb-2">
-            <h1 className="text-4xl font-extrabold font-mono text-foreground tracking-tight">{detail.ticker}</h1>
-            <SessionBadge session={detail.halted ? "halted" : detail.session} />
+      <div className="mb-6 sm:mb-8">
+        {/* Top row: ticker + price side by side on all sizes */}
+        <div className="flex items-start justify-between gap-4 mb-3">
+          <div className="min-w-0">
+            <div className="flex items-center gap-2 sm:gap-3 mb-1 flex-wrap">
+              <h1 className="text-3xl sm:text-4xl font-extrabold font-mono text-foreground tracking-tight">{detail.ticker}</h1>
+              <SessionBadge session={detail.halted ? "halted" : detail.session} />
+            </div>
+            <p className="text-sm sm:text-base text-muted-foreground truncate">{detail.name}</p>
           </div>
-          <p className="text-base text-muted-foreground mb-3">{detail.name}</p>
-          <div className="flex flex-wrap gap-2">
-            <Badge variant="outline" className="text-xs border-border capitalize">{detail.sector}</Badge>
-            <Badge variant="outline" className="text-xs border-border">{detail.mcap} cap</Badge>
-            {detail.volatility != null && (
-              <Badge variant="outline" className="text-xs border-border">σ {(detail.volatility * 100).toFixed(0)}%</Badge>
-            )}
-            <Badge variant="outline" className="text-xs border-border">β {detail.beta.toFixed(2)}</Badge>
-            {detail.halted && (
-              <Badge className="text-xs border-0 font-bold" style={{ background: "rgba(232,105,106,.15)", color: LOSS }}>
-                <AlertTriangle className="w-3 h-3 mr-1" /> HALTED
-              </Badge>
-            )}
+          <div className="text-right shrink-0">
+            <p className="text-3xl sm:text-5xl font-extrabold font-mono tabular-nums" style={{ color: up ? GAIN : LOSS }}>
+              {detail.price.toFixed(2)}
+            </p>
+            <p className="text-base sm:text-xl font-bold font-mono mt-0.5" style={{ color: up ? GAIN : LOSS }}>
+              {up ? "+" : ""}{detail.change.toFixed(2)}%
+            </p>
           </div>
         </div>
-        <div className="text-right shrink-0">
-          <p className="text-5xl font-extrabold font-mono tabular-nums" style={{ color: up ? GAIN : LOSS }}>
-            {detail.price.toFixed(2)}
-          </p>
-          <p className="text-xl font-bold font-mono mt-1" style={{ color: up ? GAIN : LOSS }}>
-            {up ? "+" : ""}{detail.change.toFixed(2)}%
-          </p>
-          <div className="flex items-center gap-3 mt-2 justify-end">
-            <span className="text-sm font-mono text-muted-foreground">
-              Bid <span className="text-foreground">{detail.bid.toFixed(2)}</span>
-            </span>
-            <span className="text-muted-foreground/40">|</span>
-            <span className="text-sm font-mono text-muted-foreground">
-              Ask <span className="text-foreground">{detail.ask.toFixed(2)}</span>
-            </span>
-            <span className="text-xs font-mono px-1.5 py-0.5 rounded" style={{ color: NEUT, background: "rgba(234,179,77,.1)" }}>
-              {detail.spreadPct.toFixed(2)}%
-            </span>
-          </div>
+        {/* Badges row */}
+        <div className="flex flex-wrap gap-2 mb-2">
+          <Badge variant="outline" className="text-xs border-border capitalize">{detail.sector}</Badge>
+          <Badge variant="outline" className="text-xs border-border">{detail.mcap} cap</Badge>
+          {detail.volatility != null && (
+            <Badge variant="outline" className="text-xs border-border">σ {(detail.volatility * 100).toFixed(0)}%</Badge>
+          )}
+          <Badge variant="outline" className="text-xs border-border">β {detail.beta.toFixed(2)}</Badge>
+          {detail.halted && (
+            <Badge className="text-xs border-0 font-bold" style={{ background: "rgba(232,105,106,.15)", color: LOSS }}>
+              <AlertTriangle className="w-3 h-3 mr-1" /> HALTED
+            </Badge>
+          )}
+        </div>
+        {/* Bid/Ask row */}
+        <div className="flex items-center gap-2 sm:gap-3 flex-wrap">
+          <span className="text-xs sm:text-sm font-mono text-muted-foreground">
+            Bid <span className="text-foreground">{detail.bid.toFixed(2)}</span>
+          </span>
+          <span className="text-muted-foreground/40">|</span>
+          <span className="text-xs sm:text-sm font-mono text-muted-foreground">
+            Ask <span className="text-foreground">{detail.ask.toFixed(2)}</span>
+          </span>
+          <span className="text-xs font-mono px-1.5 py-0.5 rounded" style={{ color: NEUT, background: "rgba(234,179,77,.1)" }}>
+            {detail.spreadPct.toFixed(2)}%
+          </span>
         </div>
       </div>
 
       {/* ── Tabs ── */}
       <Tabs defaultValue="chart" className="mb-8">
-        <div className="flex items-center gap-3 mb-6 flex-wrap">
-          <TabsList className="bg-card border border-border h-auto p-1 gap-0.5">
-            <TabsTrigger value="chart"       className="text-sm gap-1.5 px-4 py-2"><BarChart2 className="w-3.5 h-3.5" />Chart</TabsTrigger>
-            <TabsTrigger value="overview"    className="text-sm gap-1.5 px-4 py-2"><LayoutDashboard className="w-3.5 h-3.5" />Overview</TabsTrigger>
-            <TabsTrigger value="technicals"  className="text-sm gap-1.5 px-4 py-2"><FlaskConical className="w-3.5 h-3.5" />Technicals</TabsTrigger>
-            <TabsTrigger value="orderflow"   className="text-sm gap-1.5 px-4 py-2"><Layers className="w-3.5 h-3.5" />Order Flow</TabsTrigger>
-            <TabsTrigger value="profile"     className="text-sm gap-1.5 px-4 py-2"><Info className="w-3.5 h-3.5" />Profile</TabsTrigger>
-          </TabsList>
+        <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-3 mb-6">
+          {/* Scrollable tab list on mobile */}
+          <div className="overflow-x-auto -mx-4 sm:mx-0 px-4 sm:px-0">
+            <TabsList className="bg-card border border-border h-auto p-1 gap-0.5 w-max sm:w-auto">
+              <TabsTrigger value="chart"      className="text-xs sm:text-sm gap-1 sm:gap-1.5 px-3 sm:px-4 py-2"><BarChart2 className="w-3 sm:w-3.5 h-3 sm:h-3.5" /><span className="hidden xs:inline sm:inline">Chart</span><span className="xs:hidden sm:hidden">Chart</span></TabsTrigger>
+              <TabsTrigger value="overview"   className="text-xs sm:text-sm gap-1 sm:gap-1.5 px-3 sm:px-4 py-2"><LayoutDashboard className="w-3 sm:w-3.5 h-3 sm:h-3.5" /><span>Overview</span></TabsTrigger>
+              <TabsTrigger value="technicals" className="text-xs sm:text-sm gap-1 sm:gap-1.5 px-3 sm:px-4 py-2"><FlaskConical className="w-3 sm:w-3.5 h-3 sm:h-3.5" /><span className="hidden sm:inline">Technicals</span><span className="sm:hidden">Tech</span></TabsTrigger>
+              <TabsTrigger value="orderflow"  className="text-xs sm:text-sm gap-1 sm:gap-1.5 px-3 sm:px-4 py-2"><Layers className="w-3 sm:w-3.5 h-3 sm:h-3.5" /><span className="hidden sm:inline">Order Flow</span><span className="sm:hidden">Orders</span></TabsTrigger>
+              <TabsTrigger value="profile"    className="text-xs sm:text-sm gap-1 sm:gap-1.5 px-3 sm:px-4 py-2"><Info className="w-3 sm:w-3.5 h-3 sm:h-3.5" /><span>Profile</span></TabsTrigger>
+            </TabsList>
+          </div>
 
-          {/* Chart type toggle — only relevant on chart tab but always visible */}
-          <div className="ml-auto flex items-center gap-1 bg-card border border-border rounded-lg p-1">
+          {/* Chart type toggle */}
+          <div className="flex items-center gap-1 bg-card border border-border rounded-lg p-1 sm:ml-auto w-fit">
             <button
               onClick={() => setChartMode("candle")}
               className={cn(
@@ -862,7 +871,7 @@ function StockDetailView({ detail, stocks, onBack, openDetail }: {
                 <Signal bull={orderImbalance >= 0} />
               </div>
               <OrderFlowBar orderFlow={detail.orderFlow} buyVol={detail.buyVolume} sellVol={detail.sellVolume} />
-              <div className="grid grid-cols-4 gap-3 mt-5 pt-4 border-t border-border/40 text-center">
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mt-5 pt-4 border-t border-border/40 text-center">
                 <div>
                   <p className="text-[10px] text-muted-foreground uppercase tracking-widest mb-1">Buy Vol</p>
                   <p className="text-base font-bold font-mono tabular-nums" style={{ color: GAIN }}>{fmtVol(detail.buyVolume)}</p>
@@ -1013,12 +1022,14 @@ function StockDetailView({ detail, stocks, onBack, openDetail }: {
 export default function MarketPage() {
   const { market, stocks, sectors, events, loading, getDetail } = useSimulation()
 
-  const [detail, setDetail]   = useState<StockDetail | null>(null)
-  const [view, setView]       = useState<"list" | "detail">("list")
-  const [search, setSearch]   = useState("")
-  const [filter, setFilter]   = useState("all")
-  const [sort, setSort]       = useState("ticker")
-  const [sortDir, setSortDir] = useState<"asc" | "desc">("asc")
+  const [detail, setDetail]         = useState<StockDetail | null>(null)
+  const [view, setView]             = useState<"list" | "detail">("list")
+  const [search, setSearch]         = useState("")
+  const [filter, setFilter]         = useState("all")
+  const [sort, setSort]             = useState("ticker")
+  const [sortDir, setSortDir]       = useState<"asc" | "desc">("asc")
+  const [openingTicker, setOpeningTicker] = useState<string | null>(null)
+  const [sidebarOpen, setSidebarOpen] = useState(false)
   const [visibleCols, setVisibleCols] = useState<Record<string, boolean>>({
     name: true, price: true, change: true, volume: true, rsi: true, spread: true,
   })
@@ -1033,8 +1044,14 @@ export default function MarketPage() {
   }, [market])
 
   const openDetail = async (ticker: string) => {
-    const d = await getDetail(ticker)
-    if (d) { setDetail(d); setView("detail") }
+    if (openingTicker) return
+    setOpeningTicker(ticker)
+    try {
+      const d = await getDetail(ticker)
+      if (d) { setDetail(d); setView("detail") }
+    } finally {
+      setOpeningTicker(null)
+    }
   }
 
   const sectorList = useMemo(
@@ -1092,10 +1109,10 @@ export default function MarketPage() {
   }
 
   return (
-    <div className="max-w-[1600px] mx-auto px-8 py-10">
+    <div className="max-w-[1600px] mx-auto px-4 sm:px-8 py-6 sm:py-10">
 
       {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4 mb-8">
+      <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4 mb-6 sm:mb-8">
         <div>
           <h1 className="text-3xl font-bold text-foreground tracking-tight mb-1">Market</h1>
           <p className="text-base text-muted-foreground">
@@ -1110,7 +1127,7 @@ export default function MarketPage() {
       </div>
 
       {/* Top stat row */}
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-4">
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 sm:gap-3 mb-3 sm:mb-4">
         <StatTile label="Index"        value={market.index.toFixed(0)}          sub={`${idxUp ? "+" : "-"}${idxPct}%`}             subColor={idxUp ? GAIN : LOSS} />
         <StatTile label="VIX"          value={(market.vix ?? 18).toFixed(1)}    sub={market.vix > 30 ? "Elevated" : market.vix > 20 ? "Normal" : "Low"} subColor={market.vix > 30 ? LOSS : market.vix > 20 ? NEUT : GAIN} />
         <StatTile label="Fear & Greed" value={market.fearGreed.toString()}       sub={market.fearGreedLabel}                          subColor={market.fearGreed > 60 ? GAIN : market.fearGreed < 40 ? LOSS : NEUT} />
@@ -1118,7 +1135,7 @@ export default function MarketPage() {
       </div>
 
       {/* Secondary stat row */}
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-6">
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 sm:gap-3 mb-4 sm:mb-6">
         <div className="bg-card border border-border rounded-xl px-4 py-3 flex justify-between items-center">
           <span className="text-sm text-muted-foreground">52w Highs</span>
           <span className="text-base font-bold font-mono" style={{ color: GAIN }}>{market.newHighs ?? 0}</span>
@@ -1171,7 +1188,7 @@ export default function MarketPage() {
         {/* Stock table */}
         <div className="flex-1 min-w-0">
           <div className="flex flex-wrap gap-2 mb-4 items-center">
-            <div className="relative flex-1 min-w-[180px] max-w-[280px]">
+            <div className="relative flex-1 min-w-[140px] max-w-[280px]">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground pointer-events-none" />
               <Input
                 value={search}
@@ -1196,7 +1213,7 @@ export default function MarketPage() {
               <PopoverTrigger asChild>
                 <button className="h-9 px-3 flex items-center gap-1.5 bg-card border border-border rounded-lg text-xs text-muted-foreground hover:text-foreground transition-colors cursor-pointer">
                   <SlidersHorizontal className="w-3.5 h-3.5" />
-                  <span>Columns</span>
+                  <span className="hidden sm:inline">Columns</span>
                 </button>
               </PopoverTrigger>
               <PopoverContent align="start" className="w-44 p-2 bg-card border-border">
@@ -1222,6 +1239,28 @@ export default function MarketPage() {
             </Popover>
 
             <span className="text-xs text-muted-foreground ml-auto">{sortedStocks.length} stocks</span>
+
+            {/* Mobile sidebar toggle */}
+            <Sheet open={sidebarOpen} onOpenChange={setSidebarOpen}>
+              <SheetTrigger asChild>
+                <button className="xl:hidden h-9 px-3 flex items-center gap-1.5 bg-card border border-border rounded-lg text-xs text-muted-foreground hover:text-foreground transition-colors cursor-pointer">
+                  <PanelRight className="w-3.5 h-3.5" />
+                  <span className="hidden sm:inline">Market Info</span>
+                </button>
+              </SheetTrigger>
+              <SheetContent side="right" className="w-80 p-0 bg-background border-border overflow-y-auto">
+                <div className="p-5 space-y-5">
+                  <MarketSidebar
+                    sectorList={sectorList}
+                    filter={filter}
+                    setFilter={setFilter}
+                    setSearch={setSearch}
+                    market={market}
+                    openDetail={openDetail}
+                  />
+                </div>
+              </SheetContent>
+            </Sheet>
           </div>
 
           <div className="rounded-xl border border-border overflow-hidden">
@@ -1229,13 +1268,13 @@ export default function MarketPage() {
               <thead>
                 <tr className="border-b border-border bg-card/60">
                   {[
-                    { key: "ticker", label: "Ticker", align: "left",  always: true },
-                    { key: "name",   label: "Name",   align: "left",  always: false },
-                    { key: "price",  label: "Price",  align: "right", always: false },
-                    { key: "change", label: "Chg%",   align: "right", always: false },
-                    { key: "volume", label: "Volume", align: "right", always: false },
-                    { key: "rsi",    label: "RSI",    align: "right", always: false },
-                    { key: "spread", label: "Spread", align: "right", always: false },
+                    { key: "ticker", label: "Ticker", align: "left",  always: true,  hideMobile: false },
+                    { key: "name",   label: "Name",   align: "left",  always: false, hideMobile: true  },
+                    { key: "price",  label: "Price",  align: "right", always: false, hideMobile: false },
+                    { key: "change", label: "Chg%",   align: "right", always: false, hideMobile: false },
+                    { key: "volume", label: "Volume", align: "right", always: false, hideMobile: true  },
+                    { key: "rsi",    label: "RSI",    align: "right", always: false, hideMobile: true  },
+                    { key: "spread", label: "Spread", align: "right", always: false, hideMobile: true  },
                   ].filter(col => col.always || visibleCols[col.key]).map(col => (
                     <th
                       key={col.key}
@@ -1243,7 +1282,8 @@ export default function MarketPage() {
                         "px-3 py-3 text-xs font-medium text-muted-foreground uppercase tracking-widest select-none",
                         col.align === "right" && "text-right",
                         col.align === "left"  && "text-left",
-                        !["name","spread"].includes(col.key) && "cursor-pointer hover:text-foreground transition-colors"
+                        !["name","spread"].includes(col.key) && "cursor-pointer hover:text-foreground transition-colors",
+                        col.hideMobile && "hidden sm:table-cell"
                       )}
                       onClick={() => !["name","spread"].includes(col.key) && toggleSort(col.key)}
                     >
@@ -1266,7 +1306,8 @@ export default function MarketPage() {
                       key={t}
                       onClick={() => openDetail(t)}
                       className={cn(
-                        "cursor-pointer hover:bg-card/60 transition-colors border-b border-border/50",
+                        "transition-colors border-b border-border/50",
+                        openingTicker === t ? "bg-card/80" : "cursor-pointer hover:bg-card/60",
                         idx === sortedStocks.length - 1 && "border-b-0",
                         s.halted && "opacity-60"
                       )}
@@ -1277,11 +1318,11 @@ export default function MarketPage() {
                           {s.halted && <AlertTriangle className="w-3.5 h-3.5" style={{ color: LOSS }} />}
                         </div>
                       </td>
-                      {visibleCols.name    && <td className="px-3 py-3.5 text-muted-foreground text-sm max-w-[180px] truncate">{s.name}</td>}
+                      {visibleCols.name    && <td className="px-3 py-3.5 text-muted-foreground text-sm max-w-[160px] truncate hidden sm:table-cell">{s.name}</td>}
                       {visibleCols.price   && (
                         <td className="px-3 py-3.5 text-right">
-                          <div className="font-semibold font-mono text-base tabular-nums text-foreground">{s.price.toFixed(2)}</div>
-                          <div className="text-xs font-mono text-muted-foreground tabular-nums">
+                          <div className="font-semibold font-mono text-sm sm:text-base tabular-nums text-foreground">{s.price.toFixed(2)}</div>
+                          <div className="text-xs font-mono text-muted-foreground tabular-nums hidden sm:block">
                             {s.bid.toFixed(2)}/{s.ask.toFixed(2)}
                           </div>
                         </td>
@@ -1289,32 +1330,35 @@ export default function MarketPage() {
                       {visibleCols.change  && (
                         <td className="px-3 py-3.5 text-right">
                           <span className="inline-flex items-center gap-1 font-semibold font-mono text-sm tabular-nums" style={{ color: up ? GAIN : LOSS }}>
-                            {up ? <TrendingUp className="w-3.5 h-3.5" /> : <TrendingDown className="w-3.5 h-3.5" />}
+                            {up ? <TrendingUp className="w-3 sm:w-3.5 h-3 sm:h-3.5" /> : <TrendingDown className="w-3 sm:w-3.5 h-3 sm:h-3.5" />}
                             {up ? "+" : ""}{s.change.toFixed(2)}%
                           </span>
                         </td>
                       )}
                       {visibleCols.volume  && (
-                        <td className="px-3 py-3.5 text-right font-mono text-sm text-muted-foreground tabular-nums">
+                        <td className="px-3 py-3.5 text-right font-mono text-sm text-muted-foreground tabular-nums hidden sm:table-cell">
                           {fmtVol(s.volume)}
                         </td>
                       )}
                       {visibleCols.rsi     && (
-                        <td className="px-3 py-3.5 text-right">
+                        <td className="px-3 py-3.5 text-right hidden sm:table-cell">
                           <span className="text-sm font-mono tabular-nums" style={{ color: s.rsi > 70 ? LOSS : s.rsi < 30 ? GAIN : NEUT }}>
                             {s.rsi.toFixed(0)}
                           </span>
                         </td>
                       )}
                       {visibleCols.spread  && (
-                        <td className="px-3 py-3.5 text-right">
+                        <td className="px-3 py-3.5 text-right hidden sm:table-cell">
                           <span className="text-xs font-mono tabular-nums" style={{ color: s.spreadPct > 0.5 ? LOSS : DIM }}>
                             {(s.spreadPct || 0).toFixed(2)}%
                           </span>
                         </td>
                       )}
                       <td className="px-3 py-3.5 text-right">
-                        <span className="text-muted-foreground text-sm">›</span>
+                        {openingTicker === t
+                          ? <Loader2 className="w-3.5 h-3.5 text-muted-foreground animate-spin ml-auto" />
+                          : <span className="text-muted-foreground text-sm">›</span>
+                        }
                       </td>
                     </tr>
                   )
@@ -1324,88 +1368,118 @@ export default function MarketPage() {
           </div>
         </div>
 
-        {/* Right sidebar */}
-        <div className="w-64 shrink-0 space-y-5">
-          {/* Sectors */}
-          <div>
-            <p className="text-xs text-muted-foreground uppercase tracking-widest mb-3">Sectors</p>
-            <div className="space-y-1.5">
-              {sectorList.map(([k, v]) => {
-                const up = v.avgChange >= 0
-                const maxVal = Math.max(0.01, ...sectorList.map(([, e]) => Math.abs(e.avgChange)))
-                const barW = Math.min(100, (Math.abs(v.avgChange) / maxVal) * 100)
-                return (
-                  <button
-                    key={k}
-                    onClick={() => { setFilter(k === filter ? "all" : k); setSearch("") }}
-                    className={cn(
-                      "w-full p-2.5 rounded-lg border text-left transition-all cursor-pointer",
-                      filter === k ? "bg-card border-ring/40" : "bg-card/40 border-border hover:bg-card"
-                    )}
-                  >
-                    <div className="flex justify-between items-center mb-1">
-                      <span className="text-sm text-foreground">{v.icon} {v.label}</span>
-                      <span className="text-xs font-semibold font-mono tabular-nums" style={{ color: up ? GAIN : LOSS }}>
-                        {up ? "+" : ""}{v.avgChange.toFixed(2)}%
-                      </span>
-                    </div>
-                    <div className="h-0.5 bg-background rounded-full overflow-hidden">
-                      <div className="h-full rounded-full transition-all duration-700" style={{ width: `${barW}%`, background: up ? GAIN : LOSS }} />
-                    </div>
-                  </button>
-                )
-              })}
-            </div>
-          </div>
-
-          <Separator className="bg-border" />
-
-          {/* Top movers */}
-          <div>
-            <p className="text-xs text-muted-foreground uppercase tracking-widest mb-3">Top Movers</p>
-            <div className="space-y-1.5">
-              <button
-                onClick={() => openDetail(market.topGainer.ticker)}
-                className="w-full flex justify-between items-center px-3 py-2.5 bg-card/40 border border-border rounded-lg hover:bg-card transition-colors cursor-pointer"
-              >
-                <span className="text-sm text-muted-foreground">Gainer</span>
-                <span className="text-sm font-semibold font-mono" style={{ color: GAIN }}>
-                  {market.topGainer.ticker} +{market.topGainer.pct}%
-                </span>
-              </button>
-              <button
-                onClick={() => openDetail(market.topLoser.ticker)}
-                className="w-full flex justify-between items-center px-3 py-2.5 bg-card/40 border border-border rounded-lg hover:bg-card transition-colors cursor-pointer"
-              >
-                <span className="text-sm text-muted-foreground">Loser</span>
-                <span className="text-sm font-semibold font-mono" style={{ color: LOSS }}>
-                  {market.topLoser.ticker} {market.topLoser.pct}%
-                </span>
-              </button>
-            </div>
-          </div>
-
-          <Separator className="bg-border" />
-
-          {/* Macro */}
-          <div>
-            <p className="text-xs text-muted-foreground uppercase tracking-widest mb-3">Macro</p>
-            <div className="space-y-1.5">
-              {[
-                ["Rate",      `${market.interestRate?.toFixed(2) ?? "—"}%`],
-                ["Inflation", `${market.inflation?.toFixed(2) ?? "—"}%`],
-                ["GDP",       `${market.gdpGrowth?.toFixed(2) ?? "—"}%`],
-                ["VIX",       (market.vix ?? 18).toFixed(1)],
-              ].map(([label, val], i) => (
-                <div key={i} className="flex justify-between items-center px-3 py-2.5 bg-card/40 border border-border rounded-lg">
-                  <span className="text-sm text-muted-foreground">{label}</span>
-                  <span className="text-sm font-semibold font-mono text-foreground tabular-nums">{val}</span>
-                </div>
-              ))}
-            </div>
-          </div>
+        {/* Right sidebar — desktop only (xl+) */}
+        <div className="hidden xl:block w-64 shrink-0 space-y-5">
+          <MarketSidebar
+            sectorList={sectorList}
+            filter={filter}
+            setFilter={setFilter}
+            setSearch={setSearch}
+            market={market}
+            openDetail={openDetail}
+          />
         </div>
       </div>
     </div>
+  )
+}
+
+// ── Market sidebar (shared between desktop and mobile Sheet) ──────────────────
+function MarketSidebar({
+  sectorList,
+  filter,
+  setFilter,
+  setSearch,
+  market,
+  openDetail,
+}: {
+  sectorList: [string, import("@/lib/SimulationContext").SectorInfo][]
+  filter: string
+  setFilter: (v: string) => void
+  setSearch: (v: string) => void
+  market: import("@/lib/SimulationContext").MarketOverview
+  openDetail: (t: string) => void
+}) {
+  return (
+    <>
+      {/* Sectors */}
+      <div>
+        <p className="text-xs text-muted-foreground uppercase tracking-widest mb-3">Sectors</p>
+        <div className="space-y-1.5">
+          {sectorList.map(([k, v]) => {
+            const up = v.avgChange >= 0
+            const maxVal = Math.max(0.01, ...sectorList.map(([, e]) => Math.abs(e.avgChange)))
+            const barW = Math.min(100, (Math.abs(v.avgChange) / maxVal) * 100)
+            return (
+              <button
+                key={k}
+                onClick={() => { setFilter(k === filter ? "all" : k); setSearch("") }}
+                className={cn(
+                  "w-full p-2.5 rounded-lg border text-left transition-all cursor-pointer",
+                  filter === k ? "bg-card border-ring/40" : "bg-card/40 border-border hover:bg-card"
+                )}
+              >
+                <div className="flex justify-between items-center mb-1">
+                  <span className="text-sm text-foreground">{v.icon} {v.label}</span>
+                  <span className="text-xs font-semibold font-mono tabular-nums" style={{ color: up ? GAIN : LOSS }}>
+                    {up ? "+" : ""}{v.avgChange.toFixed(2)}%
+                  </span>
+                </div>
+                <div className="h-0.5 bg-background rounded-full overflow-hidden">
+                  <div className="h-full rounded-full transition-all duration-700" style={{ width: `${barW}%`, background: up ? GAIN : LOSS }} />
+                </div>
+              </button>
+            )
+          })}
+        </div>
+      </div>
+
+      <Separator className="bg-border" />
+
+      {/* Top movers */}
+      <div>
+        <p className="text-xs text-muted-foreground uppercase tracking-widest mb-3">Top Movers</p>
+        <div className="space-y-1.5">
+          <button
+            onClick={() => openDetail(market.topGainer.ticker)}
+            className="w-full flex justify-between items-center px-3 py-2.5 bg-card/40 border border-border rounded-lg hover:bg-card transition-colors cursor-pointer"
+          >
+            <span className="text-sm text-muted-foreground">Gainer</span>
+            <span className="text-sm font-semibold font-mono" style={{ color: GAIN }}>
+              {market.topGainer.ticker} +{market.topGainer.pct}%
+            </span>
+          </button>
+          <button
+            onClick={() => openDetail(market.topLoser.ticker)}
+            className="w-full flex justify-between items-center px-3 py-2.5 bg-card/40 border border-border rounded-lg hover:bg-card transition-colors cursor-pointer"
+          >
+            <span className="text-sm text-muted-foreground">Loser</span>
+            <span className="text-sm font-semibold font-mono" style={{ color: LOSS }}>
+              {market.topLoser.ticker} {market.topLoser.pct}%
+            </span>
+          </button>
+        </div>
+      </div>
+
+      <Separator className="bg-border" />
+
+      {/* Macro */}
+      <div>
+        <p className="text-xs text-muted-foreground uppercase tracking-widest mb-3">Macro</p>
+        <div className="space-y-1.5">
+          {[
+            ["Rate",      `${market.interestRate?.toFixed(2) ?? "—"}%`],
+            ["Inflation", `${market.inflation?.toFixed(2) ?? "—"}%`],
+            ["GDP",       `${market.gdpGrowth?.toFixed(2) ?? "—"}%`],
+            ["VIX",       (market.vix ?? 18).toFixed(1)],
+          ].map(([label, val], i) => (
+            <div key={i} className="flex justify-between items-center px-3 py-2.5 bg-card/40 border border-border rounded-lg">
+              <span className="text-sm text-muted-foreground">{label}</span>
+              <span className="text-sm font-semibold font-mono text-foreground tabular-nums">{val}</span>
+            </div>
+          ))}
+        </div>
+      </div>
+    </>
   )
 }

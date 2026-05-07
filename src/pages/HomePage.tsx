@@ -79,7 +79,7 @@ export default function HomePage({ onNavigate }: Props) {
     <div className="flex flex-col">
 
       {/* ── Hero ─────────────────────────────────────────────────────────── */}
-      <section className="relative flex flex-col items-center text-center pt-32 pb-28 px-8 overflow-hidden">
+      <section className="relative flex flex-col items-center text-center pt-16 sm:pt-24 lg:pt-32 pb-14 sm:pb-20 lg:pb-28 px-4 sm:px-8 overflow-hidden">
         {/* subtle grid background */}
         <div
           className="pointer-events-none absolute inset-0 opacity-[0.03]"
@@ -99,13 +99,13 @@ export default function HomePage({ onNavigate }: Props) {
           Simulated Stock Market Training Data
         </Badge>
 
-        <h1 className="text-6xl sm:text-7xl lg:text-8xl xl:text-9xl font-extrabold tracking-tight text-balance leading-[1.02] mb-8 max-w-6xl">
+        <h1 className="text-4xl sm:text-6xl lg:text-8xl xl:text-9xl font-extrabold tracking-tight text-balance leading-[1.05] sm:leading-[1.02] mb-6 sm:mb-8 max-w-6xl">
           Real market mechanics.
           <br />
           <span className="text-muted-foreground">Fictional data.</span>
         </h1>
 
-        <p className="text-xl text-muted-foreground leading-relaxed max-w-3xl mb-12">
+        <p className="text-base sm:text-xl text-muted-foreground leading-relaxed max-w-3xl mb-8 sm:mb-12">
           POLYMART runs a persistent simulated stock exchange with 132 companies, 20 sectors, live macro variables,
           and an open API. Built for Discord bots, browser games, and learning how markets behave.
         </p>
@@ -151,24 +151,28 @@ export default function HomePage({ onNavigate }: Props) {
             <div
               key={i}
               className={cn(
-                "flex flex-col items-center py-10 px-6",
-                i < STATS.length - 1 && "border-r border-border"
+                "flex flex-col items-center py-8 sm:py-10 px-4 sm:px-6",
+                /* right border: always on col 1 (odd), and on desktop cols 1-3 */
+                i % 2 === 0 && i < STATS.length - 1 && "border-r border-border sm:border-r-0",
+                i < STATS.length - 1 && "sm:border-r sm:border-border",
+                /* bottom border on first row (items 0,1) in 2-col mobile layout */
+                i < 2 && "border-b border-border sm:border-b-0",
               )}
             >
-              <span className="text-5xl lg:text-6xl font-extrabold font-mono text-foreground mb-2 tabular-nums">
+              <span className="text-4xl sm:text-5xl lg:text-6xl font-extrabold font-mono text-foreground mb-2 tabular-nums">
                 {s.value}
               </span>
-              <span className="text-sm text-muted-foreground uppercase tracking-widest">{s.label}</span>
+              <span className="text-xs sm:text-sm text-muted-foreground uppercase tracking-widest">{s.label}</span>
             </div>
           ))}
         </div>
       </section>
 
       {/* ── Features ─────────────────────────────────────────────────────── */}
-      <section className="max-w-[1600px] mx-auto w-full px-8 py-28">
+      <section className="max-w-[1600px] mx-auto w-full px-4 sm:px-8 py-14 sm:py-20 lg:py-28">
         <div className="mb-14 max-w-xl">
           <p className="text-xs text-muted-foreground uppercase tracking-widest mb-3">How it works</p>
-          <h2 className="text-4xl font-bold tracking-tight text-foreground">
+          <h2 className="text-2xl sm:text-4xl font-bold tracking-tight text-foreground">
             A complete market simulation in your pocket
           </h2>
         </div>
@@ -197,11 +201,11 @@ export default function HomePage({ onNavigate }: Props) {
       <Separator className="bg-border" />
 
       {/* ── Sectors ──────────────────────────────────────────────────────── */}
-      <section className="max-w-[1600px] mx-auto w-full px-8 py-28">
+      <section className="max-w-[1600px] mx-auto w-full px-4 sm:px-8 py-14 sm:py-20 lg:py-28">
         <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-6 mb-10">
           <div>
             <p className="text-xs text-muted-foreground uppercase tracking-widest mb-3">Coverage</p>
-            <h2 className="text-4xl font-bold tracking-tight text-foreground">20 sectors simulated</h2>
+            <h2 className="text-2xl sm:text-4xl font-bold tracking-tight text-foreground">20 sectors simulated</h2>
           </div>
           <Button variant="outline" onClick={() => onNavigate("market")} className="border-border shrink-0">
             Browse all stocks
@@ -231,11 +235,11 @@ export default function HomePage({ onNavigate }: Props) {
       <Separator className="bg-border" />
 
       {/* ── API preview ──────────────────────────────────────────────────── */}
-      <section className="max-w-[1600px] mx-auto w-full px-8 py-28">
+      <section className="max-w-[1600px] mx-auto w-full px-4 sm:px-8 py-14 sm:py-20 lg:py-28">
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-16 items-center">
           <div>
             <p className="text-xs text-muted-foreground uppercase tracking-widest mb-3">PolyAPI</p>
-            <h2 className="text-4xl font-bold tracking-tight text-foreground mb-5">
+            <h2 className="text-2xl sm:text-4xl font-bold tracking-tight text-foreground mb-4 sm:mb-5">
               One GET request.<br />All market data.
             </h2>
             <p className="text-base text-muted-foreground leading-relaxed mb-8">
@@ -282,7 +286,7 @@ export default function HomePage({ onNavigate }: Props) {
       <Separator className="bg-border" />
 
       {/* ── Discord CTA ──────────────────────────────────────────────────── */}
-      <section className="max-w-[1600px] mx-auto w-full px-8 py-28">
+      <section className="max-w-[1600px] mx-auto w-full px-4 sm:px-8 py-14 sm:py-20 lg:py-28">
         <div className="relative rounded-2xl border border-border bg-card overflow-hidden">
           {/* subtle dot pattern */}
           <div
@@ -292,9 +296,9 @@ export default function HomePage({ onNavigate }: Props) {
               backgroundSize: "24px 24px",
             }}
           />
-          <div className="relative flex flex-col sm:flex-row items-center justify-between gap-8 p-10 sm:p-14">
+          <div className="relative flex flex-col sm:flex-row items-center justify-between gap-6 sm:gap-8 p-6 sm:p-10 lg:p-14">
             <div className="text-center sm:text-left">
-              <h2 className="text-3xl font-bold text-foreground mb-3 tracking-tight">
+              <h2 className="text-xl sm:text-3xl font-bold text-foreground mb-3 tracking-tight">
                 Bring POLYMART to your Discord server
               </h2>
               <p className="text-base text-muted-foreground max-w-lg leading-relaxed">
