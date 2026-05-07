@@ -1,7 +1,7 @@
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Separator } from "@/components/ui/separator"
-import { ArrowRight, GraducationCap, ChartBar as BarChart2, Globe, Bot, TrendingUp, Activity, Monitor, Brain, FlaskConical, Rocket, Laugh, Pill, Landmark, Gamepad2, Leaf, Bitcoin, Shield, Utensils, ShoppingCart, Tv as Tv2, Car, Building2, Plane, Bolt as BoltIcon, Package, Wheat } from "lucide-react"
+import { ArrowRight, GraduationCap, ChartBar as BarChart2, Globe, Bot, TrendingUp, Activity, Monitor, Brain, FlaskConical, Rocket, Laugh, Pill, Landmark, Gamepad2, Leaf, Bitcoin, Shield, Utensils, ShoppingCart, Tv as Tv2, Car, Building2, Plane, Bolt as BoltIcon, Package, Wheat } from "lucide-react"
 import { cn } from "@/lib/utils"
 import type { LucideIcon } from "lucide-react"
 
@@ -18,7 +18,7 @@ const FEATURES = [
     desc: "Prices tick every 3 seconds driven by volatility, momentum, RSI, insider bias, earnings cycles, and macro sensitivity.",
   },
   {
-    icon: GraducationCap,
+    icon: GraduationCap,
     title: "Dynamic Market Events",
     desc: "Weighted random events fire continuously with flash crashes, FDA approvals, meme frenzies, and geopolitical shocks move entire sectors.",
   },
