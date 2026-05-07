@@ -2,7 +2,7 @@ import { useState, useEffect, useRef } from "react"
 import { Button } from "@/components/ui/button"
 import { Separator } from "@/components/ui/separator"
 import { cn } from "@/lib/utils"
-import { Hop as Home, TrendingUp, Code as Code2, Layers, GraduationCap, Circle as HelpCircle, ShieldCheck, FileText, Bot, ArrowUpRight, Activity } from "lucide-react"
+import { Hop as Home, TrendingUp, Code as Code2, Layers, GraduationCap, Circle as HelpCircle, ShieldCheck, FileText, Bot, ArrowUpRight, Activity, X } from "lucide-react"
 import { SimulationProvider, useSimulation } from "@/lib/SimulationContext"
 import HomePage from "@/pages/HomePage"
 import MarketPage from "@/pages/MarketPage"
@@ -288,6 +288,95 @@ function Footer({ setRoute }: { setRoute: (r: Route) => void }) {
   )
 }
 
+// ── Market nudge banner ───────────────────────────────────────────────────────
+const NUDGE_KEY = "polymart_nudge_dismissed"
+const NUDGE_DELAY_MS = 45_000
+
+function MarketNudge({
+  onNavigate,
+  currentRoute,
+}: {
+  onNavigate: (r: Route) => void
+  currentRoute: Route
+}) {
+  const [visible, setVisible] = useState(false)
+  const [rendered, setRendered] = useState(false)
+
+  useEffect(() => {
+    // Don't show if already dismissed this session or user is on market
+    if (sessionStorage.getItem(NUDGE_KEY) || currentRoute === "market") return
+
+    const timer = setTimeout(() => {
+      setRendered(true)
+      // Small delay so the element exists before we trigger the animation
+      requestAnimationFrame(() => requestAnimationFrame(() => setVisible(true)))
+    }, NUDGE_DELAY_MS)
+
+    return () => clearTimeout(timer)
+  }, []) // intentionally run once on mount
+
+  // If user navigates to market while nudge is showing, auto-dismiss
+  useEffect(() => {
+    if (currentRoute === "market" && visible) dismiss()
+  }, [currentRoute])
+
+  function dismiss() {
+    setVisible(false)
+    sessionStorage.setItem(NUDGE_KEY, "1")
+    setTimeout(() => setRendered(false), 400)
+  }
+
+  function goToMarket() {
+    onNavigate("market")
+    dismiss()
+  }
+
+  if (!rendered) return null
+
+  return (
+    <div
+      className={cn(
+        "fixed top-4 left-1/2 -translate-x-1/2 z-50",
+        "w-full max-w-sm px-4",
+        "transition-all duration-400 ease-out",
+        visible ? "opacity-100 translate-y-0" : "opacity-0 -translate-y-3 pointer-events-none",
+      )}
+    >
+      <div className="bg-card border border-border rounded-xl shadow-lg px-4 py-3 flex items-center gap-3">
+        {/* Pulsing dot */}
+        <span className="relative flex h-2.5 w-2.5 shrink-0">
+          <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-foreground opacity-40" />
+          <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-foreground" />
+        </span>
+
+        <div className="flex-1 min-w-0">
+          <p className="text-sm font-semibold text-foreground leading-tight">Market is live</p>
+          <p className="text-xs text-muted-foreground leading-tight mt-0.5 truncate">
+            Real-time prices, charts & sector data
+          </p>
+        </div>
+
+        <Button
+          size="sm"
+          variant="default"
+          className="shrink-0 h-7 px-3 text-xs font-semibold"
+          onClick={goToMarket}
+        >
+          View Market
+        </Button>
+
+        <button
+          onClick={dismiss}
+          aria-label="Dismiss"
+          className="shrink-0 text-muted-foreground hover:text-foreground transition-colors cursor-pointer bg-transparent border-0 p-0.5"
+        >
+          <X className="w-3.5 h-3.5" />
+        </button>
+      </div>
+    </div>
+  )
+}
+
 // ── Root ──────────────────────────────────────────────────────────────────────
 export default function App() {
   const [route, setRoute] = useState<Route>(getRoute)
@@ -303,6 +392,7 @@ export default function App() {
   return (
     <SimulationProvider>
       <div className="min-h-screen flex flex-col bg-background text-foreground">
+        <MarketNudge onNavigate={go} currentRoute={route} />
         <Navbar route={route} setRoute={setRoute} />
 
         <main className="flex-1">
