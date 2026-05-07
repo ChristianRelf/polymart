@@ -336,24 +336,23 @@ function MarketNudge({
   return (
     <div
       className={cn(
-        "fixed top-4 left-1/2 -translate-x-1/2 z-50",
-        "w-full max-w-sm px-4",
+        "fixed top-14 left-1/2 -translate-x-1/2 z-50",
+        "w-full max-w-3xl px-4",
         "transition-all duration-400 ease-out",
-        visible ? "opacity-100 translate-y-0" : "opacity-0 -translate-y-3 pointer-events-none",
+        visible ? "opacity-100 translate-y-0" : "opacity-0 -translate-y-2 pointer-events-none",
       )}
     >
-      <div className="bg-card border border-border rounded-xl shadow-lg px-4 py-3 flex items-center gap-3">
+      <div className="bg-card border border-border rounded-lg shadow-lg px-4 py-2 flex items-center gap-3">
         {/* Pulsing dot */}
         <span className="relative flex h-2.5 w-2.5 shrink-0">
           <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-foreground opacity-40" />
           <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-foreground" />
         </span>
 
-        <div className="flex-1 min-w-0">
-          <p className="text-sm font-semibold text-foreground leading-tight">Market is live</p>
-          <p className="text-xs text-muted-foreground leading-tight mt-0.5 truncate">
-            Real-time prices, charts & sector data
-          </p>
+        <div className="flex-1 min-w-0 flex items-center gap-2">
+          <p className="text-sm font-semibold text-foreground leading-none whitespace-nowrap">Market is live</p>
+          <span className="text-muted-foreground text-xs leading-none">—</span>
+          <p className="text-xs text-muted-foreground leading-none truncate">Real-time prices, charts &amp; sector data</p>
         </div>
 
         <Button
