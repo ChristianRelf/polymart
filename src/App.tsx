@@ -8,9 +8,10 @@ import MarketPage from "@/pages/MarketPage"
 import ApiDocsPage from "@/pages/ApiDocsPage"
 import LegalPage from "@/pages/LegalPage"
 import ChangelogPage from "@/pages/ChangelogPage"
+import EducationPage from "@/pages/EducationPage"
 
 // ── Routing ───────────────────────────────────────────────────────────────────
-export type Route = "home" | "market" | "api" | "terms" | "privacy" | "changelog"
+export type Route = "home" | "market" | "api" | "terms" | "privacy" | "changelog" | "education"
 
 const HASH_MAP: Record<string, Route> = {
   "": "home",
@@ -21,6 +22,7 @@ const HASH_MAP: Record<string, Route> = {
   "/docs/terms": "terms",
   "/docs/privacy": "privacy",
   "/changelog": "changelog",
+  "/education": "education",
 }
 
 const ROUTE_HASH: Record<Route, string> = {
@@ -30,6 +32,7 @@ const ROUTE_HASH: Record<Route, string> = {
   terms: "/docs/terms",
   privacy: "/docs/privacy",
   changelog: "/changelog",
+  education: "/education",
 }
 
 function getRoute(): Route {
@@ -132,6 +135,7 @@ function Navbar({ route, setRoute }: { route: Route; setRoute: (r: Route) => voi
             ["home", "Home"],
             ["market", "Market"],
             ["api", "API Docs"],
+            ["education", "Education"],
           ] as [Route, string][]).map(([r, label]) => (
             <button
               key={r}
@@ -197,6 +201,7 @@ function Footer({ setRoute }: { setRoute: (r: Route) => void }) {
                 ["home", "Home"],
                 ["market", "Market"],
                 ["api", "API Reference"],
+                ["education", "Education"],
               ] as [Route, string][]).map(([r, label]) => (
                 <button
                   key={r}
@@ -270,6 +275,7 @@ export default function App() {
           {route === "terms"     && <LegalPage      type="terms"   onNavigate={go} />}
           {route === "privacy"   && <LegalPage      type="privacy" onNavigate={go} />}
           {route === "changelog" && <ChangelogPage  onNavigate={go} />}
+          {route === "education" && <EducationPage  onNavigate={go} />}
         </main>
 
         <Footer setRoute={setRoute} />
