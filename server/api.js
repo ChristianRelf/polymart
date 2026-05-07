@@ -18,7 +18,7 @@ function setCors(res) {
 // 60 requests per 60-second window per IP.
 // Expensive endpoints (getStocks, getHistory, getLeaderboard) count as 3 tokens.
 const RATE_WINDOW_MS = 60_000;
-const RATE_LIMIT     = 60;
+const RATE_LIMIT     = 400;
 const HEAVY_COST     = 3;
 const HEAVY_ROUTES   = new Set(["/getStocks", "/getHistory", "/getLeaderboard"]);
 
