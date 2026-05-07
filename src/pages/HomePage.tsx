@@ -96,7 +96,7 @@ export default function HomePage({ onNavigate }: Props) {
           variant="outline"
           className="mb-6 px-4 py-1.5 text-xs tracking-[0.15em] uppercase font-medium border-border text-muted-foreground"
         >
-          Simulated Stock Market Engine
+          Simulated Stock Market Training Data
         </Badge>
 
         <h1 className="text-6xl sm:text-7xl lg:text-8xl xl:text-9xl font-extrabold tracking-tight text-balance leading-[1.02] mb-8 max-w-6xl">
