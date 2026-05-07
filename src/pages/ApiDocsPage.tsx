@@ -25,7 +25,7 @@ const ENDPOINTS: Endpoint[] = [
     method: "GET",
     path: "/api/v1/getMarket",
     summary: "Global market snapshot",
-    desc: "Returns the current state of the entire market — index value, fear & greed score, macro variables, gainer/loser counts, and top movers.",
+    desc: "Returns the current state of the entire market index value, fear & greed score, macro variables, gainer/loser counts, and top movers.",
     response: [
       { name: "index", type: "number", desc: "Current market index value" },
       { name: "indexChange", type: "number", desc: "Absolute change from previous tick" },
@@ -412,7 +412,7 @@ export default function ApiDocsPage() {
         </Badge>
         <h1 className="text-4xl font-bold tracking-tight text-foreground mb-4">API Reference</h1>
         <p className="text-muted-foreground leading-relaxed max-w-2xl">
-          The POLYMART API is open — no authentication required. All endpoints are GET requests returning JSON.
+          The PolyAPI is open, no authentication required. All endpoints are GET requests returning JSON.
           Prices update every ~10 seconds via a persistent server-side simulation engine.
         </p>
       </div>
@@ -466,7 +466,7 @@ export default function ApiDocsPage() {
       </div>
 
       <div className="bg-card border border-border rounded-xl p-6">
-        <p className="text-[10px] text-muted-foreground uppercase tracking-widest mb-4">Discord Bot — Quick Start</p>
+        <p className="text-[10px] text-muted-foreground uppercase tracking-widest mb-4">Discord Bot Quick Start</p>
         <pre className="text-xs font-mono text-foreground bg-background border border-border rounded-lg p-4 overflow-x-auto whitespace-pre">{`// Get current price of a stock
 const res = await fetch('${BASE}/api/v1/getStock?ticker=APEX');
 const { ticker, name, price, change } = await res.json();
