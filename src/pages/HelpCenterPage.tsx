@@ -87,7 +87,7 @@ const ALL_FAQS: FaqItem[] = [
   {
     category: "The Market",
     q: "How often do prices update?",
-    a: "The market ticks every 5 seconds. The website polls for fresh data on the same interval and updates charts and prices in real time.",
+    a: "The market ticks every 3 seconds. The website polls for fresh data on the same interval and updates charts and prices in real time.",
   },
   {
     category: "The Market",
@@ -169,7 +169,7 @@ const ALL_FAQS: FaqItem[] = [
   {
     category: "API",
     q: "Is there a rate limit?",
-    a: "Yes. The hosted API applies a sliding-window limit of 60 requests per minute per IP address. The /getStocks endpoint counts as 3 tokens due to payload size. For most use cases — polling every 5 seconds — this limit is never reached.",
+    a: "Yes. The hosted API applies a sliding-window limit of 60 requests per minute per IP address. The /getStocks endpoint counts as 3 tokens due to payload size. For most use cases — polling every 3 seconds — this limit is never reached.",
   },
   {
     category: "API",

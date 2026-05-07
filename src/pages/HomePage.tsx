@@ -70,7 +70,7 @@ const SECTORS: { icon: LucideIcon; label: string }[] = [
 const STATS = [
   { value: "132", label: "Simulated Stocks" },
   { value: "20", label: "Market Sectors" },
-  { value: "5s", label: "Tick Interval" },
+  { value: "3s", label: "Tick Interval" },
   { value: "240+", label: "Event Types" },
 ]
 

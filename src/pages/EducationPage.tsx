@@ -164,7 +164,7 @@ export default function EducationPage({ onNavigate }: Props) {
           </div>
           <div className="grid grid-cols-2 gap-3">
             {[
-              { icon: Activity,    label: "Continuous simulation",  sub: "Ticks every 5 seconds"     },
+              { icon: Activity,    label: "Continuous simulation",  sub: "Ticks every 3 seconds"     },
               { icon: BarChart2,   label: "132 tickers",            sub: "Across 20 sectors"          },
               { icon: Globe,       label: "Macro variables",        sub: "Rates, inflation, GDP"      },
               { icon: Code2,       label: "Open REST API",          sub: "No auth required"           },
@@ -531,7 +531,7 @@ all_stocks = requests.get("https://polymart.co/api/v1/getStocks").json()
               },
               {
                 q: "Is there a rate limit on the API?",
-                a: "The hosted API applies a sliding window rate limit of 60 requests per minute per IP address. The getStocks endpoint (which returns all tickers) counts as 3 tokens toward this limit due to its payload size. For classroom use, individual polling intervals of 5 seconds per student are well within limits.",
+                a: "The hosted API applies a sliding window rate limit of 60 requests per minute per IP address. The getStocks endpoint (which returns all tickers) counts as 3 tokens toward this limit due to its payload size. For classroom use, individual polling intervals of 3 seconds per student are well within limits.",
               },
               {
                 q: "Can the list of tickers or sector definitions be customised?",
