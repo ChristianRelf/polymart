@@ -239,9 +239,7 @@ export default function HomePage({ onNavigate }: Props) {
               One GET request.<br />All market data.
             </h2>
             <p className="text-base text-muted-foreground leading-relaxed mb-8">
-              No authentication. No rate limits for personal use. The entire simulated market is exposed
-              over REST — index, stocks, sectors, events, and health. Designed for Discord bots, games,
-              and dashboards.
+              Use our PolyAPI to get live stock data for use with discord bots, web applications or other training/educational need. No authentication required.
             </p>
             <div className="flex gap-3">
               <Button onClick={() => onNavigate("api")} className="font-semibold">
