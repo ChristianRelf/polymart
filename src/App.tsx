@@ -240,35 +240,6 @@ function Footer({ setRoute }: { setRoute: (r: Route) => void }) {
               ))}
             </div>
           </div>
-
-        </div>
-
-        <Separator className="bg-border mb-6" />
-
-        <div className="flex flex-col sm:flex-row items-center justify-between gap-3">
-          <p className="text-xs text-muted-foreground">
-            © 2026 POLYMART. All simulation data is fictional.
-          </p>
-          <div className="flex gap-4">
-            <button
-              onClick={() => go("changelog")}
-              className="text-xs text-muted-foreground hover:text-foreground transition-colors cursor-pointer bg-transparent border-0 p-0"
-            >
-              Changelog
-            </button>
-            <button
-              onClick={() => go("terms")}
-              className="text-xs text-muted-foreground hover:text-foreground transition-colors cursor-pointer bg-transparent border-0 p-0"
-            >
-              Terms
-            </button>
-            <button
-              onClick={() => go("privacy")}
-              className="text-xs text-muted-foreground hover:text-foreground transition-colors cursor-pointer bg-transparent border-0 p-0"
-            >
-              Privacy
-            </button>
-          </div>
         </div>
       </div>
     </footer>
