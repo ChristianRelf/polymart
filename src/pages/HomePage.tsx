@@ -106,7 +106,7 @@ export default function HomePage({ onNavigate }: Props) {
         </h1>
 
         <p className="text-xl text-muted-foreground leading-relaxed max-w-3xl mb-12">
-          POLYMART runs a persistent simulated stock exchange — 132 companies, 20 sectors, live macro variables,
+          POLYMART runs a persistent simulated stock exchange with 132 companies, 20 sectors, live macro variables,
           and an open API. Built for Discord bots, browser games, and learning how markets behave.
         </p>
 
