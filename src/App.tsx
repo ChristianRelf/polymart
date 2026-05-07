@@ -230,7 +230,7 @@ function Footer({ setRoute }: { setRoute: (r: Route) => void }) {
             {/* Explore */}
             <div>
               <p className="text-[10px] font-bold text-muted-foreground/50 uppercase tracking-[0.15em] mb-4">Explore</p>
-              <div className="flex flex-col gap-3">
+              <div className="flex flex-col gap-1">
                 <FooterLink icon={Home}         label="Home"          onClick={() => go("home")} />
                 <FooterLink icon={TrendingUp}   label="Market"        onClick={() => go("market")} />
                 <FooterLink icon={Layers}       label="Products"      onClick={() => go("products")} />
