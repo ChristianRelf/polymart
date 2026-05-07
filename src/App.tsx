@@ -160,25 +160,6 @@ function Navbar({ route, setRoute }: { route: Route; setRoute: (r: Route) => voi
             </button>
           ))}
         </nav>
-
-        {/* Right actions */}
-        <div className="ml-auto flex items-center gap-2">
-          {isMarket && (
-            <div className="hidden sm:flex">
-              <TickCountdown intervalMs={3_000} />
-            </div>
-          )}
-          <Button variant="outline" size="sm" className="text-xs border-border font-medium" asChild>
-            <a
-              href="https://discord.com/api/oauth2/authorize?client_id=POLYMART_BOT&permissions=2147483648&scope=bot+applications.commands"
-              target="_blank"
-              rel="noopener noreferrer"
-            >
-              Add to Discord
-            </a>
-          </Button>
-        </div>
-
       </div>
     </header>
   )
