@@ -219,7 +219,7 @@ export default function App() {
         {page === "api" && (
           <div style={{ maxWidth: 700 }}>
             <div style={{ fontSize: 20, fontWeight: 700, color: T.white, marginBottom: 6 }}>API Documentation</div>
-            <p style={{ fontSize: 13, color: T.muted, lineHeight: 1.7, marginBottom: 20 }}>All endpoints return JSON. Simulation ticks every 3 seconds server-side.</p>
+            <p style={{ fontSize: 13, color: T.muted, lineHeight: 1.7, marginBottom: 20 }}>All endpoints return JSON. Simulation ticks every 5 seconds server-side.</p>
             {[{m:"GET",p:"/api/market",d:"Market overview - index, fear/greed, macro indicators, top movers"},{m:"GET",p:"/api/stocks",d:"All 60 stocks - price, change, volume, RSI, 52w range, sector"},{m:"GET",p:"/api/stocks/:ticker",d:"Full stock detail - history array, momentum, insider bias, peers"},{m:"GET",p:"/api/events?limit=N",d:"Recent market events with effect magnitude and sector tags"},{m:"GET",p:"/api/sectors",d:"Sector performance - avg change, news stack, momentum, tickers"},{m:"GET",p:"/api/health",d:"Server health check - uptime, tick count, stock count"}].map(function(e, i) {
               return <div key={i} style={{ padding: "12px 16px", background: T.panel, borderRadius: 8, border: "1px solid " + T.border, marginBottom: 6 }}>
                 <div style={{ display: "flex", alignItems: "center", gap: 8 }}>

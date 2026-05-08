@@ -15,7 +15,7 @@ const FEATURES = [
   {
     icon: Activity,
     title: "Live Simulation Engine",
-    desc: "Prices tick every 3 seconds driven by volatility, momentum, RSI, insider bias, earnings cycles, and macro sensitivity.",
+    desc: "Prices tick every 5 seconds driven by volatility, momentum, RSI, insider bias, earnings cycles, and macro sensitivity.",
   },
   {
     icon: GraduationCap,
@@ -70,7 +70,7 @@ const SECTORS: { icon: LucideIcon; label: string }[] = [
 const STATS = [
   { value: "132", label: "Simulated Stocks" },
   { value: "20", label: "Market Sectors" },
-  { value: "3s", label: "Tick Interval" },
+  { value: "5s", label: "Tick Interval" },
   { value: "240+", label: "Event Types" },
 ]
 

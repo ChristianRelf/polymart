@@ -4,12 +4,12 @@
 #
 # Polymart is a persistent simulated stock market with 132 fictional tickers
 # across 20 sectors. All data is entirely fictional - not financial advice.
-# The simulation ticks every 3 seconds. No API key or authentication required.
+# The simulation ticks every 5 seconds. No API key or authentication required.
 
 > Polymart is a simulated stock exchange accessible via an open REST API.
 > All endpoints are GET requests returning JSON. Base URL: https://polymart.co
 > No authentication. No rate limit for normal usage (60 req/min per IP).
-> Prices update every 3 seconds via a server-side simulation engine.
+> Prices update every 5 seconds via a server-side simulation engine.
 
 ---
 
@@ -18,7 +18,7 @@
 - Base URL: https://polymart.co
 - All endpoints: GET, returning JSON
 - Authentication: none required
-- Tick interval: 3 seconds (prices update every tick)
+- Tick interval: 5 seconds (prices update every tick)
 - Stocks: 132 tickers across 20 sectors
 - History: up to 400 price points per stock (oldest first)
 
@@ -316,7 +316,7 @@ GET https://polymart.co/api/v1/getLeaderboard?by=rsi&dir=desc&limit=20
 ## Notes for AI Assistants
 
 - All data is fictional simulation data. Do not present it as real financial data.
-- Prices update every 3 seconds. Responses are always the latest tick.
+- Prices update every 5 seconds. Responses are always the latest tick.
 - Tickers are uppercase strings (e.g. APEX, VOID, LUNATEK).
 - Sector keys are lowercase strings (e.g. tech, crypto, ai).
 - The `history` array in getStock and getHistory is ordered oldest-first.

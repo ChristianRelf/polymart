@@ -50,7 +50,7 @@ const PRODUCTS: Product[] = [
     icon: TrendingUp,
     status: "stable",
     version: "v1",
-    desc: "Open REST API for the Polymart simulated stock market. No authentication required. Prices update every ~3 seconds via the persistent simulation engine.",
+    desc: "Open REST API for the Polymart simulated stock market. No authentication required. Prices update every ~5 seconds via the persistent simulation engine.",
     baseUrl: BASE,
     endpoints: [
       {
@@ -258,7 +258,7 @@ const PRODUCTS: Product[] = [
         method: "GET",
         path: "/api/v1/getHistory",
         summary: "Price history for a stock",
-        desc: "Returns raw price history for a stock. Up to 400 data points, each representing one simulation tick (3 seconds).",
+        desc: "Returns raw price history for a stock. Up to 400 data points, each representing one simulation tick (5 seconds).",
         params: [
           { name: "ticker", type: "string", required: true, desc: "Ticker symbol", example: "VOID" },
           { name: "limit", type: "number", required: false, desc: "Data points to return (1–400, default 100)", example: "100" },

@@ -82,7 +82,7 @@ const CHANGELOG: ChangelogEntry[] = [
     changes: [
       { type: "added", text: "Supabase edge function for simulation tick (polymart-tick)" },
       { type: "added", text: "Supabase edge function for REST API (polymart-api)" },
-      { type: "added", text: "pg_cron scheduled tick every 3 seconds via database cron job" },
+      { type: "added", text: "pg_cron scheduled tick every 5 seconds via database cron job" },
       { type: "added", text: "Persistent simulation state stored in Supabase (market_state, stocks_state, sector_state, events_log)" },
       { type: "added", text: "Row Level Security enabled on all tables" },
       { type: "added", text: "Automatic warm-up: 60 ticks simulated on first run to seed price history" },
