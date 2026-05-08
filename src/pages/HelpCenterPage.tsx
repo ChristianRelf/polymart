@@ -60,7 +60,7 @@ const ALL_FAQS: FaqItem[] = [
   {
     category: "Getting Started",
     q: "What is Polymart?",
-    a: "Polymart is a persistent simulated stock exchange. It runs a continuous price engine driving 132 fictional tickers across 20 sectors. Everything — prices, companies, events — is entirely fictional. It is a tool for learning, building, and experimenting with market data without any real financial risk.",
+    a: "Polymart is a persistent simulated stock exchange. It runs a continuous price engine driving 132 fictional tickers across 20 sectors. Everything - prices, companies, events - is entirely fictional. It is a tool for learning, building, and experimenting with market data without any real financial risk.",
   },
   {
     category: "Getting Started",
@@ -102,7 +102,7 @@ const ALL_FAQS: FaqItem[] = [
   {
     category: "The Market",
     q: "What are macro variables and how do they affect stocks?",
-    a: "Three macro variables drift over time: interest rate, inflation, and GDP growth. Sectors are sensitive to these in different ways — Green Energy tends to underperform when interest rates are high (capital-intensive), Defence tends to benefit from geopolitical tension reflected in macro stress, and Consumer Goods are more inflation-sensitive. The effect is applied as a weighting multiplier on each tick.",
+    a: "Three macro variables drift over time: interest rate, inflation, and GDP growth. Sectors are sensitive to these in different ways - Green Energy tends to underperform when interest rates are high (capital-intensive), Defence tends to benefit from geopolitical tension reflected in macro stress, and Consumer Goods are more inflation-sensitive. The effect is applied as a weighting multiplier on each tick.",
   },
   {
     category: "The Market",
@@ -169,7 +169,7 @@ const ALL_FAQS: FaqItem[] = [
   {
     category: "API",
     q: "Is there a rate limit?",
-    a: "Yes. The hosted API applies a sliding-window limit of 60 requests per minute per IP address. The /getStocks endpoint counts as 3 tokens due to payload size. For most use cases — polling every 3 seconds — this limit is never reached.",
+    a: "Yes. The hosted API applies a sliding-window limit of 60 requests per minute per IP address. The /getStocks endpoint counts as 3 tokens due to payload size. For most use cases - polling every 3 seconds - this limit is never reached.",
   },
   {
     category: "API",
@@ -213,12 +213,12 @@ const ALL_FAQS: FaqItem[] = [
   {
     category: "Indicators",
     q: "What is RSI and how is it used here?",
-    a: "RSI (Relative Strength Index) is a momentum indicator on a 0–100 scale. Readings above 70 are considered overbought (potential pullback), below 30 oversold (potential bounce). In Polymart's simulation, the RSI feeds back into price movement — an overbought stock faces incremental downward pressure on each tick.",
+    a: "RSI (Relative Strength Index) is a momentum indicator on a 0–100 scale. Readings above 70 are considered overbought (potential pullback), below 30 oversold (potential bounce). In Polymart's simulation, the RSI feeds back into price movement - an overbought stock faces incremental downward pressure on each tick.",
   },
   {
     category: "Indicators",
     q: "What do the Bollinger Bands show?",
-    a: "Bollinger Bands plot a moving average (SMA 20) with upper and lower bands set at 2 standard deviations. When price touches the upper band, the stock may be extended; touching the lower band may indicate oversold conditions. Bandwidth (the gap between bands) reflects current volatility — a squeeze often precedes a breakout.",
+    a: "Bollinger Bands plot a moving average (SMA 20) with upper and lower bands set at 2 standard deviations. When price touches the upper band, the stock may be extended; touching the lower band may indicate oversold conditions. Bandwidth (the gap between bands) reflects current volatility - a squeeze often precedes a breakout.",
   },
   {
     category: "Indicators",
@@ -228,7 +228,7 @@ const ALL_FAQS: FaqItem[] = [
   {
     category: "Indicators",
     q: "What does ATR measure?",
-    a: "ATR (Average True Range) measures volatility — specifically the average range between high and low prices over 14 periods. A rising ATR means the market is becoming more volatile; a falling ATR signals calmer conditions.",
+    a: "ATR (Average True Range) measures volatility - specifically the average range between high and low prices over 14 periods. A rising ATR means the market is becoming more volatile; a falling ATR signals calmer conditions.",
   },
   {
     category: "Indicators",
@@ -348,7 +348,7 @@ export default function HelpCenterPage({ onNavigate }: Props) {
             <QuickCard
               icon={Activity}
               title="Changelog"
-              desc="See what's new — features, fixes, and updates."
+              desc="See what's new - features, fixes, and updates."
               onClick={() => onNavigate("changelog")}
             />
             <QuickCard

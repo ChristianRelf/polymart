@@ -1,4 +1,4 @@
-# Polymart — Homeserver Deployment Guide
+# Polymart - Homeserver Deployment Guide
 
 ## Architecture Overview
 
@@ -6,12 +6,12 @@ Polymart runs as two Docker containers:
 
 | Container | Image | Role |
 |---|---|---|
-| `polymart-app` | Built from `Dockerfile` | Node.js 20 — Express API, React frontend (served as static files), simulation engine tick loop |
-| `polymart-db` | `mysql:8.0` | MySQL — stores live market state, stock state, sector state, and events log |
+| `polymart-app` | Built from `Dockerfile` | Node.js 20 - Express API, React frontend (served as static files), simulation engine tick loop |
+| `polymart-db` | `mysql:8.0` | MySQL - stores live market state, stock state, sector state, and events log |
 
 The simulation engine runs entirely inside `polymart-app` on a 10-second `setInterval` loop. On each tick it reads the current state from MySQL, runs all calculations (RSI, MACD, Bollinger Bands, ATR, VWAP, etc.), and writes the updated state back. The React frontend polls the API every 10 seconds via relative `/api/v1/` paths, which are served by the same Node process.
 
-The database holds **only current simulation state** — there is no time-series history stored long-term other than the rolling events log, which is automatically purged down to the last 7 days via a MySQL Event Scheduler job.
+The database holds **only current simulation state** - there is no time-series history stored long-term other than the rolling events log, which is automatically purged down to the last 7 days via a MySQL Event Scheduler job.
 
 ---
 
@@ -20,7 +20,7 @@ The database holds **only current simulation state** — there is no time-series
 Before starting, your homeserver needs:
 
 - **Docker Engine** 24+ installed ([install guide](https://docs.docker.com/engine/install/))
-- **Portainer** running (optional but recommended — [install guide](https://docs.portainer.io/start/install-ce/server/docker/linux))
+- **Portainer** running (optional but recommended - [install guide](https://docs.portainer.io/start/install-ce/server/docker/linux))
 - At least **512 MB RAM** free for both containers
 - Outbound internet access during first build (to pull `node:20-alpine` and `mysql:8.0`)
 
@@ -33,11 +33,11 @@ docker ps
 
 ---
 
-## Option A — Portainer Stack (Recommended)
+## Option A - Portainer Stack (Recommended)
 
 Portainer gives you a UI for managing the stack: view logs, restart containers, update environment variables, and rebuild the app image without touching the command line.
 
-### Step 1 — Copy the project to your server
+### Step 1 - Copy the project to your server
 
 **Via rsync** (from your local machine):
 
@@ -60,7 +60,7 @@ git clone https://github.com/ChristianRelf/polymart.git /home/user/polymart
 cd /home/user/polymart
 ```
 
-### Step 2 — Create your environment file
+### Step 2 - Create your environment file
 
 SSH into your server and create the `.env` file from the template:
 
@@ -70,7 +70,7 @@ cp .env.example .env
 nano .env
 ```
 
-Fill in the following. Choose strong, unique passwords — these are used to secure the MySQL database:
+Fill in the following. Choose strong, unique passwords - these are used to secure the MySQL database:
 
 ```env
 # Port the Node server listens on inside the container (leave as 4000)
@@ -79,7 +79,7 @@ PORT=4000
 # Host port Docker exposes (change if 4000 is already in use on your server)
 APP_PORT=4000
 
-# MySQL connection — these must match what you set in MYSQL_* below
+# MySQL connection - these must match what you set in MYSQL_* below
 DB_HOST=db
 DB_PORT=3306
 DB_USER=polymart
@@ -95,24 +95,24 @@ MYSQL_PASSWORD=same_as_DB_PASSWORD_above
 
 > **Important**: `DB_PASSWORD` and `MYSQL_PASSWORD` must be the same value. `MYSQL_PASSWORD` is used by the MySQL Docker image to create the `polymart` user on first start. `DB_PASSWORD` is used by the Node app to connect.
 
-### Step 3 — Deploy via Portainer Stacks
+### Step 3 - Deploy via Portainer Stacks
 
 1. Open Portainer in your browser (typically `http://your-server-ip:9000`)
 2. In the left sidebar, click **Stacks**
 3. Click **Add stack** (top right)
-4. Give the stack a name — for example: `polymart`
+4. Give the stack a name - for example: `polymart`
 5. Choose how to provide the compose file. There are three options:
 
-   **Option 1 — Upload file** (simplest):
+   **Option 1 - Upload file** (simplest):
    - Select **Upload**
    - Click **Select file** and choose `docker-compose.yml` from your local machine
    - Note: If your `.env` is already on the server, you can skip the env var section below and just upload
 
-   **Option 2 — Web editor** (paste directly):
+   **Option 2 - Web editor** (paste directly):
    - Select **Web editor**
    - Open `docker-compose.yml` in a text editor on your local machine, copy the entire contents, and paste into the editor
 
-   **Option 3 — Git repository**:
+   **Option 3 - Git repository**:
    - Select **Repository**
    - Enter your repository URL
    - Set the compose path to `docker-compose.yml`
@@ -137,7 +137,7 @@ Portainer will:
 - Start `polymart-db` first and wait for its health check to pass
 - Start `polymart-app` once MySQL is healthy
 
-### Step 4 — Verify the deployment
+### Step 4 - Verify the deployment
 
 In Portainer, click into your `polymart` stack and then into the `polymart-app` container. Click **Logs**.
 
@@ -149,13 +149,13 @@ A healthy startup looks like this (in order):
 [polymart] Database connection established.
 [polymart] API + frontend running on port 4000
 [tick] Starting simulation loop every 10s
-[tick] First-run: no market_state found — initialising...
+[tick] First-run: no market_state found - initialising...
 [tick] First-run initialisation complete, 60 warm-up ticks applied.
 [tick] #61 session=open vix=18.2 fg=51 idx=1003.4 (48ms)
 [tick] #62 session=open vix=18.1 fg=51 idx=1001.7 (41ms)
 ```
 
-The `Waiting for database...` lines are expected — the app retries up to 30 times with a 2-second delay while MySQL finishes its first-run initialisation.
+The `Waiting for database...` lines are expected - the app retries up to 30 times with a 2-second delay while MySQL finishes its first-run initialisation.
 
 The `First-run initialisation complete` message means MySQL had no data, so the app seeded all 132 stocks, 20 sectors, and the market state, then ran 60 warm-up ticks to generate a realistic starting state.
 
@@ -163,7 +163,7 @@ Open `http://your-server-ip:4000` in a browser to confirm the frontend loads.
 
 ---
 
-## Option B — Docker Compose CLI
+## Option B - Docker Compose CLI
 
 If you prefer the command line over Portainer, SSH into your server and run:
 
@@ -182,7 +182,7 @@ docker compose logs -f db
 # Stop all containers (data is preserved in the named volume)
 docker compose down
 
-# Stop and delete all data (DESTRUCTIVE — wipes MySQL volume)
+# Stop and delete all data (DESTRUCTIVE - wipes MySQL volume)
 docker compose down -v
 ```
 
@@ -194,7 +194,7 @@ docker compose down -v
 
 By default Polymart is reachable on `http://your-server-ip:4000`. To serve it on port 80 (HTTP) or 443 (HTTPS), put Nginx in front as a reverse proxy.
 
-### Option 1 — Nginx Proxy Manager (easiest, Portainer-friendly)
+### Option 1 - Nginx Proxy Manager (easiest, Portainer-friendly)
 
 [Nginx Proxy Manager](https://nginxproxymanager.com/) is a Docker-based UI for managing Nginx proxy rules, including automatic Let's Encrypt HTTPS certificates.
 
@@ -221,7 +221,7 @@ volumes:
   npm-letsencrypt:
 ```
 
-Once deployed, open `http://your-server-ip:81` and log in (default: `admin@example.com` / `changeme` — change immediately).
+Once deployed, open `http://your-server-ip:81` and log in (default: `admin@example.com` / `changeme` - change immediately).
 
 **Add a proxy host for Polymart:**
 
@@ -238,7 +238,7 @@ Once deployed, open `http://your-server-ip:81` and log in (default: `admin@examp
    - Enter your email address for Let's Encrypt
 4. Click **Save**
 
-### Option 2 — Manual Nginx on the host
+### Option 2 - Manual Nginx on the host
 
 Install Nginx if not already present:
 
@@ -284,7 +284,7 @@ Enable the site and reload:
 
 ```bash
 sudo ln -s /etc/nginx/sites-available/polymart /etc/nginx/sites-enabled/
-sudo nginx -t      # test config — must print "syntax is ok" and "test is successful"
+sudo nginx -t      # test config - must print "syntax is ok" and "test is successful"
 sudo systemctl reload nginx
 ```
 
@@ -308,7 +308,7 @@ Certbot automatically edits your Nginx config to add SSL and sets up an auto-ren
 | `DB_HOST` | `db` | Yes | MySQL hostname. Use `db` inside Docker, `127.0.0.1` for bare metal |
 | `DB_PORT` | `3306` | No | MySQL port |
 | `DB_USER` | `polymart` | Yes | MySQL user the app connects as |
-| `DB_PASSWORD` | *(none)* | **Yes** | Password for `DB_USER` — must match `MYSQL_PASSWORD` |
+| `DB_PASSWORD` | *(none)* | **Yes** | Password for `DB_USER` - must match `MYSQL_PASSWORD` |
 | `DB_NAME` | `polymart` | No | MySQL database name |
 | `MYSQL_ROOT_PASSWORD` | *(none)* | **Yes (Docker)** | MySQL root password. Only used by the Docker MySQL image on first start |
 | `MYSQL_PASSWORD` | *(none)* | **Yes (Docker)** | Password the Docker MySQL image uses when creating `DB_USER`. Must equal `DB_PASSWORD` |
@@ -323,17 +323,17 @@ Certbot automatically edits your Nginx config to add SSL and sets up an auto-ren
 
 These three tables hold the live simulation state and are **never purged**:
 
-- **`market_state`** — Single row (id=1). Stores the market index, Fear & Greed index, interest rate, inflation, GDP growth, VIX, session phase, tick counter, and more. Updated every tick.
-- **`stocks_state`** — One row per stock ticker (132 rows). Stores price, volume, RSI, MACD, Bollinger Bands, ATR, Beta, EMA/SMA values, bid/ask spread, 52-week high/low, ATH, recent price history (JSON column), and recent candles (JSON column).
-- **`sector_state`** — One row per sector (20 rows). Stores sector momentum, trend, and news stack.
+- **`market_state`** - Single row (id=1). Stores the market index, Fear & Greed index, interest rate, inflation, GDP growth, VIX, session phase, tick counter, and more. Updated every tick.
+- **`stocks_state`** - One row per stock ticker (132 rows). Stores price, volume, RSI, MACD, Bollinger Bands, ATR, Beta, EMA/SMA values, bid/ask spread, 52-week high/low, ATH, recent price history (JSON column), and recent candles (JSON column).
+- **`sector_state`** - One row per sector (20 rows). Stores sector momentum, trend, and news stack.
 
 ### Rolling events log
 
-- **`events_log`** — Market news events fired during the simulation. These are trimmed to a maximum of **40 rows in memory** on each tick write, and additionally purged by a **MySQL Event Scheduler job** that runs once daily and deletes any rows older than 7 days.
+- **`events_log`** - Market news events fired during the simulation. These are trimmed to a maximum of **40 rows in memory** on each tick write, and additionally purged by a **MySQL Event Scheduler job** that runs once daily and deletes any rows older than 7 days.
 
 ### MySQL Event Scheduler
 
-The 7-day purge is handled by a MySQL scheduled event called `purge_old_events`, defined in `server/schema.sql`. For this to run, the MySQL Event Scheduler must be enabled — which is done by mounting `mysql-config/polymart.cnf` into `/etc/mysql/conf.d/` in the Docker container. This config file contains:
+The 7-day purge is handled by a MySQL scheduled event called `purge_old_events`, defined in `server/schema.sql`. For this to run, the MySQL Event Scheduler must be enabled - which is done by mounting `mysql-config/polymart.cnf` into `/etc/mysql/conf.d/` in the Docker container. This config file contains:
 
 ```ini
 [mysqld]
@@ -383,7 +383,7 @@ When you make changes to the frontend or server code:
 1. Transfer your updated files to the server (rsync or git pull)
 2. In Portainer, navigate to your `polymart` stack
 3. Click **Editor**, then **Update the stack**
-4. Portainer rebuilds only the `polymart-app` image and replaces that container — MySQL stays running throughout with no data loss
+4. Portainer rebuilds only the `polymart-app` image and replaces that container - MySQL stays running throughout with no data loss
 
 ### Via CLI
 
@@ -428,11 +428,11 @@ docker compose logs -f app
 You should see:
 
 ```
-[tick] First-run: no market_state found — initialising...
+[tick] First-run: no market_state found - initialising...
 [tick] First-run initialisation complete, 60 warm-up ticks applied.
 ```
 
-> **Note**: This does not delete the Docker volume or the database itself — only the data rows. The schema, user, and MySQL Event Scheduler job remain intact.
+> **Note**: This does not delete the Docker volume or the database itself - only the data rows. The schema, user, and MySQL Event Scheduler job remain intact.
 
 ---
 
@@ -448,9 +448,9 @@ docker compose logs app
 
 **Common causes:**
 
-- `Error: Could not connect to MySQL after multiple retries` — MySQL took too long to become healthy. Try restarting the db container and then the app: `docker compose restart db && sleep 20 && docker compose restart app`
-- `Access denied for user 'polymart'` — `DB_PASSWORD` and `MYSQL_PASSWORD` do not match. Check your `.env` file and Portainer environment variables. If the MySQL container has already initialised with the wrong password, you need to delete the volume and re-deploy: `docker compose down -v && docker compose up -d --build`
-- `ER_BAD_DB_ERROR: Unknown database 'polymart'` — The schema init script did not run. This can happen if the volume was created before the schema was mounted. Delete the volume: `docker compose down -v`, then redeploy.
+- `Error: Could not connect to MySQL after multiple retries` - MySQL took too long to become healthy. Try restarting the db container and then the app: `docker compose restart db && sleep 20 && docker compose restart app`
+- `Access denied for user 'polymart'` - `DB_PASSWORD` and `MYSQL_PASSWORD` do not match. Check your `.env` file and Portainer environment variables. If the MySQL container has already initialised with the wrong password, you need to delete the volume and re-deploy: `docker compose down -v && docker compose up -d --build`
+- `ER_BAD_DB_ERROR: Unknown database 'polymart'` - The schema init script did not run. This can happen if the volume was created before the schema was mounted. Delete the volume: `docker compose down -v`, then redeploy.
 
 ### MySQL container won't start
 
@@ -458,8 +458,8 @@ docker compose logs app
 docker compose logs db
 ```
 
-- `[ERROR] --initialize specified but the data directory has files in it` — The volume has partial data from a failed first start. Run `docker compose down -v` to clear it.
-- `mbind: Operation not permitted` — Harmless warning on some kernels. Can be ignored.
+- `[ERROR] --initialize specified but the data directory has files in it` - The volume has partial data from a failed first start. Run `docker compose down -v` to clear it.
+- `mbind: Operation not permitted` - Harmless warning on some kernels. Can be ignored.
 
 ### Frontend loads but shows no data
 
@@ -471,7 +471,7 @@ docker compose logs db
 ### Portainer "Build failed" error
 
 - Check that all files were transferred correctly, especially `Dockerfile`, `package.json`, `package-lock.json`
-- Portainer builds the image on the server — ensure the server has internet access to pull `node:20-alpine` from Docker Hub
+- Portainer builds the image on the server - ensure the server has internet access to pull `node:20-alpine` from Docker Hub
 - Try clicking **Update the stack** a second time if the first attempt timed out during the npm install step
 
 ### Checking the database directly
@@ -501,12 +501,12 @@ polymart/
 ├── .dockerignore               # Excludes node_modules, dist, .env, .git from build context
 ├── .env.example                # Copy to .env and fill in passwords before deploying
 ├── mysql-config/
-│   └── polymart.cnf            # [mysqld] event_scheduler=ON — mounted into MySQL container
+│   └── polymart.cnf            # [mysqld] event_scheduler=ON - mounted into MySQL container
 ├── server/
-│   ├── server.js               # Entry point — DB retry loop, Express setup, tick loop start
+│   ├── server.js               # Entry point - DB retry loop, Express setup, tick loop start
 │   ├── api.js                  # All /api/v1/* REST endpoints (12 routes)
-│   ├── tick.js                 # 10s tick worker — reads state, calls simulation, writes back
-│   ├── simulation.js           # Core engine — 132 stocks, 20 sectors, all indicator math
+│   ├── tick.js                 # 10s tick worker - reads state, calls simulation, writes back
+│   ├── simulation.js           # Core engine - 132 stocks, 20 sectors, all indicator math
 │   ├── db.js                   # MySQL2 connection pool (JSON auto-parse, BIT→boolean)
 │   └── schema.sql              # Schema DDL + 7-day purge event (auto-applied on first MySQL start)
 ├── src/                        # React + TypeScript frontend source
@@ -547,7 +547,7 @@ sudo apt install -y mysql-server
 # Install Nginx
 sudo apt install -y nginx
 
-# Install PM2 globally (process manager — keeps Node running on reboot)
+# Install PM2 globally (process manager - keeps Node running on reboot)
 sudo npm install -g pm2
 ```
 
@@ -629,7 +629,7 @@ DB_PASSWORD=your_strong_password
 DB_NAME=polymart
 ```
 
-> `MYSQL_ROOT_PASSWORD` and `MYSQL_PASSWORD` are only used by the Docker MySQL image — they are not needed for bare metal.
+> `MYSQL_ROOT_PASSWORD` and `MYSQL_PASSWORD` are only used by the Docker MySQL image - they are not needed for bare metal.
 
 ### 4. Install dependencies and build the frontend
 

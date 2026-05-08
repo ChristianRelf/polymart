@@ -399,7 +399,7 @@ function MarketNudge({
 
         <div className="flex-1 min-w-0 flex items-center gap-2">
           <p className="text-sm font-semibold text-foreground leading-none whitespace-nowrap">Market is live</p>
-          <span className="text-muted-foreground text-xs leading-none">—</span>
+          <span className="text-muted-foreground text-xs leading-none">-</span>
           <p className="text-xs text-muted-foreground leading-none truncate">Real-time prices, charts &amp; sector data</p>
         </div>
 

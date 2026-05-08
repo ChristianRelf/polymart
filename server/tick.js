@@ -1,4 +1,4 @@
-// Polymart tick worker — runs the simulation every 10 seconds, writes to MySQL
+// Polymart tick worker - runs the simulation every 10 seconds, writes to MySQL
 
 import pool from "./db.js";
 import { runTick, buildInitialStocks, buildInitialSectors, STOCK_DEFS, SECTORS } from "./simulation.js";
@@ -28,7 +28,7 @@ async function writeMysqlBatch(ms, stocks, sectors, newEvent) {
        ms.advance_decline,ms.new_highs,ms.new_lows]
     );
 
-    // stocks_state batch upsert — chunk by 20 to avoid huge queries
+    // stocks_state batch upsert - chunk by 20 to avoid huge queries
     const chunkSize = 20;
     for (let i = 0; i < stocks.length; i += chunkSize) {
       const chunk = stocks.slice(i, i + chunkSize);

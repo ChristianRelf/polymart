@@ -560,7 +560,7 @@ function StockDetailView({ detail, stocks, onBack, openDetail }: {
               <StatCard label="Volume"     value={fmtVol(detail.volume)}                                                     sub={`Buy ${fmtVol(detail.buyVolume)} / Sell ${fmtVol(detail.sellVolume)}`} />
               <StatCard label="VWAP"       value={detail.vwap.toFixed(2)}                                                    color={NEUT} sub={`${detail.price >= detail.vwap ? "+" : ""}${((detail.price - detail.vwap) / detail.vwap * 100).toFixed(2)}% vs price`} />
               <StatCard label="ATR (14)"   value={detail.atr.toFixed(2)}                                                     sub="avg true range" />
-              <StatCard label="Streak"     value={`${detail.streak > 0 ? "▲" : detail.streak < 0 ? "▼" : "—"} ${Math.abs(detail.streak)}`} color={detail.streak > 0 ? GAIN : detail.streak < 0 ? LOSS : undefined} sub="consecutive ticks" />
+              <StatCard label="Streak"     value={`${detail.streak > 0 ? "▲" : detail.streak < 0 ? "▼" : "-"} ${Math.abs(detail.streak)}`} color={detail.streak > 0 ? GAIN : detail.streak < 0 ? LOSS : undefined} sub="consecutive ticks" />
               <StatCard label="52w High"   value={detail.high52w.toFixed(2)}  sub={`ATH ${detail.allTimeHigh.toFixed(2)}`} />
               <StatCard label="52w Low"    value={detail.low52w.toFixed(2)} />
               <StatCard label="Open"       value={detail.openPrice.toFixed(2)} sub={`Prev ${detail.previousPrice.toFixed(2)}`} />
@@ -588,7 +588,7 @@ function StockDetailView({ detail, stocks, onBack, openDetail }: {
                 <div className="flex items-center gap-2 mb-3">
                   <Signal bull={maAligned || (!maOpposed && detail.price > detail.sma20)} />
                   <span className="text-xs text-muted-foreground">
-                    {maAligned ? "All above — trend up" : maOpposed ? "All below — trend down" : "Mixed signals"}
+                    {maAligned ? "All above - trend up" : maOpposed ? "All below - trend down" : "Mixed signals"}
                   </span>
                 </div>
                 {[
@@ -864,7 +864,7 @@ function StockDetailView({ detail, stocks, onBack, openDetail }: {
               </div>
             </div>
 
-            {/* Order flow imbalance — full width */}
+            {/* Order flow imbalance - full width */}
             <div className="bg-card border border-border rounded-xl p-5 sm:col-span-2">
               <div className="flex justify-between items-center mb-4">
                 <p className="text-xs text-muted-foreground uppercase tracking-widest">Order Flow Imbalance</p>
@@ -923,8 +923,8 @@ function StockDetailView({ detail, stocks, onBack, openDetail }: {
                 { label: "Beta (β)",         val: detail.beta.toFixed(2),                                      hint: detail.beta > 1.2 ? "High market sensitivity" : detail.beta < 0.8 ? "Low sensitivity" : "Near market beta" },
                 { label: "Volatility (σ)",   val: detail.volatility != null ? `${(detail.volatility * 100).toFixed(0)}%` : "N/A", hint: detail.volatility != null && detail.volatility > 0.15 ? "High vol" : "Moderate vol" },
                 { label: "ATR (14)",         val: detail.atr.toFixed(2),                                       hint: `${(detail.atr / detail.price * 100).toFixed(1)}% of price` },
-                { label: "BB Bandwidth",     val: `${(detail.bbBw * 100).toFixed(1)}%`,                        hint: detail.bbBw * 100 < 5 ? "Squeeze — breakout risk" : "Normal range" },
-                { label: "Spread",           val: `${detail.spreadPct.toFixed(2)}%`,                           hint: detail.spreadPct > 0.5 ? "Wide — low liquidity" : "Tight — liquid" },
+                { label: "BB Bandwidth",     val: `${(detail.bbBw * 100).toFixed(1)}%`,                        hint: detail.bbBw * 100 < 5 ? "Squeeze - breakout risk" : "Normal range" },
+                { label: "Spread",           val: `${detail.spreadPct.toFixed(2)}%`,                           hint: detail.spreadPct > 0.5 ? "Wide - low liquidity" : "Tight - liquid" },
               ].map((r, i) => (
                 <div key={i} className="flex justify-between items-start py-2.5 border-b border-border/30 last:border-0 gap-3">
                   <span className="text-sm text-muted-foreground shrink-0">{r.label}</span>
@@ -960,7 +960,7 @@ function StockDetailView({ detail, stocks, onBack, openDetail }: {
                   <span className="font-mono">
                     {(() => {
                       const rng = detail.high52w - detail.low52w
-                      return rng > 0 ? `${((detail.price - detail.low52w) / rng * 100).toFixed(0)}th percentile` : "—"
+                      return rng > 0 ? `${((detail.price - detail.low52w) / rng * 100).toFixed(0)}th percentile` : "-"
                     })()}
                   </span>
                 </div>
@@ -1146,12 +1146,12 @@ export default function MarketPage() {
         </div>
         <div className="bg-card border border-border rounded-xl px-4 py-3 flex justify-between items-center">
           <span className="text-sm text-muted-foreground">Interest Rate</span>
-          <span className="text-base font-bold font-mono text-foreground tabular-nums">{market.interestRate?.toFixed(2) ?? "—"}%</span>
+          <span className="text-base font-bold font-mono text-foreground tabular-nums">{market.interestRate?.toFixed(2) ?? "-"}%</span>
         </div>
         <div className="bg-card border border-border rounded-xl px-4 py-3 flex justify-between items-center">
           <span className="text-sm text-muted-foreground">Inflation / GDP</span>
           <span className="text-base font-bold font-mono text-foreground tabular-nums">
-            {market.inflation?.toFixed(1) ?? "—"}% / {market.gdpGrowth?.toFixed(1) ?? "—"}%
+            {market.inflation?.toFixed(1) ?? "-"}% / {market.gdpGrowth?.toFixed(1) ?? "-"}%
           </span>
         </div>
       </div>
@@ -1368,7 +1368,7 @@ export default function MarketPage() {
           </div>
         </div>
 
-        {/* Right sidebar — desktop only (xl+) */}
+        {/* Right sidebar - desktop only (xl+) */}
         <div className="hidden xl:block w-64 shrink-0 space-y-5">
           <MarketSidebar
             sectorList={sectorList}
@@ -1468,9 +1468,9 @@ function MarketSidebar({
         <p className="text-xs text-muted-foreground uppercase tracking-widest mb-3">Macro</p>
         <div className="space-y-1.5">
           {[
-            ["Rate",      `${market.interestRate?.toFixed(2) ?? "—"}%`],
-            ["Inflation", `${market.inflation?.toFixed(2) ?? "—"}%`],
-            ["GDP",       `${market.gdpGrowth?.toFixed(2) ?? "—"}%`],
+            ["Rate",      `${market.interestRate?.toFixed(2) ?? "-"}%`],
+            ["Inflation", `${market.inflation?.toFixed(2) ?? "-"}%`],
+            ["GDP",       `${market.gdpGrowth?.toFixed(2) ?? "-"}%`],
             ["VIX",       (market.vix ?? 18).toFixed(1)],
           ].map(([label, val], i) => (
             <div key={i} className="flex justify-between items-center px-3 py-2.5 bg-card/40 border border-border rounded-lg">

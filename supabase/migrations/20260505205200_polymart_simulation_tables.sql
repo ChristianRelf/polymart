@@ -2,25 +2,25 @@
   # POLYMART Simulation Tables
 
   1. New Tables
-    - `market_state` — singleton row holding the global market snapshot
+    - `market_state` - singleton row holding the global market snapshot
       - `id` (int, always 1) primary key
       - `index_value`, `index_prev`, `fear_greed`, `interest_rate`, `inflation`, `gdp_growth`
       - `crash_cooldown`, `boom_cooldown`, `up_streak`, `down_streak`
       - `tick_count`, `updated_at`
-    - `stocks_state` — one row per ticker holding full stock state + price history
+    - `stocks_state` - one row per ticker holding full stock state + price history
       - `ticker` (text) primary key
       - `name`, `sector`, `mcap`, `price`, `prev_price`, `open_price`
       - `hi52w`, `lo52w`, `ath`, `volume`, `rsi`, `momentum`, `insider_bias`, `earnings_cycle`, `streak`
       - `history` (jsonb array of last 400 prices)
       - `updated_at`
-    - `sector_state` — one row per sector key
+    - `sector_state` - one row per sector key
       - `sector_key` primary key, `label`, `icon`, `momentum`, `trend`, `news_stack`, `updated_at`
-    - `events_log` — rolling log of market events (max 30)
+    - `events_log` - rolling log of market events (max 30)
       - `id` (uuid), `event_text`, `effect`, `sector`, `weight`, `fired_at`
 
   2. Security
     - RLS enabled on all tables
-    - Public read-only policies (no auth required — this is a public API)
+    - Public read-only policies (no auth required - this is a public API)
     - No write policies from the client side; only service_role (Edge Functions) can write
 
   3. Notes

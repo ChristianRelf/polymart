@@ -22,7 +22,7 @@ const CHANGELOG: ChangelogEntry[] = [
     changes: [
       { type: "added", text: "QUAK (DuckPond Holdings) stock added to the Meme sector" },
       { type: "added", text: "Changelog page accessible from the footer" },
-      { type: "added", text: "Column visibility toggle on the Market page — show only the stats you care about" },
+      { type: "added", text: "Column visibility toggle on the Market page - show only the stats you care about" },
       { type: "added", text: "240+ market event lines across all sectors for greater simulation variety" },
       { type: "fixed", text: "Green progress circle in navbar now syncs precisely with data refresh timing" },
       { type: "fixed", text: "Scrollbar hidden on the Events ticker strip" },
@@ -42,7 +42,7 @@ const CHANGELOG: ChangelogEntry[] = [
       { type: "added", text: "Market session phases: Pre, Open, Post, Closed with intraday volume U-shape" },
       { type: "added", text: "Circuit breaker: halts individual stocks that move >20% in a single tick" },
       { type: "added", text: "Gap-open logic: overnight news shocks applied at session open" },
-      { type: "changed", text: "GARCH-lite volatility clustering — recent vol breeds vol" },
+      { type: "changed", text: "GARCH-lite volatility clustering - recent vol breeds vol" },
       { type: "changed", text: "Sector correlation matrix expanded (20 cross-sector relationships)" },
     ],
   },

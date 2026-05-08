@@ -27,7 +27,7 @@ type Endpoint = {
 
 // ── Products / integrations registry ─────────────────────────────────────────
 // Each product here shows up in the left nav. Add a new entry here when a
-// new product or integration is launched — the page layout handles the rest.
+// new product or integration is launched - the page layout handles the rest.
 
 type ProductStatus = "stable" | "beta" | "coming-soon"
 
@@ -58,7 +58,7 @@ const PRODUCTS: Product[] = [
         method: "GET",
         path: "/api/v1/getMarket",
         summary: "Global market snapshot",
-        desc: "Returns the current state of the entire market — index value, fear & greed score, macro variables, gainer/loser counts, and top movers.",
+        desc: "Returns the current state of the entire market - index value, fear & greed score, macro variables, gainer/loser counts, and top movers.",
         response: [
           { name: "index", type: "number", desc: "Current market index value" },
           { name: "indexChange", type: "number", desc: "Absolute change from previous tick" },
@@ -85,7 +85,7 @@ const PRODUCTS: Product[] = [
         id: "getStocks",
         method: "GET",
         path: "/api/v1/getStocks",
-        summary: "All stocks — summary",
+        summary: "All stocks - summary",
         desc: "Returns a map of all 132 stocks keyed by ticker symbol. Optionally filter by sector.",
         params: [
           { name: "sector", type: "string", required: false, desc: "Filter by sector key", example: "tech" },
@@ -111,7 +111,7 @@ const PRODUCTS: Product[] = [
         id: "getStock",
         method: "GET",
         path: "/api/v1/getStock",
-        summary: "Single stock — full detail",
+        summary: "Single stock - full detail",
         desc: "Full data for one stock including price history (up to 400 data points) and sector peers.",
         params: [
           { name: "ticker", type: "string", required: true, desc: "Ticker symbol (case-insensitive)", example: "APEX" },
@@ -146,7 +146,7 @@ const PRODUCTS: Product[] = [
         id: "getSectors",
         method: "GET",
         path: "/api/v1/getSectors",
-        summary: "All sectors — summary",
+        summary: "All sectors - summary",
         desc: "Returns all 20 sectors with average price change, momentum, and news impact score.",
         response: [
           { name: "<sector_key>", type: "object", desc: "Keyed by sector key (e.g. tech, crypto)" },
@@ -164,7 +164,7 @@ const PRODUCTS: Product[] = [
         id: "getSector",
         method: "GET",
         path: "/api/v1/getSector",
-        summary: "Single sector — full detail",
+        summary: "Single sector - full detail",
         desc: "Full data for one sector including constituent stocks with current prices.",
         params: [
           { name: "sector", type: "string", required: true, desc: "Sector key", example: "crypto" },
@@ -186,7 +186,7 @@ const PRODUCTS: Product[] = [
         method: "GET",
         path: "/api/v1/getEvents",
         summary: "Recent market events",
-        desc: "Returns the most recent market events — flash crashes, FDA approvals, meme frenzies, sector booms, and more.",
+        desc: "Returns the most recent market events - flash crashes, FDA approvals, meme frenzies, sector booms, and more.",
         params: [
           { name: "limit", type: "number", required: false, desc: "Max events (1–30, default 10)", example: "10" },
           { name: "sector", type: "string", required: false, desc: "Filter to events for a specific sector", example: "meme" },
@@ -308,7 +308,7 @@ const PRODUCTS: Product[] = [
     ],
   },
 
-  // ── Future products — add new entries here ────────────────────────────────
+  // ── Future products - add new entries here ────────────────────────────────
   {
     id: "webhooks",
     label: "Webhooks",
@@ -339,7 +339,7 @@ const PRODUCTS: Product[] = [
     icon: Zap,
     status: "coming-soon",
     desc: "Drop-in HTML widgets for price tickers, market summaries, and leaderboards. Embed live Polymart data on any website with a single script tag.",
-    comingSoonNote: "Widgets are iframe-based and theme-aware. Configure via data attributes — no JavaScript required.",
+    comingSoonNote: "Widgets are iframe-based and theme-aware. Configure via data attributes - no JavaScript required.",
   },
   {
     id: "integrations",
@@ -764,7 +764,7 @@ function OverviewPanel({ onSelect }: { onSelect: (id: string) => void }) {
         </Badge>
         <h1 className="text-3xl font-bold tracking-tight text-foreground mb-3">API &amp; Integrations</h1>
         <p className="text-muted-foreground leading-relaxed max-w-2xl">
-          Everything you need to build on top of Polymart — from the open REST API to upcoming integrations,
+          Everything you need to build on top of Polymart - from the open REST API to upcoming integrations,
           SDK, webhooks, and embeddable widgets.
         </p>
       </div>
@@ -802,7 +802,7 @@ function OverviewPanel({ onSelect }: { onSelect: (id: string) => void }) {
           <p className="text-[10px] text-muted-foreground uppercase tracking-widest mb-1">Open by default</p>
           <p className="text-sm font-semibold text-foreground mb-2">No API key required</p>
           <p className="text-sm text-muted-foreground leading-relaxed">
-            The Polymart REST API is completely open. All endpoints are GET requests returning JSON —
+            The Polymart REST API is completely open. All endpoints are GET requests returning JSON -
             no authentication headers, no rate limit tiers, no signup required.
             Point any HTTP client at <code className="text-foreground font-mono text-xs bg-muted/50 px-1.5 py-0.5 rounded">https://polymart.co/api/v1</code> and go.
           </p>
@@ -823,7 +823,7 @@ function OverviewPanel({ onSelect }: { onSelect: (id: string) => void }) {
           <div>
             <p className="text-sm font-semibold text-foreground mb-1">AI-Readable Docs</p>
             <p className="text-xs text-muted-foreground leading-relaxed">
-              Machine-readable <code className="text-foreground font-mono bg-muted/50 px-1 py-0.5 rounded">llms.txt</code> covering all endpoints, parameters, response fields, and usage examples — formatted for AI assistants and chatbots.
+              Machine-readable <code className="text-foreground font-mono bg-muted/50 px-1 py-0.5 rounded">llms.txt</code> covering all endpoints, parameters, response fields, and usage examples - formatted for AI assistants and chatbots.
             </p>
           </div>
           <p className="text-[10px] text-muted-foreground font-mono mt-auto">/llms.txt</p>

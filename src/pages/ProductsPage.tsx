@@ -158,7 +158,7 @@ export default function ProductsPage({ onNavigate }: Props) {
         </h1>
         <p className="text-lg text-muted-foreground leading-relaxed max-w-2xl">
           Polymart is growing into a full suite of financial market simulations.
-          The stock exchange is live today — more markets are on the way.
+          The stock exchange is live today - more markets are on the way.
         </p>
       </div>
 
@@ -195,12 +195,12 @@ export default function ProductsPage({ onNavigate }: Props) {
           <ComingSoonProduct
             icon={DollarSign}
             title="Forex Simulation"
-            desc="Fictional currency pairs with configurable macro drivers — interest rate differentials, inflation spreads, and geopolitical event shocks. Pip-accurate pricing."
+            desc="Fictional currency pairs with configurable macro drivers - interest rate differentials, inflation spreads, and geopolitical event shocks. Pip-accurate pricing."
           />
           <ComingSoonProduct
             icon={LayoutGrid}
             title="ETFs Simulation"
-            desc="Exchange-traded fund vehicles built on top of Polymart equities. Sector ETFs, thematic ETFs, and inverse products — all with real-time NAV calculations."
+            desc="Exchange-traded fund vehicles built on top of Polymart equities. Sector ETFs, thematic ETFs, and inverse products - all with real-time NAV calculations."
           />
         </div>
       </div>
@@ -254,10 +254,10 @@ export default function ProductsPage({ onNavigate }: Props) {
             status="live"
             items={[
               "Add the Polymart bot to any Discord server",
-              "/price [ticker] — live price, change, RSI",
-              "/market — top movers and sector overview",
-              "/stock [ticker] — full detail card",
-              "/index — Polymart composite index",
+              "/price [ticker] - live price, change, RSI",
+              "/market - top movers and sector overview",
+              "/stock [ticker] - full detail card",
+              "/index - Polymart composite index",
               "No bot token required for slash commands",
             ]}
           />
@@ -289,7 +289,7 @@ export default function ProductsPage({ onNavigate }: Props) {
           <p className="text-base font-bold text-foreground mb-1.5">Build on the API</p>
           <p className="text-sm text-muted-foreground leading-relaxed max-w-xl">
             Every product exposes its data through the same REST API pattern. No keys,
-            no subscriptions. Any HTTP client works — browser, server, Discord bot, or data pipeline.
+            no subscriptions. Any HTTP client works - browser, server, Discord bot, or data pipeline.
           </p>
         </div>
         <button

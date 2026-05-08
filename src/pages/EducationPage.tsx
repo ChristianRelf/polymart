@@ -120,7 +120,7 @@ export default function EducationPage({ onNavigate }: Props) {
         </h1>
         <p className="text-lg text-muted-foreground leading-relaxed max-w-2xl mb-8">
           A fully-simulated, risk-free financial market environment designed to support
-          teaching, research, and the development of trading algorithms — with no real money,
+          teaching, research, and the development of trading algorithms - with no real money,
           no sign-ups, and an open REST API.
         </p>
         <div
@@ -151,7 +151,7 @@ export default function EducationPage({ onNavigate }: Props) {
             </p>
             <p>
               The simulation currently tracks <strong className="text-foreground">132 fictional tickers</strong> across{" "}
-              <strong className="text-foreground">20 sectors</strong> — from Tech and AI to
+              <strong className="text-foreground">20 sectors</strong> - from Tech and AI to
               Meme stocks and Agriculture. Every ticker has its own character: unique
               volatility, trend bias, beta, and sector sensitivity.
             </p>
@@ -194,13 +194,13 @@ export default function EducationPage({ onNavigate }: Props) {
           <UseCaseCard
             number="01"
             title="Finance & Economics Classrooms"
-            body="Instructors can use Polymart as a live backdrop for teaching technical analysis, portfolio theory, and market microstructure. Students can observe how RSI signals, Bollinger Band squeezes, and order flow imbalance play out in real time — concepts that are far more intuitive when seen in a moving market than described on a slide."
+            body="Instructors can use Polymart as a live backdrop for teaching technical analysis, portfolio theory, and market microstructure. Students can observe how RSI signals, Bollinger Band squeezes, and order flow imbalance play out in real time - concepts that are far more intuitive when seen in a moving market than described on a slide."
             tags={["Technical Analysis", "Portfolio Theory", "Macro Economics", "Market Microstructure"]}
           />
           <UseCaseCard
             number="02"
             title="Algorithmic Trading Courses"
-            body="The open REST API lets students write code that queries live market data, make trading decisions, and back-test strategies against historical price data — all without the risk of real capital or the complexity of brokerage API access. Languages are irrelevant; any HTTP client works."
+            body="The open REST API lets students write code that queries live market data, make trading decisions, and back-test strategies against historical price data - all without the risk of real capital or the complexity of brokerage API access. Languages are irrelevant; any HTTP client works."
             tags={["Python", "JavaScript", "REST API", "Algorithmic Strategy", "Back-testing"]}
           />
           <UseCaseCard
@@ -212,13 +212,13 @@ export default function EducationPage({ onNavigate }: Props) {
           <UseCaseCard
             number="04"
             title="Hackathons & Project Courses"
-            body="Polymart's API provides an interesting data source for building trading dashboards, Discord bots, alert systems, or market visualisations as coursework projects. The simulation produces interesting, structured data that can be displayed in many different ways — making it suitable for front-end, back-end, data science, or full-stack project briefs."
+            body="Polymart's API provides an interesting data source for building trading dashboards, Discord bots, alert systems, or market visualisations as coursework projects. The simulation produces interesting, structured data that can be displayed in many different ways - making it suitable for front-end, back-end, data science, or full-stack project briefs."
             tags={["Project Work", "Data Visualisation", "Discord Bots", "Full-Stack", "APIs"]}
           />
           <UseCaseCard
             number="05"
             title="Trading Simulations & Competitions"
-            body="Institutions can build portfolio tracking applications on top of the Polymart API to run paper-trading competitions. Students are given a virtual starting balance and compete to grow it using market data from the simulation — a motivating and practical teaching format that requires no real financial infrastructure."
+            body="Institutions can build portfolio tracking applications on top of the Polymart API to run paper-trading competitions. Students are given a virtual starting balance and compete to grow it using market data from the simulation - a motivating and practical teaching format that requires no real financial infrastructure."
             tags={["Paper Trading", "Competitions", "Portfolio Tracking", "Leaderboards"]}
           />
           <UseCaseCard
@@ -240,19 +240,19 @@ export default function EducationPage({ onNavigate }: Props) {
           <FeatureCard
             icon={Database}
             title="Structured Time-Series"
-            desc="Every stock produces a continuous stream of OHLCV candles alongside pre-computed indicators. The data is consistently formatted and available via a single GET request per ticker — no scraping or cleaning required."
+            desc="Every stock produces a continuous stream of OHLCV candles alongside pre-computed indicators. The data is consistently formatted and available via a single GET request per ticker - no scraping or cleaning required."
             accent="#7c8af4"
           />
           <FeatureCard
             icon={Layers}
             title="Multi-Asset & Cross-Sector"
-            desc="With 132 tickers across 20 sectors, models can learn cross-asset relationships, sector rotations, and correlation structures — the kind of multi-variate signals that real market models depend on."
+            desc="With 132 tickers across 20 sectors, models can learn cross-asset relationships, sector rotations, and correlation structures - the kind of multi-variate signals that real market models depend on."
             accent="#5bce8a"
           />
           <FeatureCard
             icon={FlaskConical}
             title="Known Ground Truth"
-            desc="Because the simulation parameters are fixed and knowable, researchers can generate datasets where the generative process is understood — useful for evaluating whether a model is learning signal or overfitting to noise."
+            desc="Because the simulation parameters are fixed and knowable, researchers can generate datasets where the generative process is understood - useful for evaluating whether a model is learning signal or overfitting to noise."
             accent="#eab34d"
           />
           <FeatureCard
@@ -281,7 +281,7 @@ export default function EducationPage({ onNavigate }: Props) {
             <div className="flex items-center gap-2">
               <Code2 className="w-3.5 h-3.5 text-muted-foreground" />
               <p className="text-xs font-semibold text-muted-foreground">
-                Fetching a full stock detail — Python example
+                Fetching a full stock detail - Python example
               </p>
             </div>
             <Badge variant="outline" className="text-[10px] border-border">GET /api/v1/getStock</Badge>
@@ -337,7 +337,7 @@ all_stocks = requests.get("https://polymart.co/api/v1/getStocks").json()
           <div className="bg-card border border-border rounded-xl p-6">
             <div className="flex items-center gap-2 mb-4">
               <Globe className="w-4 h-4 text-muted-foreground" />
-              <p className="text-sm font-bold text-foreground">Option A — Use the hosted version</p>
+              <p className="text-sm font-bold text-foreground">Option A - Use the hosted version</p>
             </div>
             <p className="text-xs text-muted-foreground leading-relaxed mb-4">
               The simplest path. Direct students to{" "}
@@ -350,7 +350,7 @@ all_stocks = requests.get("https://polymart.co/api/v1/getStocks").json()
               {[
                 "Zero infrastructure overhead",
                 "Always-on persistent simulation",
-                "Same shared market state for all students — useful for collaborative exercises",
+                "Same shared market state for all students - useful for collaborative exercises",
                 "Rate limiting applies per IP (60 requests/minute)",
               ].map((item, i) => (
                 <div key={i} className="flex items-start gap-2">
@@ -365,7 +365,7 @@ all_stocks = requests.get("https://polymart.co/api/v1/getStocks").json()
           <div className="bg-card border border-border rounded-xl p-6">
             <div className="flex items-center gap-2 mb-4">
               <Building2 className="w-4 h-4 text-muted-foreground" />
-              <p className="text-sm font-bold text-foreground">Option B — Self-host</p>
+              <p className="text-sm font-bold text-foreground">Option B - Self-host</p>
             </div>
             <p className="text-xs text-muted-foreground leading-relaxed mb-4">
               Polymart is open-source. Institutions can run their own instance on internal
@@ -515,11 +515,11 @@ all_stocks = requests.get("https://polymart.co/api/v1/getStocks").json()
               },
               {
                 q: "Do students need accounts or credentials?",
-                a: "No. The API has no authentication requirement. Any HTTP client — curl, Python requests, JavaScript fetch, Postman — can query it immediately without signing up or obtaining keys. This removes all friction from getting students started.",
+                a: "No. The API has no authentication requirement. Any HTTP client - curl, Python requests, JavaScript fetch, Postman - can query it immediately without signing up or obtaining keys. This removes all friction from getting students started.",
               },
               {
                 q: "Can the simulation be paused or reset for coursework?",
-                a: "In the hosted version the simulation runs continuously and cannot be paused. In a self-hosted instance, the tick worker can be stopped, the database reset, and the simulation restarted from a known state — which is useful for exercises that require a deterministic starting point.",
+                a: "In the hosted version the simulation runs continuously and cannot be paused. In a self-hosted instance, the tick worker can be stopped, the database reset, and the simulation restarted from a known state - which is useful for exercises that require a deterministic starting point.",
               },
               {
                 q: "What programming languages can be used to interact with the API?",

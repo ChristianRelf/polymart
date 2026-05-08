@@ -1,12 +1,12 @@
 /*
-  # Polymart Simulation Expansion — Advanced Market Mechanics
+  # Polymart Simulation Expansion - Advanced Market Mechanics
 
   ## Overview
   Adds real-life trading data fields to stocks_state and market_state to support
   broker training: OHLC candles, bid/ask spread, VWAP, MACD, Bollinger Bands,
   ATR, Beta, order flow (buy/sell volume), VIX, market session, and advance/decline.
 
-  ## New columns — stocks_state
+  ## New columns - stocks_state
   - buy_volume / sell_volume: directional order flow
   - beta: stock beta relative to market index
   - atr: Average True Range (14-period)
@@ -23,13 +23,13 @@
   - candle_ticks: Ticks into current candle period
   - candles: JSONB array of closed OHLCV candles (last 120)
 
-  ## New columns — market_state
+  ## New columns - market_state
   - vix: Simulated volatility index (8–80)
   - market_session: Current session label
   - advance_decline: Advancing minus declining stocks per tick
   - new_highs / new_lows: 52-week high/low counters per tick
 
-  ## New column — events_log
+  ## New column - events_log
   - category: Event category tag (macro/earnings/event)
 */
 

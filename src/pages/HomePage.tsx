@@ -35,7 +35,7 @@ const FEATURES = [
   {
     icon: Bot,
     title: "Discord Bot Ready",
-    desc: "Pull live market data directly into your server. Query prices, check the index, monitor events — all via slash commands.",
+    desc: "Pull live market data directly into your server. Query prices, check the index, monitor events - all via slash commands.",
   },
   {
     icon: TrendingUp,

@@ -91,7 +91,7 @@ CREATE TABLE IF NOT EXISTS sector_state (
 ) ENGINE=InnoDB;
 
 -- ── events_log (rolling log, purged > 7 days, max 40 rows) ───────────────────
--- NOTE: tick_count is NOT purged — only events_log data rows are cleared.
+-- NOTE: tick_count is NOT purged - only events_log data rows are cleared.
 CREATE TABLE IF NOT EXISTS events_log (
   id              CHAR(36)     NOT NULL DEFAULT (UUID()),
   event_text      TEXT         NOT NULL,

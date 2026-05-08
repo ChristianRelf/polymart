@@ -1,9 +1,9 @@
-# Polymart API — AI-Readable Reference
+# Polymart API - AI-Readable Reference
 # https://polymart.co/llms.txt
 # Format: llms.txt v1 (https://llmstxt.org)
 #
 # Polymart is a persistent simulated stock market with 132 fictional tickers
-# across 20 sectors. All data is entirely fictional — not financial advice.
+# across 20 sectors. All data is entirely fictional - not financial advice.
 # The simulation ticks every 3 seconds. No API key or authentication required.
 
 > Polymart is a simulated stock exchange accessible via an open REST API.
@@ -27,7 +27,7 @@
 ## Endpoints
 
 ### GET /api/v1/getMarket
-Global market snapshot — index value, fear & greed, macro variables, movers.
+Global market snapshot - index value, fear & greed, macro variables, movers.
 
 Response fields:
 - index (number): Current market index value
@@ -62,7 +62,7 @@ Query parameters:
 Response: object keyed by ticker symbol (e.g. "APEX"), each value containing:
 - name (string): Company name
 - sector (string): Sector key
-- mcap (string): Market cap tier — large | mid | small
+- mcap (string): Market cap tier - large | mid | small
 - price (number): Current price
 - change (number): % change from previous tick
 - volume (number): Cumulative simulated volume
@@ -149,7 +149,7 @@ Example: https://polymart.co/api/v1/getSector?sector=crypto
 ---
 
 ### GET /api/v1/getEvents
-Recent market events — flash crashes, sector booms, FDA approvals, meme frenzies, etc.
+Recent market events - flash crashes, sector booms, FDA approvals, meme frenzies, etc.
 
 Query parameters:
 - limit (number, optional): Max events to return, 1–30, default 10
@@ -185,7 +185,7 @@ Example: https://polymart.co/api/v1/getTopMovers?limit=5
 All stocks ranked by any numeric field. Good for Discord bot leaderboard commands.
 
 Query parameters:
-- by (string, optional): Sort field — change | price | volume | rsi | ath | streak; default: change
+- by (string, optional): Sort field - change | price | volume | rsi | ath | streak; default: change
 - dir (string, optional): asc | desc; default: desc
 - limit (number, optional): Max results, 1–132; default: 10
 
@@ -250,7 +250,7 @@ Example: https://polymart.co/api/v1/search?q=moon
 ---
 
 ### GET /api/v1/getHealth
-API health check — confirms simulation is running and reports data freshness.
+API health check - confirms simulation is running and reports data freshness.
 
 Response fields:
 - status (string): ok | uninitialised
@@ -322,7 +322,7 @@ GET https://polymart.co/api/v1/getLeaderboard?by=rsi&dir=desc&limit=20
 - The `history` array in getStock and getHistory is ordered oldest-first.
 - RSI values follow standard interpretation: below 30 = oversold, above 70 = overbought.
 - The `streak` field: positive = consecutive up-ticks, negative = consecutive down-ticks.
-- `insiderBias` is a hidden simulation variable — it subtly nudges price direction.
+- `insiderBias` is a hidden simulation variable - it subtly nudges price direction.
 - `fearGreedLabel` maps to: 0–10 Extreme Fear, 11–25 Fear, 26–40 Cautious,
   41–59 Neutral, 60–74 Greed, 75–89 High Greed, 90–100 Extreme Greed.
 - The human-readable API docs are at: https://polymart.co/#/docs/api

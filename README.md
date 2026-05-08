@@ -4,7 +4,7 @@
 
 **POLYMART** is a real-time stock market simulation engine designed primarily as a **synthetic data generator** for financial applications, experiments, and creative projects.
 
-It provides a fully programmable environment for generating realistic, evolving stock market data that can be used across a wide range of use cases — from lightweight bots to full-scale training platforms.
+It provides a fully programmable environment for generating realistic, evolving stock market data that can be used across a wide range of use cases - from lightweight bots to full-scale training platforms.
 
 ---
 
@@ -17,7 +17,7 @@ POLYMART is a **self-contained market simulation system** built to:
 - Provide a controllable environment for **testing and experimentation**  
 - Act as a backend for projects that need **live-like financial data without real markets**
 
-This is not a production trading engine — it is a **data generation and simulation platform**.
+This is not a production trading engine - it is a **data generation and simulation platform**.
 
 ---
 
@@ -126,4 +126,4 @@ By using any POLYMART-related services or outputs, you agree to the following:
 
 POLYMART explores the idea that **financial systems don’t need to be real to be useful**.
 
-By generating realistic, controllable market data, it enables developers, researchers, and creators to build and experiment freely — without external dependencies or real-world risk.
+By generating realistic, controllable market data, it enables developers, researchers, and creators to build and experiment freely - without external dependencies or real-world risk.
