@@ -14,10 +14,21 @@ import EducationPage from "@/pages/EducationPage"
 import ProductsPage from "@/pages/ProductsPage"
 import HelpCenterPage from "@/pages/HelpCenterPage"
 
-<MaintenancePopup
-  start="2026-05-12T02:00:00Z"
-  end="2026-05-12T03:00:00Z"
-/>
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: scale(0.96);
+  }
+
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+.animate-fadeIn {
+  animation: fadeIn 0.2s ease-out;
+}
 
 
 // ── Routing ───────────────────────────────────────────────────────────────────
