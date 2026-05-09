@@ -14,6 +14,12 @@ import EducationPage from "@/pages/EducationPage"
 import ProductsPage from "@/pages/ProductsPage"
 import HelpCenterPage from "@/pages/HelpCenterPage"
 
+<MaintenancePopup
+  start="2026-05-12T02:00:00Z"
+  end="2026-05-12T03:00:00Z"
+/>
+
+
 // ── Routing ───────────────────────────────────────────────────────────────────
 export type Route = "home" | "market" | "api" | "terms" | "privacy" | "changelog" | "education" | "products" | "help"
 
