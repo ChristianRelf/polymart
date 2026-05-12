@@ -19,11 +19,6 @@ const DIM   = "rgba(255,255,255,0.18)"
 const BG    = "oklch(0.138 0.004 264)"
 const CARD  = "oklch(0.165 0.004 264)"
 
-<MaintenancePopup
-  start="2026-05-12T02:00:00Z"
-  end="2026-05-12T03:00:00Z"
-/>
-
 // ── Candlestick chart ─────────────────────────────────────────────────────────
 function CandleChart({ candles, price, sma20, sma50, bbUpper, bbMiddle, bbLower, vwap }: {
   candles: Candle[]; price: number
