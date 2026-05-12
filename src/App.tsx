@@ -16,9 +16,10 @@ import HelpCenterPage from "@/pages/HelpCenterPage"
 import WidgetsPage from "@/pages/WidgetsPage"
 import EduToolsPage from "@/pages/EduToolsPage"
 import CommunityPage from "@/pages/CommunityPage"
+import BotLegalPage from "@/pages/BotLegalPage"
 
 // ── Routing ───────────────────────────────────────────────────────────────────
-export type Route = "home" | "market" | "api" | "terms" | "privacy" | "changelog" | "education" | "products" | "help" | "widgets" | "edu-tools" | "community"
+export type Route = "home" | "market" | "api" | "terms" | "privacy" | "changelog" | "education" | "products" | "help" | "widgets" | "edu-tools" | "community" | "bot-terms" | "bot-privacy"
 
 const HASH_MAP: Record<string, Route> = {
   "": "home",
@@ -35,6 +36,8 @@ const HASH_MAP: Record<string, Route> = {
   "/widgets": "widgets",
   "/edu-tools": "edu-tools",
   "/community": "community",
+  "/docs/bots/terms": "bot-terms",
+  "/docs/bots/privacy": "bot-privacy",
 }
 
 const ROUTE_HASH: Record<Route, string> = {
@@ -50,6 +53,8 @@ const ROUTE_HASH: Record<Route, string> = {
   widgets: "/widgets",
   "edu-tools": "/edu-tools",
   community: "/community",
+  "bot-terms": "/docs/bots/terms",
+  "bot-privacy": "/docs/bots/privacy",
 }
 
 function getRoute(): Route {
@@ -455,7 +460,9 @@ export default function App() {
           {route === "help"      && <HelpCenterPage onNavigate={go} />}
           {route === "widgets"   && <WidgetsPage    onNavigate={go} />}
           {route === "edu-tools" && <EduToolsPage   onNavigate={go} />}
-          {route === "community" && <CommunityPage  onNavigate={go} />}
+          {route === "community"   && <CommunityPage  onNavigate={go} />}
+          {route === "bot-terms"   && <BotLegalPage   type="bot-terms"   onNavigate={go} />}
+          {route === "bot-privacy" && <BotLegalPage   type="bot-privacy" onNavigate={go} />}
         </main>
 
         <Footer setRoute={setRoute} />
