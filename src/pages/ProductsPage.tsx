@@ -3,7 +3,7 @@ import { Separator } from "@/components/ui/separator"
 import { TrendingUp, Bitcoin, ChartBar as BarChart2, DollarSign, LayoutGrid, Bot, Globe, ArrowRight, Clock, Layers, MonitorSmartphone, Code as Code2 } from "lucide-react"
 import { cn } from "@/lib/utils"
 
-type Route = "home" | "market" | "api" | "terms" | "privacy" | "education" | "changelog" | "products" | "help"
+type Route = "home" | "market" | "api" | "terms" | "privacy" | "education" | "changelog" | "products" | "help" | "widgets"
 
 interface Props {
   onNavigate: (r: Route) => void
@@ -215,24 +215,28 @@ export default function ProductsPage({ onNavigate }: Props) {
           Drop live Polymart market data directly into any webpage or application without writing backend code.
         </p>
 
-        <div className="bg-card/50 border border-border/60 rounded-xl p-8 flex flex-col sm:flex-row items-start sm:items-center gap-6 opacity-70">
-          <div className="w-12 h-12 rounded-xl bg-muted border border-border flex items-center justify-center shrink-0">
-            <MonitorSmartphone className="w-6 h-6 text-muted-foreground" />
+        <div className="bg-card border border-border rounded-xl p-8 flex flex-col sm:flex-row items-start sm:items-center gap-6 hover:border-ring transition-colors group">
+          <div className="w-12 h-12 rounded-xl bg-foreground/5 border border-border flex items-center justify-center shrink-0">
+            <MonitorSmartphone className="w-6 h-6 text-foreground" />
           </div>
           <div className="flex-1">
             <div className="flex items-center gap-2 mb-1.5">
-              <p className="text-base font-bold text-foreground/70">Embeds & Widgets</p>
-              <div className="flex items-center gap-1.5">
-                <Clock className="w-3 h-3 text-muted-foreground" />
-                <span className="text-[10px] text-muted-foreground font-medium">Coming Soon</span>
-              </div>
+              <p className="text-base font-bold text-foreground">Embeds &amp; Widgets</p>
+              <Badge variant="outline" className="text-[10px] border-emerald-500/40 text-emerald-400 bg-emerald-500/5">
+                Live
+              </Badge>
             </div>
             <p className="text-sm text-muted-foreground leading-relaxed max-w-xl">
-              Iframe-embeddable ticker tapes, price cards, sector heatmaps, and mini-charts.
-              Configurable by ticker, sector, or index. Suitable for educational dashboards,
-              Discord server pages, and project websites.
+              Seven drop-in web components — price cards, ticker tapes, leaderboards, sparklines,
+              sector overviews, market summaries, and event feeds. One script tag, no API key, Shadow DOM isolated.
             </p>
           </div>
+          <button
+            onClick={() => onNavigate("widgets")}
+            className="flex items-center gap-1.5 text-xs font-semibold text-foreground cursor-pointer bg-transparent border-0 p-0 w-fit hover:opacity-70 transition-opacity shrink-0"
+          >
+            View Widgets <ArrowRight className="w-3 h-3" />
+          </button>
         </div>
       </div>
 
@@ -265,13 +269,13 @@ export default function ProductsPage({ onNavigate }: Props) {
             icon={Globe}
             title="Web"
             sub="Embeds & widgets"
-            status="coming-soon"
+            status="live"
             items={[
-              "Iframe-embeddable ticker tape",
-              "Configurable price cards per ticker",
-              "Sector heatmap widget",
-              "Mini-chart embeds with live data",
-              "Lightweight JS snippet for custom sites",
+              "Single <script> tag, no dependencies",
+              "Price cards, tapes, leaderboards, sparklines",
+              "Sector overview and market summary widgets",
+              "Live event feed with impact indicators",
+              "Dark & light themes, Shadow DOM isolated",
               "Zero-auth, CORS-open endpoints",
             ]}
           />

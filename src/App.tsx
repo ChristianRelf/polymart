@@ -3,7 +3,7 @@ import { Button } from "@/components/ui/button"
 import { Separator } from "@/components/ui/separator"
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet"
 import { cn } from "@/lib/utils"
-import { Hop as Home, TrendingUp, Code as Code2, Layers, GraduationCap, Circle as HelpCircle, ShieldCheck, FileText, Bot, ArrowUpRight, Activity, X, Brain, Menu } from "lucide-react"
+import { Hop as Home, TrendingUp, Code as Code2, Layers, GraduationCap, Circle as HelpCircle, ShieldCheck, FileText, Bot, ArrowUpRight, Activity, X, Brain, Menu, MonitorSmartphone } from "lucide-react"
 import { SimulationProvider, useSimulation } from "@/lib/SimulationContext"
 import HomePage from "@/pages/HomePage"
 import MarketPage from "@/pages/MarketPage"
@@ -13,9 +13,10 @@ import ChangelogPage from "@/pages/ChangelogPage"
 import EducationPage from "@/pages/EducationPage"
 import ProductsPage from "@/pages/ProductsPage"
 import HelpCenterPage from "@/pages/HelpCenterPage"
+import WidgetsPage from "@/pages/WidgetsPage"
 
 // ── Routing ───────────────────────────────────────────────────────────────────
-export type Route = "home" | "market" | "api" | "terms" | "privacy" | "changelog" | "education" | "products" | "help"
+export type Route = "home" | "market" | "api" | "terms" | "privacy" | "changelog" | "education" | "products" | "help" | "widgets"
 
 const HASH_MAP: Record<string, Route> = {
   "": "home",
@@ -29,6 +30,7 @@ const HASH_MAP: Record<string, Route> = {
   "/education": "education",
   "/products": "products",
   "/help": "help",
+  "/widgets": "widgets",
 }
 
 const ROUTE_HASH: Record<Route, string> = {
@@ -41,6 +43,7 @@ const ROUTE_HASH: Record<Route, string> = {
   education: "/education",
   products: "/products",
   help: "/help",
+  widgets: "/widgets",
 }
 
 function getRoute(): Route {
@@ -292,6 +295,7 @@ function Footer({ setRoute }: { setRoute: (r: Route) => void }) {
                 <FooterLink icon={Code2}       label="API Reference" onClick={() => go("api")} />
                 <FooterLink icon={HelpCircle}  label="Help Center"   onClick={() => go("help")} />
                 <FooterLink icon={Activity}    label="Changelog"     onClick={() => go("changelog")} />
+                <FooterLink icon={MonitorSmartphone} label="Widgets" onClick={() => go("widgets")} />
                 <FooterExternalLink icon={Brain} label="AI Docs (llms.txt)" href="/llms.txt" />
               </div>
             </div>
@@ -452,6 +456,7 @@ export default function App() {
           {route === "education" && <EducationPage  onNavigate={go} />}
           {route === "products"  && <ProductsPage   onNavigate={go} />}
           {route === "help"      && <HelpCenterPage onNavigate={go} />}
+          {route === "widgets"   && <WidgetsPage    onNavigate={go} />}
         </main>
 
         <Footer setRoute={setRoute} />
