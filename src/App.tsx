@@ -1,9 +1,9 @@
-import { useState, useEffect, useRef } from "react"
+import { useState, useEffect, useRef, type ReactNode } from "react"
 import { Button } from "@/components/ui/button"
 import { Separator } from "@/components/ui/separator"
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet"
 import { cn } from "@/lib/utils"
-import { Hop as Home, TrendingUp, Code as Code2, Layers, GraduationCap, Circle as HelpCircle, ShieldCheck, FileText, Bot, ArrowUpRight, Activity, X, Brain, Menu, MonitorSmartphone, Users } from "lucide-react"
+import { Bot, ArrowUpRight, X, Menu } from "lucide-react"
 import { SimulationProvider, useSimulation } from "@/lib/SimulationContext"
 import HomePage from "@/pages/HomePage"
 import MarketPage from "@/pages/MarketPage"
@@ -219,132 +219,108 @@ function Navbar({ route, setRoute }: { route: Route; setRoute: (r: Route) => voi
   )
 }
 
-// ── Footer nav link ───────────────────────────────────────────────────────────
-function FooterLink({
-  icon: Icon,
-  label,
-  onClick,
-}: {
-  icon: React.ElementType
-  label: string
-  onClick: () => void
-}) {
-  return (
-    <button
-      onClick={onClick}
-      className="group flex items-center gap-2.5 text-sm text-muted-foreground hover:text-foreground transition-colors cursor-pointer bg-transparent border-0 p-0 w-fit"
-    >
-      <Icon className="w-3.5 h-3.5 shrink-0 text-muted-foreground/60 group-hover:text-foreground transition-colors" />
-      {label}
-    </button>
-  )
-}
-
-function FooterExternalLink({
-  icon: Icon,
-  label,
-  href,
-}: {
-  icon: React.ElementType
-  label: string
-  href: string
-}) {
-  return (
-    <a
-      href={href}
-      target="_blank"
-      rel="noopener noreferrer"
-      className="group flex items-center gap-2.5 text-sm text-muted-foreground hover:text-foreground transition-colors w-fit no-underline"
-    >
-      <Icon className="w-3.5 h-3.5 shrink-0 text-muted-foreground/60 group-hover:text-foreground transition-colors" />
-      {label}
-    </a>
-  )
-}
-
 // ── Footer ────────────────────────────────────────────────────────────────────
 function Footer({ setRoute }: { setRoute: (r: Route) => void }) {
   const go = (r: Route) => { navigate(r); setRoute(r) }
 
+  function NavCol({ title, children }: { title: string; children: ReactNode }) {
+    return (
+      <div>
+        <p className="text-[10px] font-bold text-muted-foreground/40 uppercase tracking-[0.15em] mb-4">{title}</p>
+        <div className="flex flex-col gap-2.5">{children}</div>
+      </div>
+    )
+  }
+
+  function FLink({ label, route }: { label: string; route: Route }) {
+    return (
+      <button
+        onClick={() => go(route)}
+        className="text-sm text-muted-foreground hover:text-foreground transition-colors cursor-pointer bg-transparent border-0 p-0 text-left w-fit"
+      >
+        {label}
+      </button>
+    )
+  }
+
+  function FExt({ label, href }: { label: string; href: string }) {
+    return (
+      <a
+        href={href}
+        target="_blank"
+        rel="noopener noreferrer"
+        className="flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground transition-colors w-fit no-underline"
+      >
+        {label}
+        <ArrowUpRight className="w-3 h-3 opacity-40" />
+      </a>
+    )
+  }
+
   return (
     <footer className="border-t border-border mt-auto">
-      {/* Main footer body */}
-      <div className="max-w-[1600px] mx-auto px-4 sm:px-8 py-10 sm:py-12">
-        <div className="grid grid-cols-1 lg:grid-cols-[1fr_auto] gap-8 lg:gap-12">
+      <div className="max-w-[1600px] mx-auto px-4 sm:px-8 pt-12 pb-8">
 
-          {/* Left: brand + nav columns */}
-          <div className="grid grid-cols-2 sm:grid-cols-[auto_1fr_1fr_1fr] gap-6 sm:gap-10">
+        {/* Nav columns */}
+        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-x-8 gap-y-10 mb-12">
 
-            {/* Brand */}
-            <div className="flex flex-col gap-4 max-w-[200px] col-span-2 sm:col-span-1">
-              <p className="text-xs text-muted-foreground leading-relaxed">
-                A persistent simulated stock exchange. All data is entirely fictional.
-                Not financial advice.
-              </p>
-            </div>
-
-            {/* Explore */}
-            <div>
-              <p className="text-[10px] font-bold text-muted-foreground/50 uppercase tracking-[0.15em] mb-4">Explore</p>
-              <div className="flex flex-col gap-3">
-                <FooterLink icon={Home}         label="Home"          onClick={() => go("home")} />
-                <FooterLink icon={TrendingUp}   label="Market"        onClick={() => go("market")} />
-                <FooterLink icon={Layers}       label="Products"      onClick={() => go("products")} />
-                <FooterLink icon={GraduationCap} label="Education"   onClick={() => go("education")} />
-                <FooterLink icon={Users}         label="Community"   onClick={() => go("community")} />
-              </div>
-            </div>
-
-            {/* Developers */}
-            <div>
-              <p className="text-[10px] font-bold text-muted-foreground/50 uppercase tracking-[0.15em] mb-4">Developers</p>
-              <div className="flex flex-col gap-3">
-                <FooterLink icon={Code2}       label="API Reference" onClick={() => go("api")} />
-                <FooterLink icon={HelpCircle}  label="Help Center"   onClick={() => go("help")} />
-                <FooterLink icon={Activity}    label="Changelog"     onClick={() => go("changelog")} />
-                <FooterLink icon={MonitorSmartphone} label="Widgets" onClick={() => go("widgets")} />
-                <FooterExternalLink icon={Brain} label="AI Docs (llms.txt)" href="/llms.txt" />
-              </div>
-            </div>
-
-            {/* Legal */}
-            <div>
-              <p className="text-[10px] font-bold text-muted-foreground/50 uppercase tracking-[0.15em] mb-4">Legal</p>
-              <div className="flex flex-col gap-3">
-                <FooterLink icon={FileText}    label="Terms of Service" onClick={() => go("terms")} />
-                <FooterLink icon={ShieldCheck} label="Privacy Policy"   onClick={() => go("privacy")} />
-              </div>
-            </div>
+          {/* Brand blurb */}
+          <div className="col-span-2 sm:col-span-3 lg:col-span-1">
+            <p className="text-xs text-muted-foreground leading-relaxed">
+              A persistent simulated stock exchange. All prices, tickers, and events are entirely
+              fictional. Not financial advice.
+            </p>
           </div>
 
-          {/* Right: Discord CTA */}
-          <div className="flex items-start">
-            <div className="bg-card border border-border rounded-xl p-5 flex flex-col gap-4 w-full lg:w-[220px] shrink-0">
-              <div className="w-9 h-9 rounded-lg bg-foreground/5 border border-border flex items-center justify-center">
-                <Bot className="w-4 h-4 text-foreground" />
-              </div>
-              <div>
-                <p className="text-sm font-semibold text-foreground mb-1">Add to Discord</p>
-                <p className="text-xs text-muted-foreground leading-relaxed">
-                  Live market data, slash commands, and price alerts in your server.
-                </p>
-              </div>
-              <a
-                href="https://discord.com/oauth2/authorize?client_id=1502125060524347512&permissions=139586455616&integration_type=0&scope=bot+applications.commands"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="flex items-center justify-between px-3 py-2 bg-foreground text-background rounded-lg text-xs font-semibold hover:opacity-90 transition-opacity no-underline"
-              >
-                Add Bot
-                <ArrowUpRight className="w-3 h-3" />
-              </a>
-            </div>
-          </div>
+          <NavCol title="Platform">
+            <FLink label="Home"     route="home" />
+            <FLink label="Market"   route="market" />
+            <FLink label="Products" route="products" />
+            <FLink label="Widgets"  route="widgets" />
+            <FExt  label="Demo Site" href="/demo/index.html" />
+          </NavCol>
 
+          <NavCol title="Learn">
+            <FLink label="Education"    route="education" />
+            <FLink label="Student Tools" route="edu-tools" />
+            <FLink label="Changelog"    route="changelog" />
+          </NavCol>
+
+          <NavCol title="Community">
+            <FLink label="Community Hub" route="community" />
+            <FExt  label="Discord" href="https://discord.com/oauth2/authorize?client_id=1502125060524347512&permissions=139586455616&integration_type=0&scope=bot+applications.commands" />
+          </NavCol>
+
+          <NavCol title="Developers">
+            <FLink label="API Reference" route="api" />
+            <FLink label="Help Center"   route="help" />
+            <FExt  label="AI Docs"       href="/llms.txt" />
+          </NavCol>
+
+          <NavCol title="Legal">
+            <FLink label="Terms of Service" route="terms" />
+            <FLink label="Privacy Policy"   route="privacy" />
+          </NavCol>
+        </div>
+
+        {/* Bottom bar */}
+        <div className="flex flex-wrap items-center justify-between gap-4 pt-6 border-t border-border/40">
+          <p className="text-xs text-muted-foreground">
+            © 2026 Polymart · All data is fictional · Not financial advice
+          </p>
+          <a
+            href="https://discord.com/oauth2/authorize?client_id=1502125060524347512&permissions=139586455616&integration_type=0&scope=bot+applications.commands"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="flex items-center gap-2 px-3 py-1.5 bg-foreground text-background rounded-lg text-xs font-semibold hover:opacity-90 transition-opacity no-underline"
+          >
+            <Bot className="w-3 h-3" />
+            Add to Discord
+          </a>
         </div>
       </div>
 
-      {/* Large logo strip — full bleed, edge to edge */}
+      {/* Large logo strip — full bleed */}
       <div
         className="overflow-hidden pointer-events-none select-none"
         style={{ width: "100vw", marginLeft: "calc(50% - 50vw)" }}
