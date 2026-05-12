@@ -231,12 +231,22 @@ export default function ProductsPage({ onNavigate }: Props) {
               sector overviews, market summaries, and event feeds. One script tag, no API key, Shadow DOM isolated.
             </p>
           </div>
-          <button
-            onClick={() => onNavigate("widgets")}
-            className="flex items-center gap-1.5 text-xs font-semibold text-foreground cursor-pointer bg-transparent border-0 p-0 w-fit hover:opacity-70 transition-opacity shrink-0"
-          >
-            View Widgets <ArrowRight className="w-3 h-3" />
-          </button>
+          <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3 shrink-0">
+            <a
+              href="/demo/"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="flex items-center gap-1.5 text-xs font-semibold px-3 py-1.5 bg-foreground text-background rounded-lg hover:opacity-90 transition-opacity"
+            >
+              View Demo <ArrowRight className="w-3 h-3" />
+            </a>
+            <button
+              onClick={() => onNavigate("widgets")}
+              className="flex items-center gap-1.5 text-xs font-semibold text-foreground cursor-pointer bg-transparent border-0 p-0 w-fit hover:opacity-70 transition-opacity"
+            >
+              View Widgets <ArrowRight className="w-3 h-3" />
+            </button>
+          </div>
         </div>
       </div>
 
