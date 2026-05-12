@@ -3,7 +3,7 @@ import { Button } from "@/components/ui/button"
 import { Separator } from "@/components/ui/separator"
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet"
 import { cn } from "@/lib/utils"
-import { Hop as Home, TrendingUp, Code as Code2, Layers, GraduationCap, Circle as HelpCircle, ShieldCheck, FileText, Bot, ArrowUpRight, Activity, X, Brain, Menu, MonitorSmartphone } from "lucide-react"
+import { Hop as Home, TrendingUp, Code as Code2, Layers, GraduationCap, Circle as HelpCircle, ShieldCheck, FileText, Bot, ArrowUpRight, Activity, X, Brain, Menu, MonitorSmartphone, Users } from "lucide-react"
 import { SimulationProvider, useSimulation } from "@/lib/SimulationContext"
 import HomePage from "@/pages/HomePage"
 import MarketPage from "@/pages/MarketPage"
@@ -15,9 +15,10 @@ import ProductsPage from "@/pages/ProductsPage"
 import HelpCenterPage from "@/pages/HelpCenterPage"
 import WidgetsPage from "@/pages/WidgetsPage"
 import EduToolsPage from "@/pages/EduToolsPage"
+import CommunityPage from "@/pages/CommunityPage"
 
 // ── Routing ───────────────────────────────────────────────────────────────────
-export type Route = "home" | "market" | "api" | "terms" | "privacy" | "changelog" | "education" | "products" | "help" | "widgets" | "edu-tools"
+export type Route = "home" | "market" | "api" | "terms" | "privacy" | "changelog" | "education" | "products" | "help" | "widgets" | "edu-tools" | "community"
 
 const HASH_MAP: Record<string, Route> = {
   "": "home",
@@ -33,6 +34,7 @@ const HASH_MAP: Record<string, Route> = {
   "/help": "help",
   "/widgets": "widgets",
   "/edu-tools": "edu-tools",
+  "/community": "community",
 }
 
 const ROUTE_HASH: Record<Route, string> = {
@@ -47,6 +49,7 @@ const ROUTE_HASH: Record<Route, string> = {
   help: "/help",
   widgets: "/widgets",
   "edu-tools": "/edu-tools",
+  community: "/community",
 }
 
 function getRoute(): Route {
@@ -130,6 +133,7 @@ const NAV_LINKS: [Route, string][] = [
   ["api", "Developer Docs"],
   ["products", "Products"],
   ["education", "Education"],
+  ["community", "Community"],
   ["help", "Help"],
 ]
 
@@ -288,6 +292,7 @@ function Footer({ setRoute }: { setRoute: (r: Route) => void }) {
                 <FooterLink icon={TrendingUp}   label="Market"        onClick={() => go("market")} />
                 <FooterLink icon={Layers}       label="Products"      onClick={() => go("products")} />
                 <FooterLink icon={GraduationCap} label="Education"   onClick={() => go("education")} />
+                <FooterLink icon={Users}         label="Community"   onClick={() => go("community")} />
               </div>
             </div>
 
@@ -461,6 +466,7 @@ export default function App() {
           {route === "help"      && <HelpCenterPage onNavigate={go} />}
           {route === "widgets"   && <WidgetsPage    onNavigate={go} />}
           {route === "edu-tools" && <EduToolsPage   onNavigate={go} />}
+          {route === "community" && <CommunityPage  onNavigate={go} />}
         </main>
 
         <Footer setRoute={setRoute} />
