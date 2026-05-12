@@ -14,9 +14,10 @@ import EducationPage from "@/pages/EducationPage"
 import ProductsPage from "@/pages/ProductsPage"
 import HelpCenterPage from "@/pages/HelpCenterPage"
 import WidgetsPage from "@/pages/WidgetsPage"
+import EduToolsPage from "@/pages/EduToolsPage"
 
 // ── Routing ───────────────────────────────────────────────────────────────────
-export type Route = "home" | "market" | "api" | "terms" | "privacy" | "changelog" | "education" | "products" | "help" | "widgets"
+export type Route = "home" | "market" | "api" | "terms" | "privacy" | "changelog" | "education" | "products" | "help" | "widgets" | "edu-tools"
 
 const HASH_MAP: Record<string, Route> = {
   "": "home",
@@ -31,6 +32,7 @@ const HASH_MAP: Record<string, Route> = {
   "/products": "products",
   "/help": "help",
   "/widgets": "widgets",
+  "/edu-tools": "edu-tools",
 }
 
 const ROUTE_HASH: Record<Route, string> = {
@@ -44,6 +46,7 @@ const ROUTE_HASH: Record<Route, string> = {
   products: "/products",
   help: "/help",
   widgets: "/widgets",
+  "edu-tools": "/edu-tools",
 }
 
 function getRoute(): Route {
@@ -457,6 +460,7 @@ export default function App() {
           {route === "products"  && <ProductsPage   onNavigate={go} />}
           {route === "help"      && <HelpCenterPage onNavigate={go} />}
           {route === "widgets"   && <WidgetsPage    onNavigate={go} />}
+          {route === "edu-tools" && <EduToolsPage   onNavigate={go} />}
         </main>
 
         <Footer setRoute={setRoute} />
