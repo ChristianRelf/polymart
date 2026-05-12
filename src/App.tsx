@@ -277,7 +277,6 @@ function Footer({ setRoute }: { setRoute: (r: Route) => void }) {
 
             {/* Brand */}
             <div className="flex flex-col gap-4 max-w-[200px] col-span-2 sm:col-span-1">
-              <img src="/polymartlogo.png" alt="POLYMART" className="block h-auto w-auto" />
               <p className="text-xs text-muted-foreground leading-relaxed">
                 A persistent simulated stock exchange. All data is entirely fictional.
                 Not financial advice.
@@ -343,6 +342,17 @@ function Footer({ setRoute }: { setRoute: (r: Route) => void }) {
           </div>
 
         </div>
+      </div>
+
+      {/* Large logo strip */}
+      <div className="overflow-hidden border-t border-border/20 pointer-events-none select-none">
+        <img
+          src="/polymartlogo.png"
+          alt=""
+          aria-hidden="true"
+          className="w-full dark:invert opacity-[0.06] dark:opacity-[0.07] block"
+          style={{ maxHeight: "clamp(120px, 14vw, 240px)", objectFit: "contain", objectPosition: "center" }}
+        />
       </div>
     </footer>
   )
