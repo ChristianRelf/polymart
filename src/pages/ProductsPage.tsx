@@ -233,7 +233,7 @@ export default function ProductsPage({ onNavigate }: Props) {
           </div>
           <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3 shrink-0">
             <a
-              href="/demo/"
+              href="/demo/index.html"
               target="_blank"
               rel="noopener noreferrer"
               className="flex items-center gap-1.5 text-xs font-semibold px-3 py-1.5 bg-foreground text-background rounded-lg hover:opacity-90 transition-opacity"
