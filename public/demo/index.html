@@ -1,0 +1,765 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Apex Systems Corp — Enterprise AI Infrastructure | NYSE: APEX</title>
+  <meta name="description" content="Apex Systems Corporation delivers enterprise-grade AI infrastructure and cloud solutions. Publicly traded under APEX.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <script src="https://polymart.co/widgets/polymart-widgets.js" defer></script>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --navy:        #080d1a;
+      --navy-mid:    #0d1526;
+      --navy-light:  #111c35;
+      --blue:        #3b82f6;
+      --blue-light:  #93c5fd;
+      --indigo:      #6366f1;
+      --text:        #0f172a;
+      --muted:       #64748b;
+      --light-muted: #94a3b8;
+      --bg:          #f1f5f9;
+      --surface:     #ffffff;
+      --border:      #e2e8f0;
+      --green:       #22c55e;
+      --red:         #ef4444;
+      --r:           12px;
+    }
+
+    html { scroll-behavior: smooth; }
+    body {
+      font-family: 'Inter', -apple-system, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      line-height: 1.6;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    /* ── Tape bar ── */
+    .tape-bar { background: var(--navy); overflow: hidden; line-height: 0; }
+    .tape-bar polymart-tape { display: block; }
+
+    /* ── Header ── */
+    .header {
+      background: var(--navy);
+      position: sticky; top: 0; z-index: 100;
+      border-bottom: 1px solid rgba(255,255,255,0.06);
+    }
+    .header-inner {
+      max-width: 1280px; margin: 0 auto; padding: 0 32px;
+      height: 68px; display: flex; align-items: center; gap: 0;
+    }
+    .logo { display: flex; align-items: center; gap: 11px; text-decoration: none; flex-shrink: 0; }
+    .logo-mark {
+      width: 38px; height: 38px; background: var(--blue);
+      border-radius: 9px; display: flex; align-items: center; justify-content: center;
+      font-weight: 900; font-size: 17px; color: white; letter-spacing: -1px;
+      font-family: 'Inter', sans-serif;
+    }
+    .logo-text-wrap { display: flex; flex-direction: column; gap: 0; }
+    .logo-name { font-size: 15px; font-weight: 700; color: white; letter-spacing: -0.3px; line-height: 1; }
+    .logo-tag  { font-size: 9px; color: rgba(255,255,255,0.35); font-weight: 500; letter-spacing: 0.12em; text-transform: uppercase; margin-top: 2px; }
+
+    .header-sep { width: 1px; height: 28px; background: rgba(255,255,255,0.08); margin: 0 24px; }
+
+    nav { display: flex; align-items: center; gap: 2px; }
+    nav a {
+      padding: 7px 13px; font-size: 14px; font-weight: 500;
+      color: rgba(255,255,255,0.55); text-decoration: none;
+      border-radius: 7px; transition: all 0.15s;
+    }
+    nav a:hover { color: white; background: rgba(255,255,255,0.06); }
+
+    .header-right { margin-left: auto; display: flex; align-items: center; gap: 10px; }
+    .stock-pill {
+      display: flex; align-items: center; gap: 8px;
+      padding: 6px 12px;
+      background: rgba(255,255,255,0.05);
+      border: 1px solid rgba(255,255,255,0.08);
+      border-radius: 8px;
+    }
+    .stock-pill-sym {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 11px; font-weight: 700;
+      color: rgba(255,255,255,0.45); letter-spacing: 0.06em;
+    }
+    .stock-pill-spark { line-height: 0; }
+    .btn-ir {
+      padding: 8px 18px;
+      background: rgba(59,130,246,0.15);
+      color: var(--blue-light);
+      border: 1px solid rgba(59,130,246,0.25);
+      border-radius: 8px; font-size: 13px; font-weight: 600;
+      cursor: pointer; text-decoration: none; transition: all 0.15s;
+    }
+    .btn-ir:hover { background: rgba(59,130,246,0.25); }
+    .btn-contact {
+      padding: 8px 18px;
+      background: var(--blue); color: white;
+      border: none; border-radius: 8px;
+      font-size: 13px; font-weight: 600;
+      cursor: pointer; text-decoration: none; transition: opacity 0.15s;
+    }
+    .btn-contact:hover { opacity: 0.88; }
+
+    /* ── Hero ── */
+    .hero {
+      background: var(--navy-mid);
+      padding: 88px 32px 100px; position: relative; overflow: hidden;
+    }
+    .hero::before {
+      content: '';
+      position: absolute; top: -180px; right: -180px;
+      width: 640px; height: 640px;
+      background: radial-gradient(circle, rgba(99,102,241,0.12), transparent 60%);
+      pointer-events: none;
+    }
+    .hero::after {
+      content: '';
+      position: absolute; bottom: -100px; left: -100px;
+      width: 400px; height: 400px;
+      background: radial-gradient(circle, rgba(59,130,246,0.07), transparent 60%);
+      pointer-events: none;
+    }
+    .hero-inner {
+      max-width: 1280px; margin: 0 auto;
+      display: grid; grid-template-columns: 1fr auto;
+      gap: 64px; align-items: center; position: relative;
+    }
+    .hero-badge {
+      display: inline-flex; align-items: center; gap: 7px;
+      padding: 5px 14px 5px 7px;
+      background: rgba(59,130,246,0.12);
+      border: 1px solid rgba(59,130,246,0.25);
+      border-radius: 100px;
+      font-size: 12px; font-weight: 600; color: var(--blue-light);
+      letter-spacing: 0.03em; margin-bottom: 22px;
+    }
+    .hero-badge-dot {
+      width: 7px; height: 7px; background: var(--green);
+      border-radius: 50%;
+      box-shadow: 0 0 0 2px rgba(34,197,94,0.3);
+    }
+    .hero-h1 {
+      font-size: clamp(34px, 5vw, 56px);
+      font-weight: 800; line-height: 1.07;
+      letter-spacing: -0.04em; color: white;
+      margin-bottom: 22px;
+    }
+    .hero-h1 em { color: var(--blue-light); font-style: normal; }
+    .hero-desc {
+      font-size: 17px; color: rgba(255,255,255,0.5);
+      max-width: 490px; line-height: 1.75; margin-bottom: 36px;
+    }
+    .hero-actions { display: flex; gap: 12px; flex-wrap: wrap; }
+    .btn-hero-p {
+      padding: 13px 30px; background: var(--blue); color: white;
+      border: none; border-radius: 10px;
+      font-size: 15px; font-weight: 600;
+      cursor: pointer; text-decoration: none;
+      letter-spacing: -0.2px; transition: all 0.15s;
+    }
+    .btn-hero-p:hover { background: #2563eb; transform: translateY(-1px); }
+    .btn-hero-s {
+      padding: 13px 30px;
+      background: rgba(255,255,255,0.05);
+      color: rgba(255,255,255,0.75);
+      border: 1px solid rgba(255,255,255,0.12);
+      border-radius: 10px; font-size: 15px; font-weight: 600;
+      cursor: pointer; text-decoration: none;
+      letter-spacing: -0.2px; transition: all 0.15s;
+    }
+    .btn-hero-s:hover { background: rgba(255,255,255,0.09); }
+
+    /* ── Stats strip ── */
+    .stats { background: var(--navy-light); border-bottom: 1px solid rgba(255,255,255,0.05); }
+    .stats-inner {
+      max-width: 1280px; margin: 0 auto;
+      display: grid; grid-template-columns: repeat(4, 1fr);
+    }
+    .stat-cell {
+      padding: 32px 28px; text-align: center;
+      border-right: 1px solid rgba(255,255,255,0.05);
+    }
+    .stat-cell:last-child { border-right: none; }
+    .stat-val {
+      font-size: 36px; font-weight: 800; color: white;
+      letter-spacing: -0.04em; margin-bottom: 4px; line-height: 1;
+    }
+    .stat-val sup { font-size: 20px; vertical-align: super; letter-spacing: 0; }
+    .stat-lbl {
+      font-size: 11px; color: rgba(255,255,255,0.35);
+      text-transform: uppercase; letter-spacing: 0.1em; font-weight: 500;
+    }
+
+    /* ── Sections ── */
+    .section { padding: 88px 32px; }
+    .section-inner { max-width: 1280px; margin: 0 auto; }
+    .section-kicker {
+      font-size: 11px; font-weight: 700; text-transform: uppercase;
+      letter-spacing: 0.12em; color: var(--blue); margin-bottom: 10px;
+    }
+    .section-title {
+      font-size: clamp(26px, 4vw, 40px); font-weight: 800;
+      letter-spacing: -0.03em; color: var(--text);
+      margin-bottom: 16px; line-height: 1.12;
+    }
+    .section-desc {
+      font-size: 16px; color: var(--muted); max-width: 560px; line-height: 1.8;
+    }
+
+    /* ── About features ── */
+    .features-grid {
+      display: grid; grid-template-columns: repeat(3, 1fr);
+      gap: 2px; margin-top: 56px; background: var(--border);
+      border: 1px solid var(--border); border-radius: var(--r); overflow: hidden;
+    }
+    .feature {
+      background: var(--surface); padding: 32px;
+      transition: background 0.15s;
+    }
+    .feature:hover { background: #f8faff; }
+    .feature-icon { font-size: 28px; margin-bottom: 18px; }
+    .feature-title { font-size: 16px; font-weight: 700; color: var(--text); margin-bottom: 8px; letter-spacing: -0.02em; }
+    .feature-desc { font-size: 14px; color: var(--muted); line-height: 1.7; }
+
+    /* ── Products ── */
+    .products { background: var(--bg); }
+    .products-grid {
+      display: grid; grid-template-columns: repeat(3, 1fr);
+      gap: 20px; margin-top: 52px;
+    }
+    .product-card {
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: var(--r); padding: 32px;
+      transition: all 0.2s;
+    }
+    .product-card:hover {
+      border-color: var(--blue);
+      box-shadow: 0 0 0 1px var(--blue), 0 12px 32px rgba(59,130,246,0.08);
+      transform: translateY(-2px);
+    }
+    .product-badge {
+      display: inline-flex; align-items: center;
+      padding: 4px 12px; border-radius: 100px;
+      font-size: 11px; font-weight: 600;
+      letter-spacing: 0.04em; margin-bottom: 22px;
+    }
+    .badge-blue { background: rgba(59,130,246,0.08); color: var(--blue); }
+    .badge-indigo { background: rgba(99,102,241,0.08); color: var(--indigo); }
+    .badge-purple { background: rgba(139,92,246,0.08); color: #8b5cf6; }
+    .product-name {
+      font-size: 20px; font-weight: 800; color: var(--text);
+      margin-bottom: 10px; letter-spacing: -0.03em;
+    }
+    .product-desc {
+      font-size: 14px; color: var(--muted); line-height: 1.7; margin-bottom: 24px;
+    }
+    .product-metrics { display: flex; gap: 24px; }
+    .pm-item { font-size: 12px; color: var(--muted); }
+    .pm-val { font-size: 18px; font-weight: 700; color: var(--text); display: block; letter-spacing: -0.02em; }
+    .product-link {
+      display: inline-flex; align-items: center; gap: 4px;
+      margin-top: 20px; font-size: 13px; font-weight: 600;
+      color: var(--blue); text-decoration: none;
+      transition: gap 0.15s;
+    }
+    .product-link:hover { gap: 8px; }
+
+    /* ── Investor Relations ── */
+    .ir { background: var(--surface); border-top: 1px solid var(--border); }
+    .ir-grid-2 {
+      display: grid; grid-template-columns: 1fr 1fr;
+      gap: 24px; margin-top: 44px;
+    }
+    .ir-grid-2b {
+      display: grid; grid-template-columns: 3fr 2fr;
+      gap: 24px; margin-top: 24px;
+    }
+    .widget-label {
+      font-size: 10px; font-weight: 700; text-transform: uppercase;
+      letter-spacing: 0.1em; color: var(--muted); margin-bottom: 10px;
+    }
+
+    /* ── Polymart callout ── */
+    .pm-callout {
+      background: var(--navy); padding: 72px 32px;
+      position: relative; overflow: hidden;
+    }
+    .pm-callout::before {
+      content: '';
+      position: absolute; top: 0; left: 0; right: 0; bottom: 0;
+      background: radial-gradient(ellipse 800px 300px at 50% 100%, rgba(59,130,246,0.08), transparent);
+      pointer-events: none;
+    }
+    .pm-callout-inner {
+      max-width: 1280px; margin: 0 auto;
+      display: flex; align-items: center; justify-content: space-between;
+      gap: 40px; flex-wrap: wrap; position: relative;
+    }
+    .pm-callout-text .kicker {
+      font-size: 11px; font-weight: 700; text-transform: uppercase;
+      letter-spacing: 0.12em; color: var(--blue-light); margin-bottom: 10px;
+    }
+    .pm-callout-text h2 {
+      font-size: 28px; font-weight: 800; color: white;
+      letter-spacing: -0.03em; margin-bottom: 10px;
+    }
+    .pm-callout-text p {
+      font-size: 15px; color: rgba(255,255,255,0.45); max-width: 540px; line-height: 1.7;
+    }
+    .pm-callout-widgets {
+      display: flex; gap: 10px; flex-wrap: wrap; align-items: center;
+    }
+    .pm-widget-chip {
+      padding: 6px 14px;
+      background: rgba(255,255,255,0.05);
+      border: 1px solid rgba(255,255,255,0.08);
+      border-radius: 100px;
+      font-size: 12px; font-weight: 500;
+      color: rgba(255,255,255,0.5);
+      font-family: 'JetBrains Mono', monospace;
+    }
+    .pm-cta {
+      display: flex; align-items: center; gap: 14px; margin-top: 28px;
+    }
+    .pm-cta a {
+      padding: 11px 24px; border-radius: 9px;
+      font-size: 14px; font-weight: 600; text-decoration: none;
+      transition: all 0.15s;
+    }
+    .pm-cta-primary { background: var(--blue); color: white; }
+    .pm-cta-primary:hover { background: #2563eb; }
+    .pm-cta-secondary {
+      color: rgba(255,255,255,0.5);
+      border: 1px solid rgba(255,255,255,0.1);
+    }
+    .pm-cta-secondary:hover { color: white; border-color: rgba(255,255,255,0.2); }
+
+    /* ── Footer ── */
+    .footer {
+      background: var(--navy); border-top: 1px solid rgba(255,255,255,0.05);
+      padding: 56px 32px 32px;
+    }
+    .footer-inner {
+      max-width: 1280px; margin: 0 auto;
+    }
+    .footer-top {
+      display: grid; grid-template-columns: 240px 1fr 1fr 1fr;
+      gap: 48px; margin-bottom: 48px; padding-bottom: 48px;
+      border-bottom: 1px solid rgba(255,255,255,0.05);
+    }
+    .footer-brand p {
+      font-size: 13px; color: rgba(255,255,255,0.35); line-height: 1.7; margin-top: 14px;
+    }
+    .footer-col-title {
+      font-size: 10px; font-weight: 700; text-transform: uppercase;
+      letter-spacing: 0.12em; color: rgba(255,255,255,0.25); margin-bottom: 16px;
+    }
+    .footer-col a {
+      display: block; font-size: 14px; color: rgba(255,255,255,0.45);
+      text-decoration: none; margin-bottom: 10px; transition: color 0.15s;
+    }
+    .footer-col a:hover { color: rgba(255,255,255,0.8); }
+    .footer-bottom {
+      display: flex; align-items: center; justify-content: space-between;
+      flex-wrap: wrap; gap: 12px;
+    }
+    .footer-bottom p { font-size: 12px; color: rgba(255,255,255,0.25); }
+    .footer-disclaimer {
+      font-size: 11px; color: rgba(255,255,255,0.2);
+      max-width: 680px; line-height: 1.6; margin-top: 6px;
+    }
+    .demo-badge {
+      display: inline-flex; align-items: center; gap: 6px;
+      padding: 4px 12px; background: rgba(251,191,36,0.1);
+      border: 1px solid rgba(251,191,36,0.2); border-radius: 100px;
+      font-size: 11px; font-weight: 600; color: #fbbf24; letter-spacing: 0.04em;
+    }
+
+    /* ── Responsive ── */
+    @media (max-width: 900px) {
+      .hero-inner { grid-template-columns: 1fr; }
+      .hero-inner > :last-child { display: none; }
+      .stats-inner { grid-template-columns: repeat(2, 1fr); }
+      .stat-cell:nth-child(2) { border-right: none; }
+      .stat-cell:nth-child(1), .stat-cell:nth-child(2) { border-bottom: 1px solid rgba(255,255,255,0.05); }
+      .features-grid, .products-grid, .ir-grid-2, .ir-grid-2b { grid-template-columns: 1fr; }
+      .footer-top { grid-template-columns: 1fr 1fr; }
+      nav { display: none; }
+      .header-sep { display: none; }
+    }
+    @media (max-width: 600px) {
+      .section { padding: 60px 20px; }
+      .hero { padding: 64px 20px 72px; }
+      .footer-top { grid-template-columns: 1fr; gap: 32px; }
+      .pm-callout-inner { flex-direction: column; }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- ── Ticker tape ── -->
+  <div class="tape-bar">
+    <polymart-tape limit="20" speed="30"></polymart-tape>
+  </div>
+
+  <!-- ── Header ── -->
+  <header class="header">
+    <div class="header-inner">
+      <a href="#" class="logo">
+        <div class="logo-mark">A</div>
+        <div class="logo-text-wrap">
+          <span class="logo-name">Apex Systems</span>
+          <span class="logo-tag">Corp · NYSE: APEX</span>
+        </div>
+      </a>
+      <div class="header-sep"></div>
+      <nav>
+        <a href="#about">About</a>
+        <a href="#products">Products</a>
+        <a href="#investors">Investors</a>
+        <a href="#contact">Contact</a>
+      </nav>
+      <div class="header-right">
+        <div class="stock-pill">
+          <span class="stock-pill-sym">APEX</span>
+          <span class="stock-pill-spark">
+            <polymart-sparkline ticker="APEX" width="60" height="20"></polymart-sparkline>
+          </span>
+        </div>
+        <a href="#investors" class="btn-ir">Investor Relations</a>
+        <a href="#contact" class="btn-contact">Contact</a>
+      </div>
+    </div>
+  </header>
+
+  <!-- ── Hero ── -->
+  <section class="hero">
+    <div class="hero-inner">
+      <div>
+        <div class="hero-badge">
+          <span class="hero-badge-dot"></span>
+          Markets open · NYSE: APEX
+        </div>
+        <h1 class="hero-h1">
+          The infrastructure<br>
+          <em>AI runs on.</em>
+        </h1>
+        <p class="hero-desc">
+          Apex Systems powers the world's most demanding AI workloads.
+          From hyperscale cloud deployments to real-time edge inference,
+          we deliver the performance, reliability, and scale enterprises depend on.
+        </p>
+        <div class="hero-actions">
+          <a href="#products" class="btn-hero-p">Explore Products</a>
+          <a href="#investors" class="btn-hero-s">Stock Information</a>
+        </div>
+      </div>
+      <!-- Live ticker widget -->
+      <div>
+        <polymart-ticker ticker="APEX"></polymart-ticker>
+      </div>
+    </div>
+  </section>
+
+  <!-- ── Stats strip ── -->
+  <div class="stats">
+    <div class="stats-inner">
+      <div class="stat-cell">
+        <div class="stat-val">2,847</div>
+        <div class="stat-lbl">Employees worldwide</div>
+      </div>
+      <div class="stat-cell">
+        <div class="stat-val">340<sup>+</sup></div>
+        <div class="stat-lbl">Enterprise customers</div>
+      </div>
+      <div class="stat-cell">
+        <div class="stat-val">28</div>
+        <div class="stat-lbl">Countries served</div>
+      </div>
+      <div class="stat-cell">
+        <div class="stat-val">99.97<sup>%</sup></div>
+        <div class="stat-lbl">Uptime SLA</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── About ── -->
+  <section class="section" id="about" style="background: var(--surface);">
+    <div class="section-inner">
+      <p class="section-kicker">Who we are</p>
+      <h2 class="section-title">Infrastructure built for<br>the intelligence era</h2>
+      <p class="section-desc">
+        Founded in 2019, Apex Systems Corporation has grown from a seed-stage startup into
+        one of the most trusted names in enterprise AI infrastructure. We design, build, and
+        operate the systems that power machine learning at scale — from training clusters to
+        production inference pipelines.
+      </p>
+
+      <div class="features-grid">
+        <div class="feature">
+          <div class="feature-icon">⚡</div>
+          <div class="feature-title">Hardware-accelerated compute</div>
+          <p class="feature-desc">
+            Purpose-built GPU and TPU clusters optimized for deep learning training and
+            high-throughput inference. Up to 40% lower cost per FLOP versus generic cloud.
+          </p>
+        </div>
+        <div class="feature">
+          <div class="feature-icon">🌐</div>
+          <div class="feature-title">Global edge network</div>
+          <p class="feature-desc">
+            140+ edge PoPs across 28 countries. Sub-20ms inference latency for end users
+            worldwide. Seamless failover with no cold-start penalties.
+          </p>
+        </div>
+        <div class="feature">
+          <div class="feature-icon">🔒</div>
+          <div class="feature-title">Compliance by default</div>
+          <p class="feature-desc">
+            SOC 2 Type II, ISO 27001, HIPAA, and GDPR compliant out of the box.
+            Data sovereignty controls for regulated industries and government contracts.
+          </p>
+        </div>
+        <div class="feature">
+          <div class="feature-icon">📊</div>
+          <div class="feature-title">Observability suite</div>
+          <p class="feature-desc">
+            Real-time model performance monitoring, drift detection, and cost analytics.
+            One dashboard for every workload from dev to production.
+          </p>
+        </div>
+        <div class="feature">
+          <div class="feature-icon">🔄</div>
+          <div class="feature-title">Model lifecycle management</div>
+          <p class="feature-desc">
+            Versioned model registry, A/B traffic splitting, shadow deployment, and
+            automated rollback. Ship models with the same confidence as code.
+          </p>
+        </div>
+        <div class="feature">
+          <div class="feature-icon">🤝</div>
+          <div class="feature-title">Dedicated support</div>
+          <p class="feature-desc">
+            24/7 infrastructure support with guaranteed 15-minute response SLAs for
+            P0 incidents. Assigned solutions architect for every enterprise account.
+          </p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ── Products ── -->
+  <section class="section products" id="products">
+    <div class="section-inner">
+      <p class="section-kicker">Products</p>
+      <h2 class="section-title">Three platforms.<br>One unified stack.</h2>
+      <p class="section-desc">
+        From model training to edge deployment, every Apex product is designed to
+        interoperate seamlessly — or integrate with whatever you already run.
+      </p>
+
+      <div class="products-grid">
+        <div class="product-card">
+          <div class="product-badge badge-blue">Cloud · GA</div>
+          <div class="product-name">ApexCloud</div>
+          <p class="product-desc">
+            Hyperscale GPU cloud infrastructure for training foundation models and serving
+            large-scale production workloads. Spot, reserved, and dedicated capacity options
+            with instant provisioning and minute-level billing.
+          </p>
+          <div class="product-metrics">
+            <div class="pm-item">
+              <span class="pm-val">8,000<span style="font-size:13px;font-weight:500">+</span></span>
+              H100 GPUs available
+            </div>
+            <div class="pm-item">
+              <span class="pm-val">$1.89</span>
+              per GPU-hour
+            </div>
+          </div>
+          <a href="#" class="product-link">Learn more →</a>
+        </div>
+
+        <div class="product-card">
+          <div class="product-badge badge-indigo">ML Platform · GA</div>
+          <div class="product-name">ApexAI</div>
+          <p class="product-desc">
+            End-to-end MLOps platform for teams that ship models to production. Experiment
+            tracking, distributed training orchestration, automated hyperparameter tuning,
+            and one-click production deployment with autoscaling.
+          </p>
+          <div class="product-metrics">
+            <div class="pm-item">
+              <span class="pm-val">3×</span>
+              faster time-to-deploy
+            </div>
+            <div class="pm-item">
+              <span class="pm-val">60%</span>
+              infra cost reduction
+            </div>
+          </div>
+          <a href="#" class="product-link">Learn more →</a>
+        </div>
+
+        <div class="product-card">
+          <div class="product-badge badge-purple">Edge · Beta</div>
+          <div class="product-name">ApexEdge</div>
+          <p class="product-desc">
+            Distributed edge inference network for latency-sensitive AI applications.
+            Deploy quantized models to 140+ global PoPs with automatic load balancing
+            and regional data residency guarantees.
+          </p>
+          <div class="product-metrics">
+            <div class="pm-item">
+              <span class="pm-val">&lt;20ms</span>
+              p99 latency
+            </div>
+            <div class="pm-item">
+              <span class="pm-val">140<span style="font-size:13px">+</span></span>
+              global PoPs
+            </div>
+          </div>
+          <a href="#" class="product-link">Learn more →</a>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ── Investor Relations ── -->
+  <section class="section ir" id="investors">
+    <div class="section-inner">
+      <p class="section-kicker">Investor Relations</p>
+      <h2 class="section-title">Live market data</h2>
+      <p class="section-desc">
+        APEX is publicly traded. Real-time stock data, market conditions, and sector
+        performance are powered by <a href="https://polymart.co" target="_blank" style="color:var(--blue);text-decoration:none;font-weight:600">Polymart</a> — the open simulated exchange API.
+      </p>
+
+      <!-- Row 1: Market summary + Sector -->
+      <div class="ir-grid-2">
+        <div>
+          <p class="widget-label">Market Overview</p>
+          <polymart-market></polymart-market>
+        </div>
+        <div>
+          <p class="widget-label">Technology Sector</p>
+          <polymart-sector sector="tech"></polymart-sector>
+        </div>
+      </div>
+
+      <!-- Row 2: Leaderboard + Events -->
+      <div class="ir-grid-2b">
+        <div>
+          <p class="widget-label">Tech Sector Leaders</p>
+          <polymart-leaderboard by="change" limit="8" title="Top Technology Stocks" sector="tech"></polymart-leaderboard>
+        </div>
+        <div>
+          <p class="widget-label">Latest Market Events</p>
+          <polymart-events limit="6"></polymart-events>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ── Polymart callout ── -->
+  <div class="pm-callout">
+    <div class="pm-callout-inner">
+      <div class="pm-callout-text">
+        <p class="kicker">Powered by Polymart Widgets</p>
+        <h2>Add live market data<br>to any website</h2>
+        <p>
+          Every data widget you see on this page is a drop-in web component from Polymart —
+          one script tag, zero dependencies, no API key required. Embed price cards,
+          leaderboards, sector views, event feeds, and more on any site in minutes.
+        </p>
+        <div class="pm-cta">
+          <a href="https://polymart.co/#/widgets" target="_blank" class="pm-cta-primary">View all widgets</a>
+          <a href="https://polymart.co/#/docs/api" target="_blank" class="pm-cta-secondary">API Reference</a>
+        </div>
+      </div>
+      <div>
+        <div style="margin-bottom: 12px; font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.1em; color: rgba(255,255,255,0.25);">Available widgets</div>
+        <div style="display: flex; flex-wrap: wrap; gap: 8px; max-width: 360px;">
+          <span class="pm-widget-chip">&lt;polymart-ticker&gt;</span>
+          <span class="pm-widget-chip">&lt;polymart-market&gt;</span>
+          <span class="pm-widget-chip">&lt;polymart-leaderboard&gt;</span>
+          <span class="pm-widget-chip">&lt;polymart-tape&gt;</span>
+          <span class="pm-widget-chip">&lt;polymart-sparkline&gt;</span>
+          <span class="pm-widget-chip">&lt;polymart-sector&gt;</span>
+          <span class="pm-widget-chip">&lt;polymart-events&gt;</span>
+        </div>
+        <div style="margin-top: 20px; padding: 14px 16px; background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.06); border-radius: 8px; font-family: 'JetBrains Mono', monospace; font-size: 12px; color: rgba(255,255,255,0.35); line-height: 1.8;">
+          &lt;script src="https://polymart.co/<br>&nbsp;&nbsp;widgets/polymart-widgets.js"<br>&nbsp;&nbsp;defer&gt;&lt;/script&gt;
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── Footer ── -->
+  <footer class="footer" id="contact">
+    <div class="footer-inner">
+      <div class="footer-top">
+        <div class="footer-brand">
+          <a href="#" class="logo" style="margin-bottom: 0;">
+            <div class="logo-mark">A</div>
+            <div class="logo-text-wrap">
+              <span class="logo-name">Apex Systems</span>
+              <span class="logo-tag">Corp · NYSE: APEX</span>
+            </div>
+          </a>
+          <p>Enterprise AI infrastructure for the world's most demanding workloads.</p>
+        </div>
+
+        <div class="footer-col">
+          <p class="footer-col-title">Products</p>
+          <a href="#">ApexCloud</a>
+          <a href="#">ApexAI</a>
+          <a href="#">ApexEdge</a>
+          <a href="#">Pricing</a>
+          <a href="#">Status page</a>
+        </div>
+
+        <div class="footer-col">
+          <p class="footer-col-title">Company</p>
+          <a href="#">About us</a>
+          <a href="#">Careers</a>
+          <a href="#">Blog</a>
+          <a href="#">Press kit</a>
+          <a href="#investors">Investors</a>
+        </div>
+
+        <div class="footer-col">
+          <p class="footer-col-title">Resources</p>
+          <a href="#">Documentation</a>
+          <a href="#">API reference</a>
+          <a href="#">Community</a>
+          <a href="#">Support</a>
+          <a href="https://polymart.co" target="_blank">Market data</a>
+        </div>
+      </div>
+
+      <div class="footer-bottom">
+        <div>
+          <p style="color: rgba(255,255,255,0.25); font-size: 13px;">
+            © 2026 Apex Systems Corporation. All rights reserved.
+          </p>
+          <p class="footer-disclaimer">
+            Market data provided by <a href="https://polymart.co" target="_blank" style="color: rgba(255,255,255,0.35); text-decoration: none;">Polymart</a>.
+            All prices are simulated and fictional. This website is a demonstration of Polymart's
+            embeddable widget system and does not represent a real publicly-traded company.
+          </p>
+        </div>
+        <div>
+          <span class="demo-badge">⚠ Demo Site</span>
+        </div>
+      </div>
+    </div>
+  </footer>
+
+</body>
+</html>
