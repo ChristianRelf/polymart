@@ -326,10 +326,10 @@ function Footer({ setRoute }: { setRoute: (r: Route) => void }) {
         style={{ width: "100vw", marginLeft: "calc(50% - 50vw)" }}
       >
         <img
-          src="/polymartlogobottom.png"
+          src="/polymartlogobottom2.png"
           alt=""
           aria-hidden="true"
-          className="w-full block dark:invert"
+          className="w-full block"
         />
       </div>
     </footer>
