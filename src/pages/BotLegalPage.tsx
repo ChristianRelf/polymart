@@ -49,19 +49,19 @@ const BOT_TERMS_SECTIONS = [
 const BOT_PRIVACY_SECTIONS = [
   {
     title: "1. What the Bot Collects",
-    body: "The POLYMART Bot is a read-only data bot. It does not store, log, or retain any information about the users who invoke its commands, the content of messages in your server, or any personal data. The only data transmitted is the slash command name and any ticker or parameter you supply, which is used solely to query the POLYMART simulation API and return a response.",
+    body: "The POLYMART Bot collects and stores limited account-related data necessary for gameplay and platform functionality. This includes Discord user IDs, account balances, portfolio holdings, open positions, transaction history, and other simulation-related data required to operate the stock market experience. The Bot does not access or store the content of server messages outside of command interactions.",
   },
   {
     title: "2. Guild and User Identifiers",
-    body: "Discord provides the Bot with a guild ID and user ID as part of the interaction payload. These identifiers are not stored, logged, or linked to any profile. They are used transiently to format and deliver the command response and are discarded immediately thereafter.",
+    body: "Discord provides the Bot with guild IDs and user IDs as part of interaction payloads. User IDs are stored to maintain account balances, stock holdings, and other persistent simulation data. Guild IDs may be used for server-specific configuration or operational purposes. These identifiers are not sold, shared, or linked to personal profiles outside the functionality of the Bot.",
   },
   {
-    title: "3. No Persistent Storage",
-    body: "The POLYMART Bot maintains no database of users, servers, commands issued, or usage history. There is no user profile, no command log, and no analytics tied to individual Discord accounts or guilds.",
+    title: "3. Persistent Storage",
+    body: "The POLYMART Bot maintains a database containing user account information and simulation data, including balances, owned stocks, transaction records, and related gameplay statistics. This data is stored securely and is used solely to provide and maintain the Bot's features and functionality.",
   },
   {
     title: "4. API Requests",
-    body: "When you run a slash command, the Bot queries the POLYMART simulation API on your behalf. The POLYMART API itself logs standard server access data (see the main Privacy Policy at polymart.co/docs/privacy). No Discord-specific identifiers are forwarded to or stored by the API.",
+    body: "When you run a slash command, the Bot may query the POLYMART simulation API on your behalf. Requests may include relevant account or gameplay data required to process the command. The POLYMART API may log standard server access information for operational, security, and debugging purposes. Discord message content is not forwarded beyond what is necessary to execute the requested command.",
   },
   {
     title: "5. Third-Party Platform",
@@ -69,15 +69,15 @@ const BOT_PRIVACY_SECTIONS = [
   },
   {
     title: "6. Data Retention",
-    body: "Because the Bot stores no data, there is nothing to retain, export, or delete. If you remove the Bot from your server, there is no residual data held on our side.",
+    body: "Account and gameplay data are retained for as long as necessary to provide the Bot's services and maintain user portfolios, balances, and transaction history. If the Bot is removed from a server, server-specific configuration data may be deleted, though user account data may remain associated with the user's POLYMART account unless deletion is requested.",
   },
   {
     title: "7. Your Rights",
-    body: "As the Bot collects no personal data, rights such as access, correction, portability, or erasure have no applicable scope. If you have a concern or believe data has been captured in error, contact us via the POLYMART Discord community server and we will investigate promptly.",
+    body: "You may request information about the data associated with your account or request deletion of your account data where applicable. If you have privacy concerns or believe data has been handled improperly, contact us through the POLYMART Discord community server and we will investigate promptly.",
   },
   {
     title: "8. Changes to this Policy",
-    body: "We may update this Privacy Policy. The revision date will be updated at the top of this page. Continued use of the Bot after an update constitutes acceptance of the revised policy.",
+    body: "We may update this Privacy Policy from time to time. The revision date will be updated at the top of this page. Continued use of the Bot after changes become effective constitutes acceptance of the revised policy.",
   },
 ]
 
