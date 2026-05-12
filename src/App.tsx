@@ -346,14 +346,19 @@ function Footer({ setRoute }: { setRoute: (r: Route) => void }) {
 
       {/* Large logo strip — full bleed, edge to edge */}
       <div
-        className="overflow-hidden border-t border-border/20 pointer-events-none select-none"
+        className="overflow-hidden pointer-events-none select-none"
         style={{ width: "100vw", marginLeft: "calc(50% - 50vw)" }}
       >
         <img
           src="/polymartlogo.png"
           alt=""
           aria-hidden="true"
-          className="w-full block dark:invert opacity-[0.15] dark:opacity-[0.18]"
+          className="w-full block dark:invert"
+          style={{
+            opacity: 0.18,
+            WebkitMaskImage: "linear-gradient(to bottom, black 30%, transparent 82%)",
+            maskImage: "linear-gradient(to bottom, black 30%, transparent 82%)",
+          }}
         />
       </div>
     </footer>
