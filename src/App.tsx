@@ -297,7 +297,7 @@ function Footer({ setRoute }: { setRoute: (r: Route) => void }) {
 
           <NavCol title="Community">
             <FLink label="Community Hub" route="community" />
-            <FExt  label="Discord" href="https://discord.com/oauth2/authorize?client_id=1502125060524347512&permissions=139586455616&integration_type=0&scope=bot+applications.commands" />
+            <FExt  label="Discord" href="https://discord.com/oauth2/authorize?client_id=1503197938027860102" />
           </NavCol>
 
           <NavCol title="Developers">
@@ -318,7 +318,7 @@ function Footer({ setRoute }: { setRoute: (r: Route) => void }) {
             © 2026 Polymart · All data is fictional · Not financial advice
           </p>
           <a
-            href="https://discord.com/oauth2/authorize?client_id=1502125060524347512&permissions=139586455616&integration_type=0&scope=bot+applications.commands"
+            href="https://discord.com/oauth2/authorize?client_id=1503197938027860102"
             target="_blank"
             rel="noopener noreferrer"
             className="flex items-center gap-2 px-3 py-1.5 bg-foreground text-background rounded-lg text-xs font-semibold hover:opacity-90 transition-opacity no-underline"

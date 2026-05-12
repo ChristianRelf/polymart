@@ -134,7 +134,7 @@ export default function HomePage({ onNavigate }: Props) {
             asChild
           >
             <a
-              href="https://discord.com/api/oauth2/authorize?client_id=POLYMART_BOT&permissions=2147483648&scope=bot+applications.commands"
+              href="https://discord.com/oauth2/authorize?client_id=1503197938027860102"
               target="_blank"
               rel="noopener noreferrer"
             >
@@ -309,7 +309,7 @@ export default function HomePage({ onNavigate }: Props) {
             <div className="flex gap-3 shrink-0">
               <Button size="lg" className="font-semibold" asChild>
                 <a
-                  href="https://discord.com/api/oauth2/authorize?client_id=POLYMART_BOT&permissions=2147483648&scope=bot+applications.commands"
+                  href="https://discord.com/oauth2/authorize?client_id=1503197938027860102"
                   target="_blank"
                   rel="noopener noreferrer"
                 >

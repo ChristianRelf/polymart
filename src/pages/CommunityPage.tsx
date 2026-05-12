@@ -234,7 +234,7 @@ export default function CommunityPage({ onNavigate }: Props) {
           </p>
         </div>
         <a
-          href="https://discord.com/oauth2/authorize?client_id=1502125060524347512&permissions=139586455616&integration_type=0&scope=bot+applications.commands"
+          href="https://discord.com/oauth2/authorize?client_id=1503197938027860102"
           target="_blank"
           rel="noopener noreferrer"
           className="flex items-center gap-2 px-5 py-2.5 rounded-lg text-sm font-semibold text-white no-underline transition-opacity hover:opacity-90 shrink-0"

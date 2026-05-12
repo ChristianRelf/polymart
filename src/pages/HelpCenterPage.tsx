@@ -343,7 +343,7 @@ export default function HelpCenterPage({ onNavigate }: Props) {
               icon={Bot}
               title="Add Discord Bot"
               desc="Get Polymart market data in your Discord server."
-              onClick={() => window.open("https://discord.com/api/oauth2/authorize?client_id=POLYMART_BOT&permissions=2147483648&scope=bot+applications.commands", "_blank")}
+              onClick={() => window.open("https://discord.com/oauth2/authorize?client_id=1503197938027860102", "_blank")}
             />
             <QuickCard
               icon={Activity}
