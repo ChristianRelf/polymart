@@ -3,7 +3,7 @@ import { Separator } from "@/components/ui/separator"
 import { Users, FileText, Puzzle, BookMarked, ArrowRight, Bot, Rss, Wrench, Share2, FlaskConical, Code2, GraduationCap, Star } from "lucide-react"
 import { cn } from "@/lib/utils"
 
-type Route = "home" | "market" | "api" | "terms" | "privacy" | "education" | "changelog" | "products" | "help" | "widgets" | "edu-tools" | "community"
+type Route = "home" | "market" | "api" | "terms" | "privacy" | "education" | "changelog" | "products" | "help" | "widgets" | "edu-tools" | "community" | "community-blog"
 
 interface Props {
   onNavigate: (r: Route) => void
@@ -24,12 +24,14 @@ function Pillar({
   description,
   features,
   accent,
+  action,
 }: {
   icon: React.ElementType
   title: string
   description: string
   features: { icon: React.ElementType; label: string; sub: string }[]
   accent: string
+  action?: { label: string; onClick: () => void }
 }) {
   return (
     <div className="bg-card border border-border rounded-2xl p-8 flex flex-col gap-6">
@@ -40,9 +42,15 @@ function Pillar({
         >
           <Icon className="w-6 h-6" style={{ color: accent }} />
         </div>
-        <Badge variant="outline" className="text-[10px] border-border text-muted-foreground shrink-0">
-          Coming Soon
-        </Badge>
+        {action ? (
+          <Badge variant="outline" className="text-[10px] border-emerald-500/40 text-emerald-400 bg-emerald-500/5 shrink-0">
+            Live preview
+          </Badge>
+        ) : (
+          <Badge variant="outline" className="text-[10px] border-border text-muted-foreground shrink-0">
+            Coming Soon
+          </Badge>
+        )}
       </div>
 
       <div>
@@ -63,6 +71,15 @@ function Pillar({
           </div>
         ))}
       </div>
+
+      {action && (
+        <button
+          onClick={action.onClick}
+          className="flex items-center gap-1.5 text-xs font-semibold text-foreground cursor-pointer bg-transparent border-0 p-0 w-fit hover:opacity-70 transition-opacity"
+        >
+          {action.label} <ArrowRight className="w-3 h-3" />
+        </button>
+      )}
     </div>
   )
 }
@@ -148,6 +165,7 @@ export default function CommunityPage({ onNavigate }: Props) {
               { icon: FlaskConical, label: "Strategy write-ups", sub: "Share back-tested trading strategies, signal scanners, and algorithm ideas with the community." },
               { icon: GraduationCap, label: "Educational content", sub: "Tutorials, explainers, and guides for using Polymart in courses and personal learning." },
             ]}
+            action={{ label: "Browse posts", onClick: () => onNavigate("community-blog") }}
           />
           <Pillar
             icon={Puzzle}

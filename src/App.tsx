@@ -17,9 +17,10 @@ import WidgetsPage from "@/pages/WidgetsPage"
 import EduToolsPage from "@/pages/EduToolsPage"
 import CommunityPage from "@/pages/CommunityPage"
 import BotLegalPage from "@/pages/BotLegalPage"
+import CommunityBlogPage from "@/pages/CommunityBlogPage"
 
 // ── Routing ───────────────────────────────────────────────────────────────────
-export type Route = "home" | "market" | "api" | "terms" | "privacy" | "changelog" | "education" | "products" | "help" | "widgets" | "edu-tools" | "community" | "bot-terms" | "bot-privacy"
+export type Route = "home" | "market" | "api" | "terms" | "privacy" | "changelog" | "education" | "products" | "help" | "widgets" | "edu-tools" | "community" | "bot-terms" | "bot-privacy" | "community-blog"
 
 const HASH_MAP: Record<string, Route> = {
   "": "home",
@@ -38,6 +39,7 @@ const HASH_MAP: Record<string, Route> = {
   "/community": "community",
   "/docs/bots/terms": "bot-terms",
   "/docs/bots/privacy": "bot-privacy",
+  "/community/blog": "community-blog",
 }
 
 const ROUTE_HASH: Record<Route, string> = {
@@ -55,6 +57,7 @@ const ROUTE_HASH: Record<Route, string> = {
   community: "/community",
   "bot-terms": "/docs/bots/terms",
   "bot-privacy": "/docs/bots/privacy",
+  "community-blog": "/community/blog",
 }
 
 function getRoute(): Route {
@@ -461,8 +464,9 @@ export default function App() {
           {route === "widgets"   && <WidgetsPage    onNavigate={go} />}
           {route === "edu-tools" && <EduToolsPage   onNavigate={go} />}
           {route === "community"   && <CommunityPage  onNavigate={go} />}
-          {route === "bot-terms"   && <BotLegalPage   type="bot-terms"   onNavigate={go} />}
-          {route === "bot-privacy" && <BotLegalPage   type="bot-privacy" onNavigate={go} />}
+          {route === "bot-terms"      && <BotLegalPage      type="bot-terms"   onNavigate={go} />}
+          {route === "bot-privacy"    && <BotLegalPage      type="bot-privacy" onNavigate={go} />}
+          {route === "community-blog" && <CommunityBlogPage onNavigate={go} />}
         </main>
 
         <Footer setRoute={setRoute} />
