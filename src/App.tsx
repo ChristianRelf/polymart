@@ -350,15 +350,10 @@ function Footer({ setRoute }: { setRoute: (r: Route) => void }) {
         style={{ width: "100vw", marginLeft: "calc(50% - 50vw)" }}
       >
         <img
-          src="/polymartlogo.png"
+          src="/polymartlogobottom.png"
           alt=""
           aria-hidden="true"
           className="w-full block dark:invert"
-          style={{
-            opacity: 0.18,
-            WebkitMaskImage: "linear-gradient(to bottom, black 30%, transparent 82%)",
-            maskImage: "linear-gradient(to bottom, black 30%, transparent 82%)",
-          }}
         />
       </div>
     </footer>
