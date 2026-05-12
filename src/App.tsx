@@ -344,14 +344,16 @@ function Footer({ setRoute }: { setRoute: (r: Route) => void }) {
         </div>
       </div>
 
-      {/* Large logo strip */}
-      <div className="overflow-hidden border-t border-border/20 pointer-events-none select-none">
+      {/* Large logo strip — full bleed, edge to edge */}
+      <div
+        className="overflow-hidden border-t border-border/20 pointer-events-none select-none"
+        style={{ width: "100vw", marginLeft: "calc(50% - 50vw)" }}
+      >
         <img
           src="/polymartlogo.png"
           alt=""
           aria-hidden="true"
-          className="w-full dark:invert opacity-[0.06] dark:opacity-[0.07] block"
-          style={{ maxHeight: "clamp(120px, 14vw, 240px)", objectFit: "contain", objectPosition: "center" }}
+          className="w-full block dark:invert opacity-[0.15] dark:opacity-[0.18]"
         />
       </div>
     </footer>
