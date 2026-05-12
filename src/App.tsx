@@ -59,6 +59,7 @@ function getRoute(): Route {
 
 function navigate(r: Route) {
   window.location.hash = ROUTE_HASH[r]
+  window.scrollTo({ top: 0, behavior: "instant" })
 }
 
 // ── Tick Countdown ────────────────────────────────────────────────────────────
