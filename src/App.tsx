@@ -15,6 +15,23 @@ import ProductsPage from "@/pages/ProductsPage"
 import HelpCenterPage from "@/pages/HelpCenterPage"
 import WidgetsPage from "@/pages/WidgetsPage"
 
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: scale(0.96);
+  }
+
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+.animate-fadeIn {
+  animation: fadeIn 0.2s ease-out;
+}
+
+
 // ── Routing ───────────────────────────────────────────────────────────────────
 export type Route = "home" | "market" | "api" | "terms" | "privacy" | "changelog" | "education" | "products" | "help" | "widgets"
 
