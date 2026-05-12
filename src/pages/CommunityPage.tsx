@@ -140,7 +140,7 @@ export default function CommunityPage({ onNavigate }: Props) {
         </h1>
         <p className="text-lg text-muted-foreground leading-relaxed max-w-2xl">
           A space for traders, students, developers, and researchers to share their work, tools,
-          and insights — all built on the Polymart simulation.
+          and insights - all built on the Polymart simulation.
         </p>
       </div>
 
@@ -158,7 +158,7 @@ export default function CommunityPage({ onNavigate }: Props) {
           <Pillar
             icon={Rss}
             title="Blogs & Posts"
-            description="A space for community members to share market analyses, strategy write-ups, educational breakdowns, and research notes — all using Polymart data."
+            description="A space for community members to share market analyses, strategy write-ups, educational breakdowns, and research notes - all using Polymart data."
             accent="#6366f1"
             features={[
               { icon: FileText, label: "Market analyses", sub: "Deep-dives into sector trends, RSI conditions, and macro impacts using live simulation data." },
@@ -170,7 +170,7 @@ export default function CommunityPage({ onNavigate }: Props) {
           <Pillar
             icon={Puzzle}
             title="Plugins & Tools"
-            description="A curated directory of community-built tools — Discord bots, dashboards, screeners, alert systems, and libraries that extend what Polymart can do."
+            description="A curated directory of community-built tools - Discord bots, dashboards, screeners, alert systems, and libraries that extend what Polymart can do."
             accent="#22c55e"
             features={[
               { icon: Bot, label: "Discord bots", sub: "Custom bots using the Polymart API for price alerts, portfolio tracking, and slash commands." },
@@ -207,12 +207,12 @@ export default function CommunityPage({ onNavigate }: Props) {
           <ShowcaseCard icon={Code2} tag="Plugin" title="Polymart RSI Alert Bot for Discord" author="@devhive" meta="Python · 240 stars" accent="#22c55e" />
           <ShowcaseCard icon={Share2} tag="Resource" title="30-day historical feature matrix (CSV)" author="@ml_labs" meta="132 tickers · 4.2MB" accent="#f59e0b" />
           <ShowcaseCard icon={FlaskConical} tag="Strategy" title="Mean-reversion on oversold streaks" author="@quant_r" meta="Backtested · +18.4%" accent="#6366f1" />
-          <ShowcaseCard icon={Bot} tag="Plugin" title="Polymart Portfolio Tracker — Telegram" author="@botbuilder" meta="JS · 88 stars" accent="#22c55e" />
+          <ShowcaseCard icon={Bot} tag="Plugin" title="Polymart Portfolio Tracker - Telegram" author="@botbuilder" meta="JS · 88 stars" accent="#22c55e" />
           <ShowcaseCard icon={GraduationCap} tag="Guide" title="Using Polymart for your Algo Trading class" author="@prof_chen" meta="Lesson plan · PDF" accent="#f59e0b" />
         </div>
 
         <p className="text-xs text-muted-foreground text-center mt-4">
-          Preview only — content is illustrative and not real.
+          Preview only - content is illustrative and not real.
         </p>
       </div>
 

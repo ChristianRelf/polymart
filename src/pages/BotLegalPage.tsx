@@ -84,7 +84,7 @@ const BOT_PRIVACY_SECTIONS = [
 export default function BotLegalPage({ type, onNavigate }: Props) {
   const isTerms = type === "bot-terms"
   const sections = isTerms ? BOT_TERMS_SECTIONS : BOT_PRIVACY_SECTIONS
-  const title = isTerms ? "Discord Bot — Terms of Use" : "Discord Bot — Privacy Policy"
+  const title = isTerms ? "Discord Bot - Terms of Use" : "Discord Bot - Privacy Policy"
   const path = isTerms ? "docs / bots / terms" : "docs / bots / privacy"
 
   return (
@@ -108,7 +108,7 @@ export default function BotLegalPage({ type, onNavigate }: Props) {
             <>
               These Terms govern use of the{" "}
               <span className="font-semibold text-foreground">POLYMART Discord Bot</span>
-              {" "}— a slash-command integration that surfaces live data from the POLYMART simulated
+              {" "}- a slash-command integration that surfaces live data from the POLYMART simulated
               stock exchange. All data returned is fictional and for entertainment or educational use only.
             </>
           ) : (

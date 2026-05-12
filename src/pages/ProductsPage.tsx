@@ -227,7 +227,7 @@ export default function ProductsPage({ onNavigate }: Props) {
               </Badge>
             </div>
             <p className="text-sm text-muted-foreground leading-relaxed max-w-xl">
-              Seven drop-in web components — price cards, ticker tapes, leaderboards, sparklines,
+              Seven drop-in web components - price cards, ticker tapes, leaderboards, sparklines,
               sector overviews, market summaries, and event feeds. One script tag, no API key, Shadow DOM isolated.
             </p>
           </div>

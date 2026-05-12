@@ -71,7 +71,7 @@ const POSTS: Post[] = [
     category: "Educational",
     title: "Using Polymart for your Algo Trading class: a full lesson plan",
     excerpt:
-      "A structured three-week lesson plan for university-level algo trading courses. Includes API exercises, back-testing assignments, and portfolio projects — all using Polymart as the live data environment.",
+      "A structured three-week lesson plan for university-level algo trading courses. Includes API exercises, back-testing assignments, and portfolio projects - all using Polymart as the live data environment.",
     author: "@prof_chen",
     date: "May 5, 2026",
     readTime: "4 min read",
@@ -82,7 +82,7 @@ const POSTS: Post[] = [
     category: "Research",
     title: "Macro sensitivity: how interest rates move sectors in simulation",
     excerpt:
-      "A 30-day study correlating Polymart's interest rate macro variable with sector-level price changes. Healthcare and Utilities show the strongest inverse correlation — consistent with real-world theory.",
+      "A 30-day study correlating Polymart's interest rate macro variable with sector-level price changes. Healthcare and Utilities show the strongest inverse correlation - consistent with real-world theory.",
     author: "@ml_labs",
     date: "May 3, 2026",
     readTime: "12 min read",
@@ -93,7 +93,7 @@ const POSTS: Post[] = [
     category: "Analysis",
     title: "RSI divergence signals in the Energy sector",
     excerpt:
-      "Price makes a new high but RSI doesn't confirm — classic bearish divergence. I tracked 14 divergence events in Polymart's Energy sector and found a consistent short-term pattern worth watching.",
+      "Price makes a new high but RSI doesn't confirm - classic bearish divergence. I tracked 14 divergence events in Polymart's Energy sector and found a consistent short-term pattern worth watching.",
     author: "@charty",
     date: "Apr 28, 2026",
     readTime: "5 min read",
@@ -104,7 +104,7 @@ const POSTS: Post[] = [
     category: "Tutorial",
     title: "Building a momentum screener with the Polymart API in Python",
     excerpt:
-      "Step-by-step guide to pulling /getStocks, calculating a simple momentum score, and ranking the top 10 tickers each tick. Full code included — works with the free API, no key required.",
+      "Step-by-step guide to pulling /getStocks, calculating a simple momentum score, and ranking the top 10 tickers each tick. Full code included - works with the free API, no key required.",
     author: "@devhive",
     date: "Apr 25, 2026",
     readTime: "10 min read",
@@ -126,7 +126,7 @@ const POSTS: Post[] = [
     category: "Strategy",
     title: "Sector rotation playbook: following macro signals in Polymart",
     excerpt:
-      "A systematic approach to rotating between Polymart sectors based on the macro environment — interest rates, GDP growth, and inflation readings. Which sectors lead in each macro regime?",
+      "A systematic approach to rotating between Polymart sectors based on the macro environment - interest rates, GDP growth, and inflation readings. Which sectors lead in each macro regime?",
     author: "@market_sage",
     date: "Apr 18, 2026",
     readTime: "6 min read",
@@ -137,7 +137,7 @@ const POSTS: Post[] = [
     category: "Tutorial",
     title: "Polymart API crash course: from zero to live dashboard in 30 minutes",
     excerpt:
-      "No prior API experience needed. Covers fetching prices, parsing sector data, and rendering a live leaderboard widget — all with vanilla JavaScript and one script tag.",
+      "No prior API experience needed. Covers fetching prices, parsing sector data, and rendering a live leaderboard widget - all with vanilla JavaScript and one script tag.",
     author: "@devhive",
     date: "Apr 14, 2026",
     readTime: "9 min read",
@@ -302,7 +302,7 @@ export default function CommunityBlogPage({ onNavigate }: Props) {
       <div className="flex items-start gap-3 bg-amber-500/5 border border-amber-500/20 rounded-xl px-5 py-4 mb-10">
         <FileText className="w-3.5 h-3.5 text-amber-400 shrink-0 mt-0.5" />
         <p className="text-xs text-muted-foreground leading-relaxed">
-          <span className="font-semibold text-amber-400">Preview only</span> — posts shown below are
+          <span className="font-semibold text-amber-400">Preview only</span> - posts shown below are
           illustrative examples of the kind of content the community will share once this feature launches.
           Submission is coming soon.
         </p>

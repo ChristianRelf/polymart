@@ -297,47 +297,47 @@ function IndicatorExplorerTab() {
 
   // Interpretations
   function rsiI(rsi: number) {
-    if (rsi > 80) return { label: "Extremely Overbought", color: "text-red-400", note: "RSI above 80 — strong overbought signal, pullback risk is elevated." }
-    if (rsi > 70) return { label: "Overbought", color: "text-orange-400", note: "RSI above 70 — price may be extended; watch for reversal signals." }
-    if (rsi < 20) return { label: "Extremely Oversold", color: "text-emerald-400", note: "RSI below 20 — strong oversold signal, bounce potential is elevated." }
-    if (rsi < 30) return { label: "Oversold", color: "text-emerald-400", note: "RSI below 30 — price may be depressed; watch for stabilisation." }
-    return { label: "Neutral Zone", color: "text-muted-foreground", note: "RSI in the neutral zone (30–70) — no strong directional signal from RSI alone." }
+    if (rsi > 80) return { label: "Extremely Overbought", color: "text-red-400", note: "RSI above 80 - strong overbought signal, pullback risk is elevated." }
+    if (rsi > 70) return { label: "Overbought", color: "text-orange-400", note: "RSI above 70 - price may be extended; watch for reversal signals." }
+    if (rsi < 20) return { label: "Extremely Oversold", color: "text-emerald-400", note: "RSI below 20 - strong oversold signal, bounce potential is elevated." }
+    if (rsi < 30) return { label: "Oversold", color: "text-emerald-400", note: "RSI below 30 - price may be depressed; watch for stabilisation." }
+    return { label: "Neutral Zone", color: "text-muted-foreground", note: "RSI in the neutral zone (30–70) - no strong directional signal from RSI alone." }
   }
 
   function macdI(hist: number) {
-    if (hist > 0) return { label: "Bullish Momentum", color: "text-emerald-400", note: "Positive histogram — MACD is above the signal line; bullish momentum is building." }
-    return { label: "Bearish Momentum", color: "text-red-400", note: "Negative histogram — MACD is below the signal line; bearish momentum is building." }
+    if (hist > 0) return { label: "Bullish Momentum", color: "text-emerald-400", note: "Positive histogram - MACD is above the signal line; bullish momentum is building." }
+    return { label: "Bearish Momentum", color: "text-red-400", note: "Negative histogram - MACD is below the signal line; bearish momentum is building." }
   }
 
   function bbI(price: number, upper: number, lower: number) {
     if (upper === lower) return { label: "No Data", color: "text-muted-foreground", note: "Band data unavailable." }
     const pos = (price - lower) / (upper - lower)
-    if (pos > 0.85) return { label: "Near Upper Band", color: "text-orange-400", note: "Price near the upper Bollinger Band — potential resistance; overbought on the bands." }
-    if (pos < 0.15) return { label: "Near Lower Band", color: "text-emerald-400", note: "Price near the lower Bollinger Band — potential support; oversold on the bands." }
-    return { label: "Mid-Band", color: "text-muted-foreground", note: "Price in the middle of the Bollinger Bands — no edge signal from band position alone." }
+    if (pos > 0.85) return { label: "Near Upper Band", color: "text-orange-400", note: "Price near the upper Bollinger Band - potential resistance; overbought on the bands." }
+    if (pos < 0.15) return { label: "Near Lower Band", color: "text-emerald-400", note: "Price near the lower Bollinger Band - potential support; oversold on the bands." }
+    return { label: "Mid-Band", color: "text-muted-foreground", note: "Price in the middle of the Bollinger Bands - no edge signal from band position alone." }
   }
 
   function atrI(atr: number, price: number) {
     const pct = (atr / price) * 100
-    if (pct > 3.5) return { label: "High Volatility", color: "text-orange-400", note: `ATR is ${pct.toFixed(1)}% of price — expect large daily price swings.` }
-    if (pct < 1) return { label: "Low Volatility", color: "text-blue-400", note: `ATR is ${pct.toFixed(1)}% of price — tight range; low daily movement expected.` }
-    return { label: "Moderate Volatility", color: "text-muted-foreground", note: `ATR is ${pct.toFixed(1)}% of price — typical daily swing range for this ticker.` }
+    if (pct > 3.5) return { label: "High Volatility", color: "text-orange-400", note: `ATR is ${pct.toFixed(1)}% of price - expect large daily price swings.` }
+    if (pct < 1) return { label: "Low Volatility", color: "text-blue-400", note: `ATR is ${pct.toFixed(1)}% of price - tight range; low daily movement expected.` }
+    return { label: "Moderate Volatility", color: "text-muted-foreground", note: `ATR is ${pct.toFixed(1)}% of price - typical daily swing range for this ticker.` }
   }
 
   function betaI(beta: number) {
-    if (beta > 1.5) return { label: "High Beta", color: "text-orange-400", note: `Beta ${beta.toFixed(2)} — moves significantly more than the market index in both directions.` }
-    if (beta < 0.7) return { label: "Low Beta (Defensive)", color: "text-blue-400", note: `Beta ${beta.toFixed(2)} — moves less than the market; a defensive, lower-risk profile.` }
-    return { label: "Market-Correlated", color: "text-muted-foreground", note: `Beta ${beta.toFixed(2)} — moves roughly in line with the overall market index.` }
+    if (beta > 1.5) return { label: "High Beta", color: "text-orange-400", note: `Beta ${beta.toFixed(2)} - moves significantly more than the market index in both directions.` }
+    if (beta < 0.7) return { label: "Low Beta (Defensive)", color: "text-blue-400", note: `Beta ${beta.toFixed(2)} - moves less than the market; a defensive, lower-risk profile.` }
+    return { label: "Market-Correlated", color: "text-muted-foreground", note: `Beta ${beta.toFixed(2)} - moves roughly in line with the overall market index.` }
   }
 
   function emaI(ema12: number, ema26: number) {
-    if (ema12 > ema26) return { label: "Bullish (EMA12 > EMA26)", color: "text-emerald-400", note: "Short-term EMA is above the longer-term EMA — short-term trend is bullish." }
-    return { label: "Bearish (EMA12 < EMA26)", color: "text-red-400", note: "Short-term EMA is below the longer-term EMA — short-term trend is bearish." }
+    if (ema12 > ema26) return { label: "Bullish (EMA12 > EMA26)", color: "text-emerald-400", note: "Short-term EMA is above the longer-term EMA - short-term trend is bullish." }
+    return { label: "Bearish (EMA12 < EMA26)", color: "text-red-400", note: "Short-term EMA is below the longer-term EMA - short-term trend is bearish." }
   }
 
   function smaI(sma20: number, sma50: number) {
-    if (sma20 > sma50) return { label: "Golden Cross", color: "text-emerald-400", note: "SMA 20 is above SMA 50 — longer-term trend is bullish (golden cross configuration)." }
-    return { label: "Death Cross", color: "text-red-400", note: "SMA 20 is below SMA 50 — longer-term trend is bearish (death cross configuration)." }
+    if (sma20 > sma50) return { label: "Golden Cross", color: "text-emerald-400", note: "SMA 20 is above SMA 50 - longer-term trend is bullish (golden cross configuration)." }
+    return { label: "Death Cross", color: "text-red-400", note: "SMA 20 is below SMA 50 - longer-term trend is bearish (death cross configuration)." }
   }
 
   return (
@@ -454,8 +454,8 @@ function IndicatorExplorerTab() {
               statusLabel={detail.momentum >= 0 ? "Positive" : "Negative"}
               statusColor={detail.momentum >= 0 ? "text-emerald-400" : "text-red-400"}
               note={detail.momentum >= 0
-                ? "Positive momentum — the price trend has been upward over the recent period."
-                : "Negative momentum — the price trend has been downward over the recent period."}
+                ? "Positive momentum - the price trend has been upward over the recent period."
+                : "Negative momentum - the price trend has been downward over the recent period."}
             />
           </div>
 
@@ -605,28 +605,28 @@ function MacroDashboardTab() {
   }
 
   function rateNote(r: number) {
-    if (r > 6) return "Very elevated rates — significant tightening; weighs heavily on growth and tech stocks."
-    if (r > 4) return "Elevated rates — tighter conditions. Favours value; weighs on high-multiple growth stocks."
-    if (r > 2) return "Moderate rates — balanced environment, neither strongly supportive nor restrictive for equities."
-    return "Low rates — supportive for risk assets, especially growth and technology stocks."
+    if (r > 6) return "Very elevated rates - significant tightening; weighs heavily on growth and tech stocks."
+    if (r > 4) return "Elevated rates - tighter conditions. Favours value; weighs on high-multiple growth stocks."
+    if (r > 2) return "Moderate rates - balanced environment, neither strongly supportive nor restrictive for equities."
+    return "Low rates - supportive for risk assets, especially growth and technology stocks."
   }
 
   function inflNote(i: number) {
-    if (i > 4) return "High inflation — erodes real returns. Commodities and real assets may outperform equities."
-    if (i > 2.5) return "Above-target inflation — pressure on policy rates; bond markets pricing in further tightening."
-    return "Low or on-target inflation — benign environment for equities, less pressure on interest rates."
+    if (i > 4) return "High inflation - erodes real returns. Commodities and real assets may outperform equities."
+    if (i > 2.5) return "Above-target inflation - pressure on policy rates; bond markets pricing in further tightening."
+    return "Low or on-target inflation - benign environment for equities, less pressure on interest rates."
   }
 
   function gdpNote(g: number) {
-    if (g > 3) return "Strong expansion — supports cyclicals, industrials, and consumer discretionary. Low recession risk."
-    if (g > 1) return "Moderate growth — balanced environment; markets can support risk assets at reasonable valuations."
-    return "Weak growth — recession risk is elevated. Favour defensives, utilities, and high-quality value stocks."
+    if (g > 3) return "Strong expansion - supports cyclicals, industrials, and consumer discretionary. Low recession risk."
+    if (g > 1) return "Moderate growth - balanced environment; markets can support risk assets at reasonable valuations."
+    return "Weak growth - recession risk is elevated. Favour defensives, utilities, and high-quality value stocks."
   }
 
   function vixNote(v: number) {
-    if (v > 30) return "Elevated VIX — markets are stressed. Wide spreads and high intraday volatility are expected."
-    if (v > 20) return "Moderate VIX — some uncertainty. Implied volatility is above average; risk is acknowledged."
-    return "Low VIX — calm markets, low expected volatility. Watch for complacency; sharp moves can surprise."
+    if (v > 30) return "Elevated VIX - markets are stressed. Wide spreads and high intraday volatility are expected."
+    if (v > 20) return "Moderate VIX - some uncertainty. Implied volatility is above average; risk is acknowledged."
+    return "Low VIX - calm markets, low expected volatility. Watch for complacency; sharp moves can surprise."
   }
 
   const fg = fgLabel(market.fearGreed)
@@ -684,9 +684,9 @@ function MacroDashboardTab() {
           />
         </div>
         <div className="flex justify-between text-[10px] text-muted-foreground">
-          <span>0 — Extreme Fear</span>
-          <span>50 — Neutral</span>
-          <span>Extreme Greed — 100</span>
+          <span>0 - Extreme Fear</span>
+          <span>50 - Neutral</span>
+          <span>Extreme Greed - 100</span>
         </div>
       </div>
 
@@ -731,7 +731,7 @@ function MacroDashboardTab() {
             </div>
           ))}
           {events.length === 0 && (
-            <p className="text-sm text-muted-foreground text-center py-8">No market events yet — check back shortly.</p>
+            <p className="text-sm text-muted-foreground text-center py-8">No market events yet - check back shortly.</p>
           )}
         </div>
       </div>
@@ -761,7 +761,7 @@ export default function EduToolsPage({ onNavigate }: Props) {
           Interactive Market Tools
         </h1>
         <p className="text-lg text-muted-foreground leading-relaxed max-w-2xl">
-          Explore the Polymart simulation with live interactive tools — screen stocks, decode technical
+          Explore the Polymart simulation with live interactive tools - screen stocks, decode technical
           indicators, compare sectors, and analyse macro conditions.
         </p>
       </div>

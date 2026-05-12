@@ -329,7 +329,7 @@ function Footer({ setRoute }: { setRoute: (r: Route) => void }) {
         </div>
       </div>
 
-      {/* Large logo strip — full bleed */}
+      {/* Large logo strip - full bleed */}
       <div
         className="overflow-hidden pointer-events-none select-none"
         style={{ width: "100vw", marginLeft: "calc(50% - 50vw)" }}

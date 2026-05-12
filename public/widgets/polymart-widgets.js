@@ -93,16 +93,16 @@
 
   // ── Helpers ──────────────────────────────────────────────────────────────────
   function fmt(n, decimals = 2) {
-    if (n == null) return "—";
+    if (n == null) return "-";
     return Number(n).toFixed(decimals);
   }
   function fmtPct(n) {
-    if (n == null) return "—";
+    if (n == null) return "-";
     const s = Number(n) >= 0 ? "+" : "";
     return s + Number(n).toFixed(2) + "%";
   }
   function fmtPrice(n) {
-    if (n == null) return "—";
+    if (n == null) return "-";
     return "$" + Number(n).toFixed(2);
   }
   function changeColor(n) {
@@ -240,7 +240,7 @@
   }
 
   // ─────────────────────────────────────────────────────────────────────────────
-  // 1. TICKER WIDGET — single stock price card
+  // 1. TICKER WIDGET - single stock price card
   //    <polymart-ticker ticker="APEX"></polymart-ticker>
   // ─────────────────────────────────────────────────────────────────────────────
   class PolymartTicker extends PolymartWidget {
@@ -385,7 +385,7 @@
   }
 
   // ─────────────────────────────────────────────────────────────────────────────
-  // 2. MARKET SUMMARY — index, fear/greed, macro stats, movers
+  // 2. MARKET SUMMARY - index, fear/greed, macro stats, movers
   //    <polymart-market></polymart-market>
   // ─────────────────────────────────────────────────────────────────────────────
   class PolymartMarket extends PolymartWidget {
@@ -475,7 +475,7 @@
             <div class="pm-market-change" style="color:${color}">
               ${changeArrow(data.indexChangePct)} ${fmtPct(data.indexChangePct)}
               <span style="color:var(--pm-text-dim);font-weight:400;margin-left:8px">
-                ${data.gainers}▲ ${data.losers}▼ ${data.unchanged}—
+                ${data.gainers}▲ ${data.losers}▼ ${data.unchanged}-
               </span>
             </div>
 
@@ -504,11 +504,11 @@
               <div class="pm-stat-label" style="margin-bottom:8px">Top Movers</div>
               <div class="pm-movers">
                 <div class="pm-mover" style="background:var(--pm-green-bg);color:var(--pm-green)">
-                  <span class="pm-mover-ticker">${data.topGainer?.ticker || "—"}</span>
+                  <span class="pm-mover-ticker">${data.topGainer?.ticker || "-"}</span>
                   <span>${fmtPct(data.topGainer?.pct)}</span>
                 </div>
                 <div class="pm-mover" style="background:var(--pm-red-bg);color:var(--pm-red)">
-                  <span class="pm-mover-ticker">${data.topLoser?.ticker || "—"}</span>
+                  <span class="pm-mover-ticker">${data.topLoser?.ticker || "-"}</span>
                   <span>${fmtPct(data.topLoser?.pct)}</span>
                 </div>
               </div>
@@ -523,7 +523,7 @@
   }
 
   // ─────────────────────────────────────────────────────────────────────────────
-  // 3. LEADERBOARD — ranked table of stocks
+  // 3. LEADERBOARD - ranked table of stocks
   //    <polymart-leaderboard by="change" limit="10" dir="desc"></polymart-leaderboard>
   // ─────────────────────────────────────────────────────────────────────────────
   class PolymartLeaderboard extends PolymartWidget {
@@ -639,7 +639,7 @@
   }
 
   // ─────────────────────────────────────────────────────────────────────────────
-  // 4. TAPE — scrolling ticker tape
+  // 4. TAPE - scrolling ticker tape
   //    <polymart-tape speed="40" limit="20"></polymart-tape>
   // ─────────────────────────────────────────────────────────────────────────────
   class PolymartTape extends PolymartWidget {
@@ -709,7 +709,7 @@
   }
 
   // ─────────────────────────────────────────────────────────────────────────────
-  // 5. SPARKLINE — tiny inline price chart
+  // 5. SPARKLINE - tiny inline price chart
   //    <polymart-sparkline ticker="VOID" width="120" height="32"></polymart-sparkline>
   // ─────────────────────────────────────────────────────────────────────────────
   class PolymartSparkline extends PolymartWidget {
@@ -749,7 +749,7 @@
   }
 
   // ─────────────────────────────────────────────────────────────────────────────
-  // 6. SECTOR WIDGET — sector overview card
+  // 6. SECTOR WIDGET - sector overview card
   //    <polymart-sector sector="crypto"></polymart-sector>
   // ─────────────────────────────────────────────────────────────────────────────
   class PolymartSector extends PolymartWidget {
@@ -831,7 +831,7 @@
   }
 
   // ─────────────────────────────────────────────────────────────────────────────
-  // 7. EVENTS — recent market events feed
+  // 7. EVENTS - recent market events feed
   //    <polymart-events limit="5"></polymart-events>
   // ─────────────────────────────────────────────────────────────────────────────
   class PolymartEvents extends PolymartWidget {

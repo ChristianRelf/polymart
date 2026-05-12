@@ -201,7 +201,7 @@ const GLOSSARY = [
   {
     term: "MACD (Moving Average Convergence Divergence)",
     def: "A trend-following indicator showing the relationship between two exponential moving averages (EMA 12 and EMA 26). When the MACD line crosses above the signal line it is a bullish signal; crossing below is bearish.",
-    polymart: "All three values — MACD line, signal, and histogram — are returned as macd, macdSignal, and macdHist in every stock response.",
+    polymart: "All three values - MACD line, signal, and histogram - are returned as macd, macdSignal, and macdHist in every stock response.",
   },
   {
     term: "MACD Histogram",
@@ -210,12 +210,12 @@ const GLOSSARY = [
   },
   {
     term: "Bollinger Bands",
-    def: "Three lines plotted around a 20-period moving average: an upper band, the middle band (SMA 20), and a lower band — each set 2 standard deviations apart. Price touching the upper band can indicate overbought conditions; touching the lower can indicate oversold.",
+    def: "Three lines plotted around a 20-period moving average: an upper band, the middle band (SMA 20), and a lower band - each set 2 standard deviations apart. Price touching the upper band can indicate overbought conditions; touching the lower can indicate oversold.",
     polymart: "Upper, middle, and lower values are in every response as bbUpper, bbMiddle, bbLower.",
   },
   {
     term: "Bandwidth (BB Bandwidth)",
-    def: "The width of the Bollinger Bands as a percentage of the middle band. Low bandwidth — known as a Bollinger squeeze — often precedes a large move in either direction as volatility expands from a compressed state.",
+    def: "The width of the Bollinger Bands as a percentage of the middle band. Low bandwidth - known as a Bollinger squeeze - often precedes a large move in either direction as volatility expands from a compressed state.",
     polymart: "Returned as bbBw. A value below 0.05 typically signals a squeeze in progress.",
   },
   {
@@ -245,7 +245,7 @@ const GLOSSARY = [
   },
   {
     term: "Momentum",
-    def: "The rate of change in price — a measure of how quickly a stock is moving in a given direction. Positive momentum suggests continued upward movement; negative suggests continued downward movement. Momentum tends to persist in the short term.",
+    def: "The rate of change in price - a measure of how quickly a stock is moving in a given direction. Positive momentum suggests continued upward movement; negative suggests continued downward movement. Momentum tends to persist in the short term.",
     polymart: "Returned as momentum in the stock detail endpoint (/getStock). One of the inputs to the simulation's price engine.",
   },
   {
@@ -270,7 +270,7 @@ const GLOSSARY = [
   },
   {
     term: "OHLCV",
-    def: "Open, High, Low, Close, Volume — the five standard data points for a price candle. Each candle represents one period of trading activity and forms the basis for most candlestick charting and technical analysis.",
+    def: "Open, High, Low, Close, Volume - the five standard data points for a price candle. Each candle represents one period of trading activity and forms the basis for most candlestick charting and technical analysis.",
     polymart: "Historical candles are returned by /getStock as an array with keys o, h, l, c, v, and t (Unix timestamp in milliseconds).",
   },
   {
@@ -280,13 +280,13 @@ const GLOSSARY = [
   },
   {
     term: "Sector Rotation",
-    def: "The cyclical movement of capital between market sectors as the economic cycle progresses. Different sectors outperform at different stages — for example, technology in expansion phases and utilities in contraction phases.",
+    def: "The cyclical movement of capital between market sectors as the economic cycle progresses. Different sectors outperform at different stages - for example, technology in expansion phases and utilities in contraction phases.",
     polymart: "Sector-level averages (avg change, avg RSI, momentum) are accessible via /getSectors, making it practical to observe and model rotation patterns.",
   },
   {
     term: "Streak",
     def: "The number of consecutive periods a stock's price has moved in the same direction. A long positive streak can indicate a trend but also signals rising mean-reversion risk; a long negative streak may indicate overselling.",
-    polymart: "Returned as streak — positive for up streaks, negative for down streaks.",
+    polymart: "Returned as streak - positive for up streaks, negative for down streaks.",
   },
   {
     term: "Insider Bias",
@@ -319,7 +319,7 @@ export default function EducationPage({ onNavigate }: Props) {
         </h1>
         <p className="text-lg text-muted-foreground leading-relaxed max-w-2xl mb-8">
           A fully-simulated, risk-free financial market environment designed to support
-          teaching, research, and the development of trading algorithms — with no real money,
+          teaching, research, and the development of trading algorithms - with no real money,
           no sign-ups, and an open REST API.
         </p>
         <div className="flex items-start gap-3 bg-card border border-border rounded-xl p-4 max-w-2xl">
@@ -348,7 +348,7 @@ export default function EducationPage({ onNavigate }: Props) {
             </p>
             <p>
               The simulation currently tracks <strong className="text-foreground">132 fictional tickers</strong> across{" "}
-              <strong className="text-foreground">20 sectors</strong> — from Tech and AI to
+              <strong className="text-foreground">20 sectors</strong> - from Tech and AI to
               Meme stocks and Agriculture. Every ticker has its own character: unique
               volatility, trend bias, beta, and sector sensitivity.
             </p>
@@ -391,13 +391,13 @@ export default function EducationPage({ onNavigate }: Props) {
           <UseCaseCard
             number="01"
             title="Finance & Economics Classrooms"
-            body="Instructors can use Polymart as a live backdrop for teaching technical analysis, portfolio theory, and market microstructure. Students can observe how RSI signals, Bollinger Band squeezes, and order flow imbalance play out in real time — concepts that are far more intuitive when seen in a moving market than described on a slide."
+            body="Instructors can use Polymart as a live backdrop for teaching technical analysis, portfolio theory, and market microstructure. Students can observe how RSI signals, Bollinger Band squeezes, and order flow imbalance play out in real time - concepts that are far more intuitive when seen in a moving market than described on a slide."
             tags={["Technical Analysis", "Portfolio Theory", "Macro Economics", "Market Microstructure"]}
           />
           <UseCaseCard
             number="02"
             title="Algorithmic Trading Courses"
-            body="The open REST API lets students write code that queries live market data, make trading decisions, and back-test strategies against historical price data — all without the risk of real capital or the complexity of brokerage API access. Languages are irrelevant; any HTTP client works."
+            body="The open REST API lets students write code that queries live market data, make trading decisions, and back-test strategies against historical price data - all without the risk of real capital or the complexity of brokerage API access. Languages are irrelevant; any HTTP client works."
             tags={["Python", "JavaScript", "REST API", "Algorithmic Strategy", "Back-testing"]}
           />
           <UseCaseCard
@@ -409,13 +409,13 @@ export default function EducationPage({ onNavigate }: Props) {
           <UseCaseCard
             number="04"
             title="Hackathons & Project Courses"
-            body="Polymart's API provides an interesting data source for building trading dashboards, Discord bots, alert systems, or market visualisations as coursework projects. The simulation produces structured data that can be displayed in many different ways — making it suitable for front-end, back-end, data science, or full-stack project briefs."
+            body="Polymart's API provides an interesting data source for building trading dashboards, Discord bots, alert systems, or market visualisations as coursework projects. The simulation produces structured data that can be displayed in many different ways - making it suitable for front-end, back-end, data science, or full-stack project briefs."
             tags={["Project Work", "Data Visualisation", "Discord Bots", "Full-Stack", "APIs"]}
           />
           <UseCaseCard
             number="05"
             title="Trading Simulations & Competitions"
-            body="Institutions can build portfolio tracking applications on top of the Polymart API to run paper-trading competitions. Students are given a virtual starting balance and compete to grow it using market data from the simulation — a motivating and practical teaching format that requires no real financial infrastructure."
+            body="Institutions can build portfolio tracking applications on top of the Polymart API to run paper-trading competitions. Students are given a virtual starting balance and compete to grow it using market data from the simulation - a motivating and practical teaching format that requires no real financial infrastructure."
             tags={["Paper Trading", "Competitions", "Portfolio Tracking", "Leaderboards"]}
           />
           <UseCaseCard
@@ -453,8 +453,8 @@ export default function EducationPage({ onNavigate }: Props) {
 
         <div className="bg-card border border-border rounded-xl p-6 mb-6">
           <p className="text-sm font-bold text-foreground mb-6">Getting students started in 4 steps</p>
-          <Step n={1} title="Share the URL" body="Direct students to polymart.co (or your self-hosted instance). No accounts or credentials needed — the market is immediately accessible to any browser or HTTP client." />
-          <Step n={2} title="Explore live data" body="Students can browse all 132 tickers, view sector performance, and watch prices update every 5 seconds from the Market page — no code required to start building intuition." />
+          <Step n={1} title="Share the URL" body="Direct students to polymart.co (or your self-hosted instance). No accounts or credentials needed - the market is immediately accessible to any browser or HTTP client." />
+          <Step n={2} title="Explore live data" body="Students can browse all 132 tickers, view sector performance, and watch prices update every 5 seconds from the Market page - no code required to start building intuition." />
           <Step n={3} title="Query the API" body='Show students the one-liner: fetch("https://polymart.co/api/v1/getStocks"). Every ticker, price, and indicator returned as structured JSON. Works in Python, JavaScript, R, or any other language.' />
           <Step n={4} last title="Build something" body="Assign a signal scanner, alert bot, sector dashboard, or ML feature pipeline as coursework. Every exercise builds on the same base URL with no authentication overhead." />
         </div>
@@ -463,7 +463,7 @@ export default function EducationPage({ onNavigate }: Props) {
           <div className="flex items-center justify-between px-5 py-3 border-b border-border">
             <div className="flex items-center gap-2">
               <Code2 className="w-3.5 h-3.5 text-muted-foreground" />
-              <p className="text-xs font-semibold text-muted-foreground">Fetch all 132 stocks — JavaScript</p>
+              <p className="text-xs font-semibold text-muted-foreground">Fetch all 132 stocks - JavaScript</p>
             </div>
             <Badge variant="outline" className="text-[10px] border-border">GET /api/v1/getStocks</Badge>
           </div>
@@ -498,7 +498,7 @@ console.log("Overbought stocks:", overbought.map(([ticker]) => ticker))`}
           </TabsList>
           <TabsContent value="finance">
             <CurriculumTab
-              description="Learn to read and interpret live market data, understand price movement, and analyse common technical signals — all in a risk-free simulated environment where nothing is at stake."
+              description="Learn to read and interpret live market data, understand price movement, and analyse common technical signals - all in a risk-free simulated environment where nothing is at stake."
               objectives={[
                 "Read and interpret bid/ask spreads, RSI levels, and volume data from the live market",
                 "Identify overbought and oversold conditions across all 132 tickers using RSI and Bollinger Band position",
@@ -509,7 +509,7 @@ console.log("Overbought stocks:", overbought.map(([ticker]) => ticker))`}
           </TabsContent>
           <TabsContent value="algo">
             <CurriculumTab
-              description="Build automated systems that query live market data, generate trading signals based on technical rules, and simulate trade execution — without real capital or brokerage complexity."
+              description="Build automated systems that query live market data, generate trading signals based on technical rules, and simulate trade execution - without real capital or brokerage complexity."
               objectives={[
                 "Write a signal scanner that identifies RSI crossovers or EMA 12/26 crossovers across all tickers",
                 "Implement a simple mean-reversion or momentum strategy with defined entry, exit, and stop-loss rules",
@@ -520,7 +520,7 @@ console.log("Overbought stocks:", overbought.map(([ticker]) => ticker))`}
           </TabsContent>
           <TabsContent value="ml">
             <CurriculumTab
-              description="Use Polymart as a structured, continuously-updating data source for machine learning experiments — from feature engineering and supervised learning to reinforcement learning trading agents."
+              description="Use Polymart as a structured, continuously-updating data source for machine learning experiments - from feature engineering and supervised learning to reinforcement learning trading agents."
               objectives={[
                 "Build a feature matrix from /getStocks with 20+ predictive features per ticker across all 132 stocks",
                 "Use OHLCV candle arrays from /getStock to train sequence-based models (LSTM, Transformer, TCN)",
@@ -531,7 +531,7 @@ console.log("Overbought stocks:", overbought.map(([ticker]) => ticker))`}
           </TabsContent>
           <TabsContent value="econ">
             <CurriculumTab
-              description="Analyse how macro variables — interest rates, inflation, GDP growth, and VIX — drive sector performance and individual stock prices, and model the transmission mechanisms between them."
+              description="Analyse how macro variables - interest rates, inflation, GDP growth, and VIX - drive sector performance and individual stock prices, and model the transmission mechanisms between them."
               objectives={[
                 "Correlate macro variable changes from /getMacro with sector and stock price movements over time",
                 "Model the impact of the Fear & Greed Index on market breadth (gainers vs losers ratio)",
@@ -553,19 +553,19 @@ console.log("Overbought stocks:", overbought.map(([ticker]) => ticker))`}
           <FeatureCard
             icon={Database}
             title="Structured Time-Series"
-            desc="Every stock produces a continuous stream of OHLCV candles alongside pre-computed indicators. The data is consistently formatted and available via a single GET request per ticker — no scraping or cleaning required."
+            desc="Every stock produces a continuous stream of OHLCV candles alongside pre-computed indicators. The data is consistently formatted and available via a single GET request per ticker - no scraping or cleaning required."
             accent="#7c8af4"
           />
           <FeatureCard
             icon={Layers}
             title="Multi-Asset & Cross-Sector"
-            desc="With 132 tickers across 20 sectors, models can learn cross-asset relationships, sector rotations, and correlation structures — the kind of multi-variate signals that real market models depend on."
+            desc="With 132 tickers across 20 sectors, models can learn cross-asset relationships, sector rotations, and correlation structures - the kind of multi-variate signals that real market models depend on."
             accent="#5bce8a"
           />
           <FeatureCard
             icon={FlaskConical}
             title="Known Ground Truth"
-            desc="Because the simulation parameters are fixed and knowable, researchers can generate datasets where the generative process is understood — useful for evaluating whether a model is learning signal or overfitting to noise."
+            desc="Because the simulation parameters are fixed and knowable, researchers can generate datasets where the generative process is understood - useful for evaluating whether a model is learning signal or overfitting to noise."
             accent="#eab34d"
           />
           <FeatureCard
@@ -593,7 +593,7 @@ console.log("Overbought stocks:", overbought.map(([ticker]) => ticker))`}
             <div className="flex items-center gap-2">
               <Code2 className="w-3.5 h-3.5 text-muted-foreground" />
               <p className="text-xs font-semibold text-muted-foreground">
-                Fetching a full stock detail — Python example
+                Fetching a full stock detail - Python example
               </p>
             </div>
             <Badge variant="outline" className="text-[10px] border-border">GET /api/v1/getStock</Badge>
@@ -706,7 +706,7 @@ all_stocks = requests.get("https://polymart.co/api/v1/getStocks").json()
           <div className="bg-card border border-border rounded-xl p-6">
             <div className="flex items-center gap-2 mb-4">
               <Globe className="w-4 h-4 text-muted-foreground" />
-              <p className="text-sm font-bold text-foreground">Option A — Use the hosted version</p>
+              <p className="text-sm font-bold text-foreground">Option A - Use the hosted version</p>
             </div>
             <p className="text-xs text-muted-foreground leading-relaxed mb-4">
               The simplest path. Direct students to{" "}
@@ -719,7 +719,7 @@ all_stocks = requests.get("https://polymart.co/api/v1/getStocks").json()
               {[
                 "Zero infrastructure overhead",
                 "Always-on persistent simulation",
-                "Same shared market state for all students — useful for collaborative exercises",
+                "Same shared market state for all students - useful for collaborative exercises",
                 "Rate limiting applies per IP (60 requests/minute)",
               ].map((item, i) => (
                 <div key={i} className="flex items-start gap-2">
@@ -733,7 +733,7 @@ all_stocks = requests.get("https://polymart.co/api/v1/getStocks").json()
           <div className="bg-card border border-border rounded-xl p-6">
             <div className="flex items-center gap-2 mb-4">
               <Building2 className="w-4 h-4 text-muted-foreground" />
-              <p className="text-sm font-bold text-foreground">Option B — Self-host</p>
+              <p className="text-sm font-bold text-foreground">Option B - Self-host</p>
             </div>
             <p className="text-xs text-muted-foreground leading-relaxed mb-4">
               Polymart is open-source. Institutions can run their own instance on internal
@@ -906,11 +906,11 @@ all_stocks = requests.get("https://polymart.co/api/v1/getStocks").json()
               },
               {
                 q: "Do students need accounts or credentials?",
-                a: "No. The API has no authentication requirement. Any HTTP client — curl, Python requests, JavaScript fetch, Postman — can query it immediately without signing up or obtaining keys. This removes all friction from getting students started.",
+                a: "No. The API has no authentication requirement. Any HTTP client - curl, Python requests, JavaScript fetch, Postman - can query it immediately without signing up or obtaining keys. This removes all friction from getting students started.",
               },
               {
                 q: "Can the simulation be paused or reset for coursework?",
-                a: "In the hosted version the simulation runs continuously and cannot be paused. In a self-hosted instance, the tick worker can be stopped, the database reset, and the simulation restarted from a known state — which is useful for exercises that require a deterministic starting point.",
+                a: "In the hosted version the simulation runs continuously and cannot be paused. In a self-hosted instance, the tick worker can be stopped, the database reset, and the simulation restarted from a known state - which is useful for exercises that require a deterministic starting point.",
               },
               {
                 q: "What programming languages can be used to interact with the API?",

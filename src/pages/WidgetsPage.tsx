@@ -99,7 +99,7 @@ export default function WidgetsPage({ onNavigate }: Props) {
           widgets, Shadow DOM isolated, zero dependencies, no API key required.
         </p>
         <CodeBlock
-          lang="Setup — add once to your page"
+          lang="Setup - add once to your page"
           code={`<script src="https://polymart.co/widgets/polymart-widgets.js" defer></script>`}
         />
       </div>
@@ -180,7 +180,7 @@ export default function WidgetsPage({ onNavigate }: Props) {
         <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-[0.15em] mb-2">Widget</p>
         <h2 className="text-2xl font-bold text-foreground mb-2">Leaderboard</h2>
         <p className="text-sm text-muted-foreground mb-8 max-w-xl">
-          Ranked table of stocks sorted by any metric — change, price, volume, RSI, streak,
+          Ranked table of stocks sorted by any metric - change, price, volume, RSI, streak,
           or all-time high.
         </p>
         <div className="bg-card/30 border border-border rounded-xl p-8 flex justify-center mb-5">
@@ -232,7 +232,7 @@ export default function WidgetsPage({ onNavigate }: Props) {
         <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-[0.15em] mb-2">Widget</p>
         <h2 className="text-2xl font-bold text-foreground mb-2">Sparkline</h2>
         <p className="text-sm text-muted-foreground mb-8 max-w-xl">
-          A tiny inline price chart you can drop into any text flow — tables, paragraphs,
+          A tiny inline price chart you can drop into any text flow - tables, paragraphs,
           or alongside other widgets.
         </p>
         <div className="bg-card/30 border border-border rounded-xl p-8 flex justify-center gap-10 flex-wrap mb-5">
@@ -284,7 +284,7 @@ export default function WidgetsPage({ onNavigate }: Props) {
         <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-[0.15em] mb-2">Widget</p>
         <h2 className="text-2xl font-bold text-foreground mb-2">Market Events</h2>
         <p className="text-sm text-muted-foreground mb-8 max-w-xl">
-          Live feed of market events — flash crashes, sector booms, meme frenzies, and more
+          Live feed of market events - flash crashes, sector booms, meme frenzies, and more
           with bullish/bearish impact indicators.
         </p>
         <div className="bg-card/30 border border-border rounded-xl p-8 flex justify-center mb-5">
