@@ -17,12 +17,13 @@ import WidgetsPage from "@/pages/WidgetsPage"
 import EduToolsPage from "@/pages/EduToolsPage"
 import CommunityPage from "@/pages/CommunityPage"
 import BotLegalPage from "@/pages/BotLegalPage"
+import KofiLegalPage from "@/pages/KofiLegalPage"
 import CommunityBlogPage from "@/pages/CommunityBlogPage"
 import SponsorPage from "@/pages/SponsorPage"
 import StockInfoPage from "@/pages/StockInfoPage"
 
 // ── Routing ───────────────────────────────────────────────────────────────────
-export type Route = "home" | "market" | "api" | "terms" | "privacy" | "changelog" | "education" | "products" | "help" | "widgets" | "edu-tools" | "community" | "bot-terms" | "bot-privacy" | "community-blog" | "sponsor" | "stock-info"
+export type Route = "home" | "market" | "api" | "terms" | "privacy" | "changelog" | "education" | "products" | "help" | "widgets" | "edu-tools" | "community" | "bot-terms" | "bot-privacy" | "community-blog" | "sponsor" | "stock-info" | "kofi-terms" | "kofi-privacy"
 
 const HASH_MAP: Record<string, Route> = {
   "": "home",
@@ -41,6 +42,8 @@ const HASH_MAP: Record<string, Route> = {
   "/community": "community",
   "/docs/bots/terms": "bot-terms",
   "/docs/bots/privacy": "bot-privacy",
+  "/docs/kofi-terms" : "kofi-terms",
+  "/docs/kofi-privacy" : "kofi-privacy",
   "/community/blog": "community-blog",
   "/sponsor": "sponsor",
 }
@@ -61,6 +64,8 @@ const ROUTE_HASH: Record<Route, string> = {
   "bot-terms": "/docs/bots/terms",
   "bot-privacy": "/docs/bots/privacy",
   "community-blog": "/community/blog",
+  "kofi-privacy": "/docs/kofi-privacy",
+  "kofi-terms": "/docs/kofi-terms",
   "sponsor": "/sponsor",
   "stock-info": "/market",
 }
@@ -544,6 +549,8 @@ export default function App() {
           {route === "community"   && <CommunityPage  onNavigate={go} />}
           {route === "bot-terms"      && <BotLegalPage      type="bot-terms"   onNavigate={go} />}
           {route === "bot-privacy"    && <BotLegalPage      type="bot-privacy" onNavigate={go} />}
+          {route === "kofi-privacy"    && <KofiLegalPage     type="bot-privacy" onNavigate={go} />}
+          {route === "kofi-terms"    && <KofiLegalPage      type="bot-terms" onNavigate={go} />}
           {route === "community-blog" && <CommunityBlogPage onNavigate={go} />}
           {route === "sponsor"        && <SponsorPage       onNavigate={go} />}
         </main>
