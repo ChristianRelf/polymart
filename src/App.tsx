@@ -315,7 +315,7 @@ function Footer({ setRoute }: { setRoute: (r: Route) => void }) {
         {/* Bottom bar */}
         <div className="flex flex-wrap items-center justify-between gap-4 pt-6 border-t border-border/40">
           <p className="text-xs text-muted-foreground">
-            © 2026 Polymart · All data is fictional · Not financial advice
+            
           </p>
           <a
             href="https://discord.com/oauth2/authorize?client_id=1503197938027860102"
