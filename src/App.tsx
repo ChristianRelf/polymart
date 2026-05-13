@@ -19,9 +19,10 @@ import CommunityPage from "@/pages/CommunityPage"
 import BotLegalPage from "@/pages/BotLegalPage"
 import CommunityBlogPage from "@/pages/CommunityBlogPage"
 import SponsorPage from "@/pages/SponsorPage"
+import StockInfoPage from "@/pages/StockInfoPage"
 
 // ── Routing ───────────────────────────────────────────────────────────────────
-export type Route = "home" | "market" | "api" | "terms" | "privacy" | "changelog" | "education" | "products" | "help" | "widgets" | "edu-tools" | "community" | "bot-terms" | "bot-privacy" | "community-blog" | "sponsor"
+export type Route = "home" | "market" | "api" | "terms" | "privacy" | "changelog" | "education" | "products" | "help" | "widgets" | "edu-tools" | "community" | "bot-terms" | "bot-privacy" | "community-blog" | "sponsor" | "stock-info"
 
 const HASH_MAP: Record<string, Route> = {
   "": "home",
@@ -61,15 +62,27 @@ const ROUTE_HASH: Record<Route, string> = {
   "bot-privacy": "/docs/bots/privacy",
   "community-blog": "/community/blog",
   "sponsor": "/sponsor",
+  "stock-info": "/market",
+}
+
+function parseHash(): { route: Route; params: Record<string, string> } {
+  const hash = window.location.hash.replace("#", "")
+  const m = hash.match(/^\/market\/([^/]+)\/info$/i)
+  if (m) return { route: "stock-info", params: { ticker: m[1].toUpperCase() } }
+  return { route: HASH_MAP[hash] ?? "home", params: {} }
 }
 
 function getRoute(): Route {
-  const hash = window.location.hash.replace("#", "")
-  return HASH_MAP[hash] ?? "home"
+  return parseHash().route
 }
 
 function navigate(r: Route) {
   window.location.hash = ROUTE_HASH[r]
+  window.scrollTo({ top: 0, behavior: "instant" })
+}
+
+function navigateToInfo(ticker: string) {
+  window.location.hash = `/market/${ticker.toLowerCase()}/info`
   window.scrollTo({ top: 0, behavior: "instant" })
 }
 
@@ -489,14 +502,24 @@ function MarketNudge({
 // ── Root ──────────────────────────────────────────────────────────────────────
 export default function App() {
   const [route, setRoute] = useState<Route>(getRoute)
+  const [routeParams, setRouteParams] = useState<Record<string, string>>(() => parseHash().params)
 
   useEffect(() => {
-    const handler = () => setRoute(getRoute())
+    const handler = () => {
+      const { route: r, params } = parseHash()
+      setRoute(r)
+      setRouteParams(params)
+    }
     window.addEventListener("hashchange", handler)
     return () => window.removeEventListener("hashchange", handler)
   }, [])
 
-  const go = (r: Route) => { navigate(r); setRoute(r) }
+  const go = (r: Route) => { navigate(r); setRoute(r); setRouteParams({}) }
+  const goToInfo = (ticker: string) => {
+    navigateToInfo(ticker)
+    setRoute("stock-info")
+    setRouteParams({ ticker: ticker.toUpperCase() })
+  }
 
   return (
     <SimulationProvider>
@@ -506,8 +529,9 @@ export default function App() {
         <Navbar route={route} setRoute={setRoute} />
 
         <main className="flex-1">
-          {route === "home"    && <HomePage    onNavigate={go} />}
-          {route === "market"  && <MarketPage  />}
+          {route === "home"       && <HomePage    onNavigate={go} />}
+          {route === "market"     && <MarketPage  onNavigateToInfo={goToInfo} />}
+          {route === "stock-info" && <StockInfoPage ticker={routeParams.ticker ?? ""} onNavigate={go} onNavigateToInfo={goToInfo} />}
           {route === "api"     && <ApiDocsPage />}
           {route === "terms"     && <LegalPage      type="terms"   onNavigate={go} />}
           {route === "privacy"   && <LegalPage      type="privacy" onNavigate={go} />}
