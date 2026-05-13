@@ -1,6 +1,5 @@
 import { Heart, Coffee, Zap, Shield, ArrowUpRight } from "lucide-react"
-
-type Route = "home" | "market" | "api" | "terms" | "privacy" | "changelog" | "education" | "products" | "help" | "widgets" | "edu-tools" | "community" | "bot-terms" | "bot-privacy" | "community-blog" | "sponsor"
+import type { Route } from "@/App"
 
 interface Props {
   onNavigate: (r: Route) => void
@@ -38,14 +37,17 @@ export default function SponsorPage({ onNavigate }: Props) {
             Sponsor
           </span>
         </div>
+
         <h1 className="text-4xl sm:text-5xl font-extrabold tracking-tight text-foreground mb-4 leading-[1.06]">
           Support Polymart
         </h1>
+
         <p className="text-base text-muted-foreground leading-relaxed max-w-xl mb-8">
           Polymart is a free, open simulated stock market — no ads, no paywalls.
           If you find it useful, buying a coffee helps keep the servers running
           and new features shipping.
         </p>
+
         <a
           href={KOFI_URL}
           target="_blank"
@@ -61,12 +63,21 @@ export default function SponsorPage({ onNavigate }: Props) {
       {/* Why it matters */}
       <div className="grid sm:grid-cols-3 gap-4 mb-14">
         {PERKS.map((p) => (
-          <div key={p.title} className="rounded-xl border border-border bg-card p-5">
+          <div
+            key={p.title}
+            className="rounded-xl border border-border bg-card p-5"
+          >
             <div className="w-8 h-8 rounded-lg bg-rose-500/10 text-rose-400 flex items-center justify-center mb-4">
               {p.icon}
             </div>
-            <p className="text-sm font-semibold text-foreground mb-1.5">{p.title}</p>
-            <p className="text-xs text-muted-foreground leading-relaxed">{p.desc}</p>
+
+            <p className="text-sm font-semibold text-foreground mb-1.5">
+              {p.title}
+            </p>
+
+            <p className="text-xs text-muted-foreground leading-relaxed">
+              {p.desc}
+            </p>
           </div>
         ))}
       </div>
@@ -75,13 +86,23 @@ export default function SponsorPage({ onNavigate }: Props) {
 
       {/* Ko-fi feed embed */}
       <div className="mb-10">
-        <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-[0.15em] mb-4">Supporters</p>
-        <h2 className="text-xl font-bold text-foreground mb-6">Our sponsors</h2>
+        <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-[0.15em] mb-4">
+          Supporters
+        </p>
+
+        <h2 className="text-xl font-bold text-foreground mb-6">
+          Our sponsors
+        </h2>
+
         <div className="rounded-2xl border border-border overflow-hidden">
           <iframe
             id="kofiframe"
             src={`${KOFI_URL}/?hidefeed=false&widget=true&embed=true&preview=true`}
-            style={{ border: "none", width: "100%", display: "block" }}
+            style={{
+              border: "none",
+              width: "100%",
+              display: "block",
+            }}
             height="680"
             title="Polymart Ko-fi supporters"
           />
@@ -91,12 +112,16 @@ export default function SponsorPage({ onNavigate }: Props) {
       {/* Bottom CTA */}
       <div className="rounded-2xl border border-border bg-card p-8 flex flex-col sm:flex-row items-start sm:items-center gap-6">
         <div className="flex-1">
-          <p className="text-base font-bold text-foreground mb-1.5">Every bit helps</p>
+          <p className="text-base font-bold text-foreground mb-1.5">
+            Every bit helps
+          </p>
+
           <p className="text-sm text-muted-foreground leading-relaxed">
-            One-time or recurring — whatever works for you. Thank you for supporting
-            independent open-source projects.
+            One-time or recurring — whatever works for you. Thank you for
+            supporting independent open-source projects.
           </p>
         </div>
+
         <a
           href={KOFI_URL}
           target="_blank"
@@ -107,7 +132,6 @@ export default function SponsorPage({ onNavigate }: Props) {
           Buy a coffee
         </a>
       </div>
-
     </div>
   )
 }

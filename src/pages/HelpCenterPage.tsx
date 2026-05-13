@@ -4,7 +4,7 @@ import { Input } from "@/components/ui/input"
 import { cn } from "@/lib/utils"
 import {
   Search, TrendingUp, Code as Code2, Bot,
-  ChartBar as BarChart2, BookOpen, Layers,
+  ChartBar as BarChart2, BookOpen,
   GraduationCap, Wrench, ArrowRight,
   TriangleAlert as AlertTriangle,
 } from "lucide-react"
