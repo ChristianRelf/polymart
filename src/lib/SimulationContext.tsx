@@ -4,6 +4,22 @@ function apiFetch(endpoint: string) {
   return fetch(endpoint).then(r => r.json())
 }
 
+// ── Simulation registry ───────────────────────────────────────────────────────
+
+export type SimType = "stocks" | "crypto" | "forex"
+
+export const SIM_CONFIGS: {
+  id: SimType
+  label: string
+  icon: string
+  status: "live" | "coming_soon"
+  description: string
+}[] = [
+  { id: "stocks", label: "Stocks", icon: "📈", status: "live",        description: "132 simulated equities across 20 sectors. Prices update every 5 seconds." },
+  { id: "crypto", label: "Crypto", icon: "₿",  status: "coming_soon", description: "Simulated cryptocurrency market with volatile assets and 24/7 trading." },
+  { id: "forex",  label: "Forex",  icon: "💱", status: "coming_soon", description: "Foreign exchange simulation with major, minor, and exotic currency pairs." },
+]
+
 // ── Exported types ────────────────────────────────────────────────────────────
 
 export type MarketOverview = {

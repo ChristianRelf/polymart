@@ -7,8 +7,8 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet"
 import { ArrowLeft, TrendingUp, TrendingDown, Search, ChevronUp, ChevronDown, ChartBar as BarChart2, Zap, TriangleAlert as AlertTriangle, SlidersHorizontal, Check, LayoutDashboard, FlaskConical, Layers, Info, PanelRight, Loader as Loader2 } from "lucide-react"
 import { cn } from "@/lib/utils"
-import { useSimulation } from "@/lib/SimulationContext"
-import type { StockDetail, Candle } from "@/lib/SimulationContext"
+import { useSimulation, SIM_CONFIGS } from "@/lib/SimulationContext"
+import type { StockDetail, Candle, SimType } from "@/lib/SimulationContext"
 
 // ── Colour palette ────────────────────────────────────────────────────────────
 const GAIN  = "#5bce8a"
@@ -1029,10 +1029,63 @@ function StockDetailView({ detail, stocks, onBack, openDetail, onNavigateToInfo 
   )
 }
 
+// ── Sim type picker ───────────────────────────────────────────────────────────
+function SimPicker({ simType, onSelect }: { simType: SimType; onSelect: (s: SimType) => void }) {
+  return (
+    <div className="flex items-center gap-2 mb-6">
+      {SIM_CONFIGS.map(sim => {
+        const active = sim.id === simType
+        const live   = sim.status === "live"
+        return (
+          <button
+            key={sim.id}
+            onClick={() => live && onSelect(sim.id)}
+            className={cn(
+              "flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium border transition-all",
+              active
+                ? "bg-foreground text-background border-foreground"
+                : live
+                  ? "border-border text-foreground/70 hover:border-foreground/50 hover:text-foreground cursor-pointer"
+                  : "border-border/30 text-muted-foreground/40 cursor-not-allowed"
+            )}
+          >
+            <span>{sim.icon}</span>
+            {sim.label}
+            {!live && (
+              <span className="text-[9px] font-bold uppercase tracking-widest px-1.5 py-0.5 rounded bg-muted/30 text-muted-foreground/50 ml-0.5">
+                Soon
+              </span>
+            )}
+          </button>
+        )
+      })}
+    </div>
+  )
+}
+
+// ── Sim coming-soon placeholder ───────────────────────────────────────────────
+function SimComingSoon({ sim }: { sim: (typeof SIM_CONFIGS)[number] }) {
+  return (
+    <div className="flex flex-col items-center justify-center py-32 gap-5 text-center">
+      <span className="text-6xl">{sim.icon}</span>
+      <div>
+        <div className="flex items-center justify-center gap-2.5 mb-2">
+          <h2 className="text-2xl font-bold text-foreground">{sim.label} Simulation</h2>
+          <span className="text-[10px] font-bold uppercase tracking-widest px-2.5 py-1 rounded border border-border text-muted-foreground">
+            Coming Soon
+          </span>
+        </div>
+        <p className="text-sm text-muted-foreground max-w-sm">{sim.description}</p>
+      </div>
+    </div>
+  )
+}
+
 // ── Market list view ──────────────────────────────────────────────────────────
 export default function MarketPage({ onNavigateToInfo }: { onNavigateToInfo?: (ticker: string) => void } = {}) {
   const { market, stocks, sectors, events, loading, getDetail } = useSimulation()
 
+  const [simType, setSimType]       = useState<SimType>("stocks")
   const [detail, setDetail]         = useState<StockDetail | null>(null)
   const [view, setView]             = useState<"list" | "detail">("list")
   const [search, setSearch]         = useState("")
@@ -1121,6 +1174,12 @@ export default function MarketPage({ onNavigateToInfo }: { onNavigateToInfo?: (t
 
   return (
     <div className="max-w-[1600px] mx-auto px-4 sm:px-8 py-6 sm:py-10">
+      <SimPicker simType={simType} onSelect={setSimType} />
+
+      {simType !== "stocks" ? (
+        <SimComingSoon sim={SIM_CONFIGS.find(s => s.id === simType)!} />
+      ) : (
+        <>
 
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4 mb-6 sm:mb-8">
@@ -1391,6 +1450,8 @@ export default function MarketPage({ onNavigateToInfo }: { onNavigateToInfo?: (t
           />
         </div>
       </div>
+        </>
+      )}
     </div>
   )
 }

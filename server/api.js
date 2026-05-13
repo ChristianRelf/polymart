@@ -352,6 +352,37 @@ router.get("/getHealth", async (req, res) => {
   } catch (e) { res.status(500).json({ error: String(e) }); }
 });
 
+// ── GET /api/v1/sims ─────────────────────────────────────────────────────────
+router.get("/sims", (req, res) => {
+  setCors(res);
+  res.json([
+    {
+      id: "stocks",
+      label: "Stock Market",
+      icon: "📈",
+      status: "live",
+      description: "132 simulated equities across 20 sectors. Prices update every 5 seconds.",
+      assets: Object.keys(STOCK_DEFS).length,
+      sectors: Object.keys(SECTORS).length,
+      tickInterval: 5,
+    },
+    {
+      id: "crypto",
+      label: "Crypto Market",
+      icon: "₿",
+      status: "coming_soon",
+      description: "Simulated cryptocurrency market with volatile assets and 24/7 trading.",
+    },
+    {
+      id: "forex",
+      label: "Forex",
+      icon: "💱",
+      status: "coming_soon",
+      description: "Foreign exchange simulation with major, minor, and exotic currency pairs.",
+    },
+  ]);
+});
+
 // ── GET /api/v1/info?ticker= ──────────────────────────────────────────────────
 router.get("/info", async (req, res) => {
   setCors(res);
