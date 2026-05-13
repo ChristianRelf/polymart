@@ -318,6 +318,7 @@ function Footer({ setRoute }: { setRoute: (r: Route) => void }) {
           className="w-full block"
         />
       </div>
+      </div>
     </footer>
   )
 }
