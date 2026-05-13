@@ -427,11 +427,12 @@ function Signal({ bull }: { bull: boolean }) {
 }
 
 // ── Detail view ───────────────────────────────────────────────────────────────
-function StockDetailView({ detail, stocks, onBack, openDetail }: {
+function StockDetailView({ detail, stocks, onBack, openDetail, onNavigateToInfo }: {
   detail: StockDetail
   stocks: Record<string, import("@/lib/SimulationContext").StockSummary>
   onBack: () => void
   openDetail: (t: string) => void
+  onNavigateToInfo?: (ticker: string) => void
 }) {
   const [chartMode, setChartMode] = useState<"candle" | "line">("candle")
   const up = detail.change >= 0
@@ -450,14 +451,24 @@ function StockDetailView({ detail, stocks, onBack, openDetail }: {
 
   return (
     <div className="max-w-[1600px] mx-auto px-4 sm:px-8 py-6 sm:py-10">
-      {/* Back */}
-      <button
-        onClick={onBack}
-        className="flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground transition-colors mb-6 sm:mb-8 cursor-pointer bg-transparent border-0 p-0"
-      >
-        <ArrowLeft className="w-4 h-4" />
-        Back to market
-      </button>
+      {/* Back + Company Info */}
+      <div className="flex items-center justify-between mb-6 sm:mb-8">
+        <button
+          onClick={onBack}
+          className="flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground transition-colors cursor-pointer bg-transparent border-0 p-0"
+        >
+          <ArrowLeft className="w-4 h-4" />
+          Back to market
+        </button>
+        {onNavigateToInfo && (
+          <button
+            onClick={() => onNavigateToInfo(detail.ticker)}
+            className="flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground transition-colors cursor-pointer bg-transparent border-0 p-0"
+          >
+            <Info className="w-3.5 h-3.5" /> Company Info
+          </button>
+        )}
+      </div>
 
       {/* Header */}
       <div className="mb-6 sm:mb-8">
@@ -1019,7 +1030,7 @@ function StockDetailView({ detail, stocks, onBack, openDetail }: {
 }
 
 // ── Market list view ──────────────────────────────────────────────────────────
-export default function MarketPage() {
+export default function MarketPage({ onNavigateToInfo }: { onNavigateToInfo?: (ticker: string) => void } = {}) {
   const { market, stocks, sectors, events, loading, getDetail } = useSimulation()
 
   const [detail, setDetail]         = useState<StockDetail | null>(null)
@@ -1098,7 +1109,7 @@ export default function MarketPage() {
   }
 
   if (view === "detail" && detail) {
-    return <StockDetailView detail={detail} stocks={stocks} onBack={() => setView("list")} openDetail={openDetail} />
+    return <StockDetailView detail={detail} stocks={stocks} onBack={() => setView("list")} openDetail={openDetail} onNavigateToInfo={onNavigateToInfo} />
   }
 
   const idxUp  = (market.indexChange || 0) >= 0
