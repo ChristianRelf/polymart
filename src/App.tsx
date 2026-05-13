@@ -3,7 +3,7 @@ import { Button } from "@/components/ui/button"
 import { Separator } from "@/components/ui/separator"
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet"
 import { cn } from "@/lib/utils"
-import { Bot, ArrowUpRight, X, Menu } from "lucide-react"
+import { Bot, ArrowUpRight, X, Menu, Coffee } from "lucide-react"
 import { SimulationProvider, useSimulation } from "@/lib/SimulationContext"
 import HomePage from "@/pages/HomePage"
 import MarketPage from "@/pages/MarketPage"
@@ -18,9 +18,10 @@ import EduToolsPage from "@/pages/EduToolsPage"
 import CommunityPage from "@/pages/CommunityPage"
 import BotLegalPage from "@/pages/BotLegalPage"
 import CommunityBlogPage from "@/pages/CommunityBlogPage"
+import SponsorPage from "@/pages/SponsorPage"
 
 // ── Routing ───────────────────────────────────────────────────────────────────
-export type Route = "home" | "market" | "api" | "terms" | "privacy" | "changelog" | "education" | "products" | "help" | "widgets" | "edu-tools" | "community" | "bot-terms" | "bot-privacy" | "community-blog"
+export type Route = "home" | "market" | "api" | "terms" | "privacy" | "changelog" | "education" | "products" | "help" | "widgets" | "edu-tools" | "community" | "bot-terms" | "bot-privacy" | "community-blog" | "sponsor"
 
 const HASH_MAP: Record<string, Route> = {
   "": "home",
@@ -40,6 +41,7 @@ const HASH_MAP: Record<string, Route> = {
   "/docs/bots/terms": "bot-terms",
   "/docs/bots/privacy": "bot-privacy",
   "/community/blog": "community-blog",
+  "/sponsor": "sponsor",
 }
 
 const ROUTE_HASH: Record<Route, string> = {
@@ -58,6 +60,7 @@ const ROUTE_HASH: Record<Route, string> = {
   "bot-terms": "/docs/bots/terms",
   "bot-privacy": "/docs/bots/privacy",
   "community-blog": "/community/blog",
+  "sponsor": "/sponsor",
 }
 
 function getRoute(): Route {
@@ -278,6 +281,7 @@ function Footer({ setRoute }: { setRoute: (r: Route) => void }) {
             <FLink label="Market"   route="market" />
             <FLink label="Products" route="products" />
             <FLink label="Widgets"  route="widgets" />
+            <FLink label="Sponsor"  route="sponsor" />
             <FExt  label="Demo Site" href="/demo/index.html" />
           </NavCol>
 
@@ -320,6 +324,77 @@ function Footer({ setRoute }: { setRoute: (r: Route) => void }) {
       </div>
       </div>
     </footer>
+  )
+}
+
+// ── Sponsor banner ────────────────────────────────────────────────────────────
+const SPONSOR_DISMISSED_KEY = "polymart_sponsor_dismissed_until"
+const SPONSOR_DELAY_MS = 20_000
+const SPONSOR_SNOOZE_DAYS = 7
+
+function SponsorBanner({ onNavigate }: { onNavigate: (r: Route) => void }) {
+  const [rendered, setRendered] = useState(false)
+  const [visible, setVisible] = useState(false)
+
+  useEffect(() => {
+    const until = parseInt(localStorage.getItem(SPONSOR_DISMISSED_KEY) || "0", 10)
+    if (Date.now() < until) return
+    const t = setTimeout(() => {
+      setRendered(true)
+      requestAnimationFrame(() => requestAnimationFrame(() => setVisible(true)))
+    }, SPONSOR_DELAY_MS)
+    return () => clearTimeout(t)
+  }, [])
+
+  function dismiss() {
+    setVisible(false)
+    const until = Date.now() + SPONSOR_SNOOZE_DAYS * 86_400_000
+    localStorage.setItem(SPONSOR_DISMISSED_KEY, String(until))
+    setTimeout(() => setRendered(false), 350)
+  }
+
+  function goToSponsor() {
+    onNavigate("sponsor")
+    dismiss()
+  }
+
+  if (!rendered) return null
+
+  return (
+    <div
+      className={cn(
+        "fixed bottom-5 right-5 z-50 w-72",
+        "transition-all duration-350 ease-out",
+        visible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-3 pointer-events-none",
+      )}
+    >
+      <div className="bg-card border border-border rounded-2xl shadow-xl p-4">
+        <div className="flex items-start justify-between gap-3 mb-3">
+          <div className="flex items-center gap-2.5">
+            <div className="w-8 h-8 rounded-lg bg-rose-500/10 flex items-center justify-center shrink-0">
+              <Coffee className="w-4 h-4 text-rose-400" />
+            </div>
+            <div>
+              <p className="text-sm font-semibold text-foreground leading-tight">Sponsor development</p>
+              <p className="text-[11px] text-muted-foreground leading-tight mt-0.5">Keep Polymart free &amp; running</p>
+            </div>
+          </div>
+          <button
+            onClick={dismiss}
+            aria-label="Dismiss"
+            className="text-muted-foreground hover:text-foreground transition-colors cursor-pointer bg-transparent border-0 p-0.5 shrink-0 mt-0.5"
+          >
+            <X className="w-3.5 h-3.5" />
+          </button>
+        </div>
+        <button
+          onClick={goToSponsor}
+          className="w-full bg-rose-500 hover:bg-rose-600 text-white text-xs font-semibold py-2 rounded-lg transition-colors cursor-pointer border-0"
+        >
+          Support on Ko-fi ☕
+        </button>
+      </div>
+    </div>
   )
 }
 
@@ -426,6 +501,7 @@ export default function App() {
   return (
     <SimulationProvider>
       <div className="min-h-screen flex flex-col bg-background text-foreground">
+        <SponsorBanner onNavigate={go} />
         <MarketNudge onNavigate={go} currentRoute={route} />
         <Navbar route={route} setRoute={setRoute} />
 
@@ -445,6 +521,7 @@ export default function App() {
           {route === "bot-terms"      && <BotLegalPage      type="bot-terms"   onNavigate={go} />}
           {route === "bot-privacy"    && <BotLegalPage      type="bot-privacy" onNavigate={go} />}
           {route === "community-blog" && <CommunityBlogPage onNavigate={go} />}
+          {route === "sponsor"        && <SponsorPage       onNavigate={go} />}
         </main>
 
         <Footer setRoute={setRoute} />
