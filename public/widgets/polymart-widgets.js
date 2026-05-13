@@ -270,7 +270,6 @@
           }
           .pm-ticker-body {
             padding: 16px;
-            animation: pm-slide-up 0.3s ease-out;
           }
           .pm-ticker-header {
             display: flex; align-items: center; justify-content: space-between;
@@ -402,7 +401,7 @@
             overflow: hidden; max-width: 480px;
             font-family: var(--pm-sans);
           }
-          .pm-market-body { padding: 20px; animation: pm-slide-up 0.3s ease-out; }
+          .pm-market-body { padding: 20px; }
           .pm-market-title {
             font-size: 11px; font-weight: 600; text-transform: uppercase;
             letter-spacing: 0.1em; color: var(--pm-text-dim); margin-bottom: 12px;
@@ -571,7 +570,6 @@
           }
           .pm-lb-table tr:last-child td { border-bottom: none; }
           .pm-lb-table tr {
-            animation: pm-slide-up 0.3s ease-out both;
           }
           .pm-lb-rank {
             font-family: var(--pm-mono); font-weight: 700;
@@ -605,7 +603,7 @@
         const rows = data.stocks
           .map(
             (s, i) => `
-          <tr style="animation-delay:${i * 30}ms">
+          <tr>
             <td class="pm-lb-rank">${i + 1}</td>
             <td>
               <div class="pm-lb-ticker">${s.ticker}</div>
@@ -857,7 +855,6 @@
           .pm-ev-list { padding: 4px 0; }
           .pm-ev-item {
             padding: 10px 16px; border-bottom: 1px solid var(--pm-border);
-            animation: pm-slide-up 0.3s ease-out both;
           }
           .pm-ev-item:last-child { border-bottom: none; }
           .pm-ev-text { font-size: 13px; line-height: 1.5; }
@@ -887,7 +884,7 @@
         const items = data
           .map(
             (ev, i) => `
-          <div class="pm-ev-item" style="animation-delay:${i * 50}ms">
+          <div class="pm-ev-item">
             <div class="pm-ev-text">${ev.text}</div>
             <div class="pm-ev-meta">
               <span class="pm-ev-badge" style="background:${ev.effect >= 0 ? "var(--pm-green-bg)" : "var(--pm-red-bg)"};color:${ev.effect >= 0 ? "var(--pm-green)" : "var(--pm-red)"}">

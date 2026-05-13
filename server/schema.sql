@@ -6,6 +6,8 @@ CREATE DATABASE IF NOT EXISTS polymart CHARACTER SET utf8mb4 COLLATE utf8mb4_uni
 USE polymart;
 
 -- ── market_state (singleton row, id=1) ───────────────────────────────────────
+-- tick_count is the only permanent metric; it is never culled or reset.
+-- No concurrent-users column — tick_count serves as the all-time peak indicator.
 CREATE TABLE IF NOT EXISTS market_state (
   id              TINYINT      NOT NULL DEFAULT 1,
   index_value     DOUBLE       NOT NULL DEFAULT 1000,
@@ -30,6 +32,8 @@ CREATE TABLE IF NOT EXISTS market_state (
 ) ENGINE=InnoDB;
 
 -- ── stocks_state (one row per ticker, ~132 rows) ──────────────────────────────
+-- history: last 60 prices (sufficient for all indicators: SMA50, MACD-60, ATR-14)
+-- candles: last 48 candles (CANDLE_PERIOD=18 ticks × 10s = 3 min/candle → ~2.4 hrs)
 CREATE TABLE IF NOT EXISTS stocks_state (
   ticker          VARCHAR(10)  NOT NULL,
   name            VARCHAR(120) NOT NULL DEFAULT '',
@@ -90,8 +94,7 @@ CREATE TABLE IF NOT EXISTS sector_state (
   PRIMARY KEY (sector_key)
 ) ENGINE=InnoDB;
 
--- ── events_log (rolling log, purged > 7 days, max 40 rows) ───────────────────
--- NOTE: tick_count is NOT purged - only events_log data rows are cleared.
+-- ── events_log (rolling log, culled every 24 hours) ──────────────────────────
 CREATE TABLE IF NOT EXISTS events_log (
   id              CHAR(36)     NOT NULL DEFAULT (UUID()),
   event_text      TEXT         NOT NULL,
@@ -104,13 +107,22 @@ CREATE TABLE IF NOT EXISTS events_log (
   INDEX idx_fired_at (fired_at)
 ) ENGINE=InnoDB;
 
--- ── 7-day data purge event ────────────────────────────────────────────────────
--- Purges events_log rows older than 7 days.
--- market_state, stocks_state, sector_state are NOT purged (simulation state).
+-- ── 24-hour cull event ────────────────────────────────────────────────────────
+-- Purges events_log rows older than 24 hours every day.
+-- market_state (including tick_count), stocks_state, and sector_state are NOT
+-- touched — only events_log data rows are cleared.
 -- MySQL Event Scheduler must be enabled: SET GLOBAL event_scheduler = ON;
 DROP EVENT IF EXISTS purge_old_events;
 CREATE EVENT purge_old_events
   ON SCHEDULE EVERY 1 DAY
   STARTS CURRENT_TIMESTAMP
   DO
-    DELETE FROM events_log WHERE fired_at < DATE_SUB(NOW(), INTERVAL 7 DAY);
+    DELETE FROM events_log WHERE fired_at < DATE_SUB(NOW(), INTERVAL 1 DAY);
+
+-- ── Migration for existing installs ──────────────────────────────────────────
+-- Run manually if upgrading a live DB to shrink oversized JSON blobs:
+--   UPDATE stocks_state SET
+--     history = JSON_EXTRACT(history, CONCAT('$[', JSON_LENGTH(history)-60, ' to last]')),
+--     candles = JSON_EXTRACT(candles, CONCAT('$[', JSON_LENGTH(candles)-48, ' to last]'))
+--   WHERE JSON_LENGTH(history) > 60 OR JSON_LENGTH(candles) > 48;
+-- Or simply: the next tick after deploying simulation.js will auto-truncate via slice(-60)/slice(-48).

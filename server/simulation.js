@@ -614,7 +614,7 @@ export function runTick(ms, stocks, sectors) {
     updated.ask = Math.round((np + halfSpread) * 100) / 100;
     updated.spread_pct = +spreadPct.toFixed(3);
 
-    const newHistory = [...h, np].slice(-400);
+    const newHistory = [...h, np].slice(-60);
     updated.sma20 = +sma(newHistory, 20).toFixed(2);
     updated.sma50 = +sma(newHistory, 50).toFixed(2);
 
@@ -657,7 +657,7 @@ export function runTick(ms, stocks, sectors) {
     if (updated.candle_ticks >= CANDLE_PERIOD) {
       const candles = Array.isArray(st.candles) ? [...st.candles] : [];
       candles.push({ o: updated.candle_open || p, h: updated.candle_high, l: updated.candle_low, c: np, v: baseVol * CANDLE_PERIOD, t: m.tick_count });
-      updated.candles = candles.slice(-120);
+      updated.candles = candles.slice(-48);
       updated.candle_open = np; updated.candle_high = np; updated.candle_low = np; updated.candle_ticks = 0;
     }
 

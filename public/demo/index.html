@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Apex Systems Corp - Enterprise AI Infrastructure | NYSE: APEX</title>
+  <title>Apex Systems Corp — Enterprise AI Infrastructure | NYSE: APEX</title>
   <meta name="description" content="Apex Systems Corporation delivers enterprise-grade AI infrastructure and cloud solutions. Publicly traded under APEX.">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
@@ -12,409 +12,519 @@
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
     :root {
-      --navy:        #080d1a;
-      --navy-mid:    #0d1526;
-      --navy-light:  #111c35;
-      --blue:        #3b82f6;
-      --blue-light:  #93c5fd;
-      --indigo:      #6366f1;
-      --text:        #0f172a;
-      --muted:       #64748b;
-      --light-muted: #94a3b8;
-      --bg:          #f1f5f9;
-      --surface:     #ffffff;
-      --border:      #e2e8f0;
-      --green:       #22c55e;
-      --red:         #ef4444;
-      --r:           12px;
+      --navy:       #07090f;
+      --navy-1:     #0c1120;
+      --navy-2:     #111827;
+      --navy-3:     #1a2438;
+      --blue:       #3b82f6;
+      --blue-dim:   rgba(59,130,246,0.12);
+      --blue-glow:  rgba(59,130,246,0.06);
+      --indigo:     #6366f1;
+      --text:       #f1f5f9;
+      --text-2:     #94a3b8;
+      --text-3:     rgba(255,255,255,0.28);
+      --border:     rgba(255,255,255,0.07);
+      --border-2:   rgba(255,255,255,0.04);
+      --green:      #22c55e;
+      --red:        #ef4444;
+      --r:          12px;
+      --r-sm:       8px;
     }
 
     html { scroll-behavior: smooth; }
     body {
       font-family: 'Inter', -apple-system, sans-serif;
-      background: var(--bg);
+      background: var(--navy);
       color: var(--text);
       line-height: 1.6;
       -webkit-font-smoothing: antialiased;
     }
 
-    /* ── Tape bar ── */
-    .tape-bar { background: var(--navy); overflow: hidden; line-height: 0; }
+    /* ── Utilities ── */
+    .kicker {
+      font-size: 11px; font-weight: 700; text-transform: uppercase;
+      letter-spacing: 0.12em; color: var(--blue); margin-bottom: 10px;
+    }
+    .muted { color: var(--text-2); }
+
+    /* ── Ticker tape ── */
+    .tape-bar {
+      background: var(--navy-1);
+      border-bottom: 1px solid var(--border);
+      overflow: hidden; line-height: 0;
+    }
     .tape-bar polymart-tape { display: block; }
 
     /* ── Header ── */
     .header {
-      background: var(--navy);
+      background: rgba(7,9,15,0.85);
+      backdrop-filter: blur(20px) saturate(1.8);
+      -webkit-backdrop-filter: blur(20px) saturate(1.8);
       position: sticky; top: 0; z-index: 100;
-      border-bottom: 1px solid rgba(255,255,255,0.06);
+      border-bottom: 1px solid var(--border);
     }
     .header-inner {
-      max-width: 1280px; margin: 0 auto; padding: 0 32px;
-      height: 68px; display: flex; align-items: center; gap: 0;
+      max-width: 1200px; margin: 0 auto; padding: 0 32px;
+      height: 64px; display: flex; align-items: center; gap: 0;
     }
-    .logo { display: flex; align-items: center; gap: 11px; text-decoration: none; flex-shrink: 0; }
+    .logo { display: flex; align-items: center; gap: 10px; text-decoration: none; flex-shrink: 0; }
     .logo-mark {
-      width: 38px; height: 38px; background: var(--blue);
+      width: 36px; height: 36px;
+      background: linear-gradient(135deg, #3b82f6, #6366f1);
       border-radius: 9px; display: flex; align-items: center; justify-content: center;
-      font-weight: 900; font-size: 17px; color: white; letter-spacing: -1px;
-      font-family: 'Inter', sans-serif;
+      font-weight: 900; font-size: 16px; color: white; letter-spacing: -1px;
     }
-    .logo-text-wrap { display: flex; flex-direction: column; gap: 0; }
-    .logo-name { font-size: 15px; font-weight: 700; color: white; letter-spacing: -0.3px; line-height: 1; }
-    .logo-tag  { font-size: 9px; color: rgba(255,255,255,0.35); font-weight: 500; letter-spacing: 0.12em; text-transform: uppercase; margin-top: 2px; }
+    .logo-name { font-size: 15px; font-weight: 700; color: white; letter-spacing: -0.3px; }
+    .logo-tag { font-size: 10px; color: var(--text-3); font-weight: 500; letter-spacing: 0.06em; text-transform: uppercase; margin-top: 1px; }
+    .logo-text { display: flex; flex-direction: column; gap: 0; }
 
-    .header-sep { width: 1px; height: 28px; background: rgba(255,255,255,0.08); margin: 0 24px; }
+    .header-sep { width: 1px; height: 24px; background: var(--border); margin: 0 20px; }
 
-    nav { display: flex; align-items: center; gap: 2px; }
+    nav { display: flex; align-items: center; gap: 1px; }
     nav a {
-      padding: 7px 13px; font-size: 14px; font-weight: 500;
-      color: rgba(255,255,255,0.55); text-decoration: none;
+      padding: 6px 12px; font-size: 13.5px; font-weight: 500;
+      color: var(--text-2); text-decoration: none;
       border-radius: 7px; transition: all 0.15s;
     }
-    nav a:hover { color: white; background: rgba(255,255,255,0.06); }
+    nav a:hover { color: var(--text); background: rgba(255,255,255,0.05); }
 
     .header-right { margin-left: auto; display: flex; align-items: center; gap: 10px; }
-    .stock-pill {
+    .stock-badge {
       display: flex; align-items: center; gap: 8px;
-      padding: 6px 12px;
-      background: rgba(255,255,255,0.05);
-      border: 1px solid rgba(255,255,255,0.08);
+      padding: 5px 10px 5px 8px;
+      background: rgba(255,255,255,0.04);
+      border: 1px solid var(--border);
       border-radius: 8px;
     }
-    .stock-pill-sym {
+    .stock-badge-sym {
       font-family: 'JetBrains Mono', monospace;
       font-size: 11px; font-weight: 700;
-      color: rgba(255,255,255,0.45); letter-spacing: 0.06em;
+      color: var(--text-3); letter-spacing: 0.06em;
     }
-    .stock-pill-spark { line-height: 0; }
-    .btn-ir {
-      padding: 8px 18px;
-      background: rgba(59,130,246,0.15);
-      color: var(--blue-light);
-      border: 1px solid rgba(59,130,246,0.25);
-      border-radius: 8px; font-size: 13px; font-weight: 600;
-      cursor: pointer; text-decoration: none; transition: all 0.15s;
-    }
-    .btn-ir:hover { background: rgba(59,130,246,0.25); }
-    .btn-contact {
-      padding: 8px 18px;
-      background: var(--blue); color: white;
-      border: none; border-radius: 8px;
-      font-size: 13px; font-weight: 600;
-      cursor: pointer; text-decoration: none; transition: opacity 0.15s;
-    }
-    .btn-contact:hover { opacity: 0.88; }
+    .btn { border-radius: 8px; font-size: 13px; font-weight: 600; cursor: pointer; text-decoration: none; transition: all 0.15s; padding: 7px 16px; }
+    .btn-ghost { color: var(--text-2); border: 1px solid var(--border); }
+    .btn-ghost:hover { color: var(--text); border-color: rgba(255,255,255,0.14); }
+    .btn-primary { background: var(--blue); color: white; border: none; }
+    .btn-primary:hover { background: #2563eb; }
 
     /* ── Hero ── */
     .hero {
-      background: var(--navy-mid);
-      padding: 88px 32px 100px; position: relative; overflow: hidden;
+      padding: 96px 32px 80px;
+      position: relative; overflow: hidden;
     }
-    .hero::before {
-      content: '';
-      position: absolute; top: -180px; right: -180px;
-      width: 640px; height: 640px;
-      background: radial-gradient(circle, rgba(99,102,241,0.12), transparent 60%);
-      pointer-events: none;
+    .hero-bg {
+      position: absolute; inset: 0; pointer-events: none;
+      background:
+        radial-gradient(ellipse 900px 600px at 70% -10%, rgba(99,102,241,0.10), transparent 65%),
+        radial-gradient(ellipse 600px 400px at 10% 80%, rgba(59,130,246,0.06), transparent 60%);
     }
-    .hero::after {
-      content: '';
-      position: absolute; bottom: -100px; left: -100px;
-      width: 400px; height: 400px;
-      background: radial-gradient(circle, rgba(59,130,246,0.07), transparent 60%);
-      pointer-events: none;
+    .hero-grid {
+      position: absolute; inset: 0; pointer-events: none;
+      background-image:
+        linear-gradient(var(--border-2) 1px, transparent 1px),
+        linear-gradient(90deg, var(--border-2) 1px, transparent 1px);
+      background-size: 64px 64px;
+      mask-image: radial-gradient(ellipse 80% 60% at 50% 0%, black 20%, transparent 100%);
     }
     .hero-inner {
-      max-width: 1280px; margin: 0 auto;
-      display: grid; grid-template-columns: 1fr auto;
-      gap: 64px; align-items: center; position: relative;
+      max-width: 1200px; margin: 0 auto;
+      display: grid; grid-template-columns: 1fr 380px;
+      gap: 80px; align-items: center; position: relative;
     }
-    .hero-badge {
-      display: inline-flex; align-items: center; gap: 7px;
-      padding: 5px 14px 5px 7px;
-      background: rgba(59,130,246,0.12);
-      border: 1px solid rgba(59,130,246,0.25);
+    .hero-eyebrow {
+      display: inline-flex; align-items: center; gap: 8px;
+      padding: 4px 14px 4px 6px;
+      background: rgba(34,197,94,0.08);
+      border: 1px solid rgba(34,197,94,0.2);
       border-radius: 100px;
-      font-size: 12px; font-weight: 600; color: var(--blue-light);
-      letter-spacing: 0.03em; margin-bottom: 22px;
+      font-size: 12px; font-weight: 600; color: #4ade80;
+      margin-bottom: 28px;
     }
-    .hero-badge-dot {
+    .hero-dot {
       width: 7px; height: 7px; background: var(--green);
       border-radius: 50%;
-      box-shadow: 0 0 0 2px rgba(34,197,94,0.3);
+      box-shadow: 0 0 8px rgba(34,197,94,0.6);
+      animation: pulse-green 2.5s ease-in-out infinite;
+    }
+    @keyframes pulse-green {
+      0%, 100% { box-shadow: 0 0 8px rgba(34,197,94,0.6); }
+      50% { box-shadow: 0 0 16px rgba(34,197,94,0.9); }
     }
     .hero-h1 {
-      font-size: clamp(34px, 5vw, 56px);
-      font-weight: 800; line-height: 1.07;
+      font-size: clamp(36px, 5vw, 58px);
+      font-weight: 800; line-height: 1.05;
       letter-spacing: -0.04em; color: white;
-      margin-bottom: 22px;
+      margin-bottom: 20px;
     }
-    .hero-h1 em { color: var(--blue-light); font-style: normal; }
+    .hero-h1 .grad {
+      background: linear-gradient(135deg, #93c5fd 0%, #a5b4fc 50%, #c4b5fd 100%);
+      -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
     .hero-desc {
-      font-size: 17px; color: rgba(255,255,255,0.5);
-      max-width: 490px; line-height: 1.75; margin-bottom: 36px;
+      font-size: 16.5px; color: var(--text-2);
+      max-width: 460px; line-height: 1.75; margin-bottom: 36px;
     }
     .hero-actions { display: flex; gap: 12px; flex-wrap: wrap; }
     .btn-hero-p {
-      padding: 13px 30px; background: var(--blue); color: white;
+      padding: 12px 28px; background: var(--blue); color: white;
       border: none; border-radius: 10px;
-      font-size: 15px; font-weight: 600;
+      font-size: 14px; font-weight: 600;
       cursor: pointer; text-decoration: none;
-      letter-spacing: -0.2px; transition: all 0.15s;
+      transition: all 0.15s;
     }
-    .btn-hero-p:hover { background: #2563eb; transform: translateY(-1px); }
+    .btn-hero-p:hover { background: #2563eb; transform: translateY(-1px); box-shadow: 0 8px 20px rgba(59,130,246,0.25); }
     .btn-hero-s {
-      padding: 13px 30px;
+      padding: 12px 28px;
       background: rgba(255,255,255,0.05);
-      color: rgba(255,255,255,0.75);
-      border: 1px solid rgba(255,255,255,0.12);
-      border-radius: 10px; font-size: 15px; font-weight: 600;
+      color: var(--text-2);
+      border: 1px solid var(--border);
+      border-radius: 10px; font-size: 14px; font-weight: 600;
       cursor: pointer; text-decoration: none;
-      letter-spacing: -0.2px; transition: all 0.15s;
+      transition: all 0.15s;
     }
-    .btn-hero-s:hover { background: rgba(255,255,255,0.09); }
+    .btn-hero-s:hover { background: rgba(255,255,255,0.08); color: var(--text); }
+
+    /* Hero widget frame */
+    .hero-widget-frame {
+      position: relative;
+    }
+    .hero-widget-frame::before {
+      content: '';
+      position: absolute; inset: -1px;
+      border-radius: 18px;
+      background: linear-gradient(135deg, rgba(99,102,241,0.25), rgba(59,130,246,0.1), transparent 60%);
+      z-index: 0;
+    }
+    .hero-widget-inner {
+      position: relative; z-index: 1;
+      border-radius: 17px; overflow: hidden;
+      background: var(--navy-1);
+    }
+    .hero-widget-chrome {
+      display: flex; align-items: center; gap: 6px;
+      padding: 10px 14px;
+      background: rgba(255,255,255,0.03);
+      border-bottom: 1px solid var(--border);
+    }
+    .chrome-dot { width: 10px; height: 10px; border-radius: 50%; }
+    .chrome-title {
+      margin-left: 6px; font-size: 11px; font-weight: 600;
+      color: var(--text-3); letter-spacing: 0.06em; text-transform: uppercase;
+    }
+    .hero-widget-body { padding: 16px; }
 
     /* ── Stats strip ── */
-    .stats { background: var(--navy-light); border-bottom: 1px solid rgba(255,255,255,0.05); }
+    .stats {
+      background: var(--navy-1);
+      border-top: 1px solid var(--border);
+      border-bottom: 1px solid var(--border);
+    }
     .stats-inner {
-      max-width: 1280px; margin: 0 auto;
+      max-width: 1200px; margin: 0 auto;
       display: grid; grid-template-columns: repeat(4, 1fr);
     }
     .stat-cell {
-      padding: 32px 28px; text-align: center;
-      border-right: 1px solid rgba(255,255,255,0.05);
+      padding: 28px 24px; text-align: center;
+      border-right: 1px solid var(--border);
     }
     .stat-cell:last-child { border-right: none; }
     .stat-val {
-      font-size: 36px; font-weight: 800; color: white;
+      font-size: 32px; font-weight: 800; color: white;
       letter-spacing: -0.04em; margin-bottom: 4px; line-height: 1;
     }
-    .stat-val sup { font-size: 20px; vertical-align: super; letter-spacing: 0; }
+    .stat-val sup { font-size: 16px; vertical-align: super; }
     .stat-lbl {
-      font-size: 11px; color: rgba(255,255,255,0.35);
+      font-size: 11px; color: var(--text-3);
       text-transform: uppercase; letter-spacing: 0.1em; font-weight: 500;
     }
 
     /* ── Sections ── */
-    .section { padding: 88px 32px; }
-    .section-inner { max-width: 1280px; margin: 0 auto; }
-    .section-kicker {
-      font-size: 11px; font-weight: 700; text-transform: uppercase;
-      letter-spacing: 0.12em; color: var(--blue); margin-bottom: 10px;
-    }
+    .section { padding: 80px 32px; }
+    .section-inner { max-width: 1200px; margin: 0 auto; }
+    .section-header { margin-bottom: 52px; }
     .section-title {
-      font-size: clamp(26px, 4vw, 40px); font-weight: 800;
-      letter-spacing: -0.03em; color: var(--text);
-      margin-bottom: 16px; line-height: 1.12;
+      font-size: clamp(26px, 3.5vw, 38px); font-weight: 800;
+      letter-spacing: -0.03em; color: white;
+      margin-bottom: 14px; line-height: 1.12;
     }
     .section-desc {
-      font-size: 16px; color: var(--muted); max-width: 560px; line-height: 1.8;
+      font-size: 15.5px; color: var(--text-2); max-width: 520px; line-height: 1.8;
     }
+    .section-desc a { color: #93c5fd; text-decoration: none; font-weight: 600; }
+    .section-desc a:hover { text-decoration: underline; }
 
-    /* ── About features ── */
+    /* ── Divider ── */
+    .divider { height: 1px; background: var(--border); }
+
+    /* ── Features ── */
     .features-grid {
       display: grid; grid-template-columns: repeat(3, 1fr);
-      gap: 2px; margin-top: 56px; background: var(--border);
+      gap: 1px; background: var(--border);
       border: 1px solid var(--border); border-radius: var(--r); overflow: hidden;
     }
     .feature {
-      background: var(--surface); padding: 32px;
+      background: var(--navy-1); padding: 32px;
       transition: background 0.15s;
     }
-    .feature:hover { background: #f8faff; }
-    .feature-icon { font-size: 28px; margin-bottom: 18px; }
-    .feature-title { font-size: 16px; font-weight: 700; color: var(--text); margin-bottom: 8px; letter-spacing: -0.02em; }
-    .feature-desc { font-size: 14px; color: var(--muted); line-height: 1.7; }
+    .feature:hover { background: var(--navy-2); }
+    .feature-icon {
+      width: 40px; height: 40px; border-radius: 10px;
+      display: flex; align-items: center; justify-content: center;
+      margin-bottom: 20px; font-size: 18px;
+    }
+    .fi-blue { background: rgba(59,130,246,0.12); }
+    .fi-indigo { background: rgba(99,102,241,0.12); }
+    .fi-purple { background: rgba(139,92,246,0.12); }
+    .fi-teal { background: rgba(20,184,166,0.12); }
+    .fi-rose { background: rgba(244,63,94,0.12); }
+    .fi-amber { background: rgba(245,158,11,0.12); }
+    .feature-title { font-size: 15px; font-weight: 700; color: white; margin-bottom: 8px; letter-spacing: -0.02em; }
+    .feature-desc { font-size: 13.5px; color: var(--text-2); line-height: 1.7; }
 
     /* ── Products ── */
-    .products { background: var(--bg); }
     .products-grid {
       display: grid; grid-template-columns: repeat(3, 1fr);
-      gap: 20px; margin-top: 52px;
+      gap: 16px;
     }
     .product-card {
-      background: var(--surface); border: 1px solid var(--border);
-      border-radius: var(--r); padding: 32px;
-      transition: all 0.2s;
+      background: var(--navy-1);
+      border: 1px solid var(--border);
+      border-radius: var(--r); padding: 28px;
+      transition: all 0.2s; position: relative; overflow: hidden;
     }
-    .product-card:hover {
-      border-color: var(--blue);
-      box-shadow: 0 0 0 1px var(--blue), 0 12px 32px rgba(59,130,246,0.08);
-      transform: translateY(-2px);
+    .product-card::before {
+      content: '';
+      position: absolute; top: 0; left: 0; right: 0; height: 2px;
+      opacity: 0; transition: opacity 0.2s;
     }
+    .product-card.pc-blue::before { background: linear-gradient(90deg, var(--blue), #818cf8); }
+    .product-card.pc-indigo::before { background: linear-gradient(90deg, #6366f1, #8b5cf6); }
+    .product-card.pc-purple::before { background: linear-gradient(90deg, #8b5cf6, #ec4899); }
+    .product-card:hover { border-color: rgba(255,255,255,0.12); transform: translateY(-2px); box-shadow: 0 16px 40px rgba(0,0,0,0.3); }
+    .product-card:hover::before { opacity: 1; }
     .product-badge {
       display: inline-flex; align-items: center;
-      padding: 4px 12px; border-radius: 100px;
-      font-size: 11px; font-weight: 600;
-      letter-spacing: 0.04em; margin-bottom: 22px;
+      padding: 3px 10px; border-radius: 100px;
+      font-size: 10.5px; font-weight: 700;
+      letter-spacing: 0.05em; text-transform: uppercase; margin-bottom: 20px;
     }
-    .badge-blue { background: rgba(59,130,246,0.08); color: var(--blue); }
-    .badge-indigo { background: rgba(99,102,241,0.08); color: var(--indigo); }
-    .badge-purple { background: rgba(139,92,246,0.08); color: #8b5cf6; }
+    .pb-blue { background: rgba(59,130,246,0.1); color: #93c5fd; border: 1px solid rgba(59,130,246,0.2); }
+    .pb-indigo { background: rgba(99,102,241,0.1); color: #a5b4fc; border: 1px solid rgba(99,102,241,0.2); }
+    .pb-purple { background: rgba(139,92,246,0.1); color: #c4b5fd; border: 1px solid rgba(139,92,246,0.2); }
     .product-name {
-      font-size: 20px; font-weight: 800; color: var(--text);
+      font-size: 20px; font-weight: 800; color: white;
       margin-bottom: 10px; letter-spacing: -0.03em;
     }
     .product-desc {
-      font-size: 14px; color: var(--muted); line-height: 1.7; margin-bottom: 24px;
+      font-size: 13.5px; color: var(--text-2); line-height: 1.75; margin-bottom: 24px;
     }
-    .product-metrics { display: flex; gap: 24px; }
-    .pm-item { font-size: 12px; color: var(--muted); }
-    .pm-val { font-size: 18px; font-weight: 700; color: var(--text); display: block; letter-spacing: -0.02em; }
-    .product-link {
-      display: inline-flex; align-items: center; gap: 4px;
-      margin-top: 20px; font-size: 13px; font-weight: 600;
-      color: var(--blue); text-decoration: none;
-      transition: gap 0.15s;
-    }
-    .product-link:hover { gap: 8px; }
+    .product-metrics { display: flex; gap: 28px; padding-top: 20px; border-top: 1px solid var(--border); }
+    .pm-item { font-size: 11.5px; color: var(--text-3); }
+    .pm-val { font-size: 20px; font-weight: 800; color: white; display: block; letter-spacing: -0.03em; margin-bottom: 2px; }
 
     /* ── Investor Relations ── */
-    .ir { background: var(--surface); border-top: 1px solid var(--border); }
-    .ir-grid-2 {
+    .ir { background: var(--navy-1); }
+    .ir-layout {
       display: grid; grid-template-columns: 1fr 1fr;
-      gap: 24px; margin-top: 44px;
+      gap: 20px; margin-top: 48px;
     }
-    .ir-grid-2b {
+    .ir-layout-wide {
       display: grid; grid-template-columns: 3fr 2fr;
-      gap: 24px; margin-top: 24px;
+      gap: 20px; margin-top: 20px;
     }
-    .widget-label {
-      font-size: 10px; font-weight: 700; text-transform: uppercase;
-      letter-spacing: 0.1em; color: var(--muted); margin-bottom: 10px;
+    .ir-panel {
+      background: var(--navy);
+      border: 1px solid var(--border);
+      border-radius: var(--r);
+      overflow: hidden;
+    }
+    .ir-panel-header {
+      padding: 14px 18px;
+      border-bottom: 1px solid var(--border);
+      display: flex; align-items: center; justify-content: space-between;
+    }
+    .ir-panel-title {
+      font-size: 12px; font-weight: 700;
+      text-transform: uppercase; letter-spacing: 0.1em;
+      color: var(--text-3);
+    }
+    .live-dot {
+      display: flex; align-items: center; gap: 5px;
+      font-size: 10px; font-weight: 600; color: #4ade80;
+    }
+    .live-dot::before {
+      content: '';
+      width: 6px; height: 6px; border-radius: 50%;
+      background: var(--green);
+      box-shadow: 0 0 6px rgba(34,197,94,0.7);
+      animation: pulse-green 2.5s ease-in-out infinite;
+    }
+    .ir-panel-body { padding: 0; }
+    .ir-panel-body polymart-market,
+    .ir-panel-body polymart-sector,
+    .ir-panel-body polymart-leaderboard,
+    .ir-panel-body polymart-events {
+      display: block;
     }
 
-    /* ── Polymart callout ── */
-    .pm-callout {
-      background: var(--navy); padding: 72px 32px;
+    /* ── Callout ── */
+    .callout {
+      background: var(--navy-2);
+      border-top: 1px solid var(--border);
+      border-bottom: 1px solid var(--border);
+      padding: 72px 32px;
       position: relative; overflow: hidden;
     }
-    .pm-callout::before {
+    .callout::before {
       content: '';
-      position: absolute; top: 0; left: 0; right: 0; bottom: 0;
-      background: radial-gradient(ellipse 800px 300px at 50% 100%, rgba(59,130,246,0.08), transparent);
-      pointer-events: none;
+      position: absolute; inset: 0; pointer-events: none;
+      background: radial-gradient(ellipse 1000px 400px at 50% 100%, rgba(59,130,246,0.06), transparent);
     }
-    .pm-callout-inner {
-      max-width: 1280px; margin: 0 auto;
-      display: flex; align-items: center; justify-content: space-between;
-      gap: 40px; flex-wrap: wrap; position: relative;
+    .callout-inner {
+      max-width: 1200px; margin: 0 auto;
+      display: grid; grid-template-columns: 1fr 1fr;
+      gap: 80px; align-items: center; position: relative;
     }
-    .pm-callout-text .kicker {
-      font-size: 11px; font-weight: 700; text-transform: uppercase;
-      letter-spacing: 0.12em; color: var(--blue-light); margin-bottom: 10px;
+    .callout-title {
+      font-size: 32px; font-weight: 800; color: white;
+      letter-spacing: -0.03em; margin-bottom: 14px; line-height: 1.1;
     }
-    .pm-callout-text h2 {
-      font-size: 28px; font-weight: 800; color: white;
-      letter-spacing: -0.03em; margin-bottom: 10px;
+    .callout-desc {
+      font-size: 15px; color: var(--text-2); max-width: 460px; line-height: 1.8; margin-bottom: 32px;
     }
-    .pm-callout-text p {
-      font-size: 15px; color: rgba(255,255,255,0.45); max-width: 540px; line-height: 1.7;
-    }
-    .pm-callout-widgets {
-      display: flex; gap: 10px; flex-wrap: wrap; align-items: center;
-    }
-    .pm-widget-chip {
-      padding: 6px 14px;
-      background: rgba(255,255,255,0.05);
-      border: 1px solid rgba(255,255,255,0.08);
-      border-radius: 100px;
-      font-size: 12px; font-weight: 500;
-      color: rgba(255,255,255,0.5);
-      font-family: 'JetBrains Mono', monospace;
-    }
-    .pm-cta {
-      display: flex; align-items: center; gap: 14px; margin-top: 28px;
-    }
-    .pm-cta a {
+    .callout-btns { display: flex; gap: 12px; }
+    .btn-cta-p {
       padding: 11px 24px; border-radius: 9px;
+      background: var(--blue); color: white;
       font-size: 14px; font-weight: 600; text-decoration: none;
       transition: all 0.15s;
     }
-    .pm-cta-primary { background: var(--blue); color: white; }
-    .pm-cta-primary:hover { background: #2563eb; }
-    .pm-cta-secondary {
-      color: rgba(255,255,255,0.5);
-      border: 1px solid rgba(255,255,255,0.1);
+    .btn-cta-p:hover { background: #2563eb; }
+    .btn-cta-s {
+      padding: 11px 24px; border-radius: 9px;
+      color: var(--text-2); font-size: 14px; font-weight: 600; text-decoration: none;
+      border: 1px solid var(--border); transition: all 0.15s;
     }
-    .pm-cta-secondary:hover { color: white; border-color: rgba(255,255,255,0.2); }
+    .btn-cta-s:hover { color: var(--text); border-color: rgba(255,255,255,0.14); }
+
+    .callout-code {
+      background: var(--navy);
+      border: 1px solid var(--border);
+      border-radius: var(--r);
+      overflow: hidden;
+    }
+    .callout-code-header {
+      padding: 10px 16px;
+      border-bottom: 1px solid var(--border);
+      display: flex; align-items: center; justify-content: space-between;
+    }
+    .callout-code-lang {
+      font-size: 10px; font-weight: 700; text-transform: uppercase;
+      letter-spacing: 0.1em; color: var(--text-3);
+    }
+    .callout-code-body {
+      padding: 20px;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 12.5px; line-height: 1.9;
+      color: var(--text-2);
+    }
+    .code-comment { color: var(--text-3); }
+    .code-tag { color: #93c5fd; }
+    .code-attr { color: #c4b5fd; }
+    .code-val { color: #86efac; }
+
+    .callout-chips {
+      display: flex; flex-wrap: wrap; gap: 8px; margin-top: 24px;
+    }
+    .chip {
+      padding: 5px 12px;
+      background: rgba(255,255,255,0.03);
+      border: 1px solid var(--border);
+      border-radius: 100px;
+      font-size: 11.5px; font-weight: 500;
+      color: var(--text-3);
+      font-family: 'JetBrains Mono', monospace;
+    }
 
     /* ── Footer ── */
     .footer {
-      background: var(--navy); border-top: 1px solid rgba(255,255,255,0.05);
-      padding: 56px 32px 32px;
+      background: var(--navy-1);
+      border-top: 1px solid var(--border);
+      padding: 52px 32px 28px;
     }
-    .footer-inner {
-      max-width: 1280px; margin: 0 auto;
-    }
+    .footer-inner { max-width: 1200px; margin: 0 auto; }
     .footer-top {
-      display: grid; grid-template-columns: 240px 1fr 1fr 1fr;
-      gap: 48px; margin-bottom: 48px; padding-bottom: 48px;
-      border-bottom: 1px solid rgba(255,255,255,0.05);
+      display: grid; grid-template-columns: 220px 1fr 1fr 1fr;
+      gap: 48px; margin-bottom: 40px; padding-bottom: 40px;
+      border-bottom: 1px solid var(--border);
     }
-    .footer-brand p {
-      font-size: 13px; color: rgba(255,255,255,0.35); line-height: 1.7; margin-top: 14px;
+    .footer-brand-desc {
+      font-size: 13px; color: var(--text-3); line-height: 1.7; margin-top: 14px;
     }
     .footer-col-title {
       font-size: 10px; font-weight: 700; text-transform: uppercase;
-      letter-spacing: 0.12em; color: rgba(255,255,255,0.25); margin-bottom: 16px;
+      letter-spacing: 0.12em; color: var(--text-3); margin-bottom: 14px;
     }
     .footer-col a {
-      display: block; font-size: 14px; color: rgba(255,255,255,0.45);
-      text-decoration: none; margin-bottom: 10px; transition: color 0.15s;
+      display: block; font-size: 13.5px; color: var(--text-2);
+      text-decoration: none; margin-bottom: 9px; transition: color 0.15s;
     }
-    .footer-col a:hover { color: rgba(255,255,255,0.8); }
+    .footer-col a:hover { color: var(--text); }
     .footer-bottom {
-      display: flex; align-items: center; justify-content: space-between;
+      display: flex; align-items: flex-start; justify-content: space-between;
       flex-wrap: wrap; gap: 12px;
     }
-    .footer-bottom p { font-size: 12px; color: rgba(255,255,255,0.25); }
+    .footer-copy { font-size: 12px; color: var(--text-3); margin-bottom: 6px; }
     .footer-disclaimer {
-      font-size: 11px; color: rgba(255,255,255,0.2);
-      max-width: 680px; line-height: 1.6; margin-top: 6px;
+      font-size: 11px; color: var(--text-3); max-width: 640px; line-height: 1.6;
     }
+    .footer-disclaimer a { color: var(--text-3); text-decoration: none; }
+    .footer-disclaimer a:hover { color: var(--text-2); }
     .demo-badge {
       display: inline-flex; align-items: center; gap: 6px;
-      padding: 4px 12px; background: rgba(251,191,36,0.1);
-      border: 1px solid rgba(251,191,36,0.2); border-radius: 100px;
+      padding: 4px 12px; background: rgba(251,191,36,0.08);
+      border: 1px solid rgba(251,191,36,0.18); border-radius: 100px;
       font-size: 11px; font-weight: 600; color: #fbbf24; letter-spacing: 0.04em;
     }
 
     /* ── Responsive ── */
-    @media (max-width: 900px) {
+    @media (max-width: 960px) {
       .hero-inner { grid-template-columns: 1fr; }
-      .hero-inner > :last-child { display: none; }
+      .hero-inner > .hero-widget-frame { display: none; }
       .stats-inner { grid-template-columns: repeat(2, 1fr); }
       .stat-cell:nth-child(2) { border-right: none; }
-      .stat-cell:nth-child(1), .stat-cell:nth-child(2) { border-bottom: 1px solid rgba(255,255,255,0.05); }
-      .features-grid, .products-grid, .ir-grid-2, .ir-grid-2b { grid-template-columns: 1fr; }
+      .stat-cell:nth-child(1), .stat-cell:nth-child(2) { border-bottom: 1px solid var(--border); }
+      .features-grid, .products-grid { grid-template-columns: 1fr; }
+      .ir-layout, .ir-layout-wide { grid-template-columns: 1fr; }
+      .callout-inner { grid-template-columns: 1fr; gap: 40px; }
       .footer-top { grid-template-columns: 1fr 1fr; }
       nav { display: none; }
       .header-sep { display: none; }
     }
     @media (max-width: 600px) {
-      .section { padding: 60px 20px; }
-      .hero { padding: 64px 20px 72px; }
-      .footer-top { grid-template-columns: 1fr; gap: 32px; }
-      .pm-callout-inner { flex-direction: column; }
+      .section { padding: 56px 20px; }
+      .hero { padding: 64px 20px 56px; }
+      .footer { padding: 40px 20px 24px; }
+      .footer-top { grid-template-columns: 1fr; gap: 28px; }
     }
   </style>
 </head>
 <body>
 
-  <!-- ── Ticker tape ── -->
+  <!-- Ticker tape -->
   <div class="tape-bar">
     <polymart-tape limit="20" speed="30"></polymart-tape>
   </div>
 
-  <!-- ── Header ── -->
+  <!-- Header -->
   <header class="header">
     <div class="header-inner">
       <a href="#" class="logo">
         <div class="logo-mark">A</div>
-        <div class="logo-text-wrap">
+        <div class="logo-text">
           <span class="logo-name">Apex Systems</span>
-          <span class="logo-tag">Corp · NYSE: APEX</span>
+          <span class="logo-tag">NYSE: APEX</span>
         </div>
       </a>
       <div class="header-sep"></div>
@@ -425,48 +535,58 @@
         <a href="#contact">Contact</a>
       </nav>
       <div class="header-right">
-        <div class="stock-pill">
-          <span class="stock-pill-sym">APEX</span>
-          <span class="stock-pill-spark">
-            <polymart-sparkline ticker="APEX" width="60" height="20"></polymart-sparkline>
-          </span>
+        <div class="stock-badge">
+          <span class="stock-badge-sym">APEX</span>
+          <polymart-sparkline ticker="APEX" width="56" height="18"></polymart-sparkline>
         </div>
-        <a href="#investors" class="btn-ir">Investor Relations</a>
-        <a href="#contact" class="btn-contact">Contact</a>
+        <a href="#investors" class="btn btn-ghost">Investor Relations</a>
+        <a href="#contact" class="btn btn-primary">Contact Us</a>
       </div>
     </div>
   </header>
 
-  <!-- ── Hero ── -->
+  <!-- Hero -->
   <section class="hero">
+    <div class="hero-bg"></div>
+    <div class="hero-grid"></div>
     <div class="hero-inner">
       <div>
-        <div class="hero-badge">
-          <span class="hero-badge-dot"></span>
-          Markets open · NYSE: APEX
+        <div class="hero-eyebrow">
+          <span class="hero-dot"></span>
+          Markets open &nbsp;·&nbsp; NYSE: APEX
         </div>
         <h1 class="hero-h1">
           The infrastructure<br>
-          <em>AI runs on.</em>
+          <span class="grad">AI runs on.</span>
         </h1>
         <p class="hero-desc">
-          Apex Systems powers the world's most demanding AI workloads.
-          From hyperscale cloud deployments to real-time edge inference,
-          we deliver the performance, reliability, and scale enterprises depend on.
+          Apex Systems powers the world's most demanding AI workloads — from
+          hyperscale training clusters to real-time edge inference. Built for
+          performance. Trusted at scale.
         </p>
         <div class="hero-actions">
           <a href="#products" class="btn-hero-p">Explore Products</a>
           <a href="#investors" class="btn-hero-s">Stock Information</a>
         </div>
       </div>
-      <!-- Live ticker widget -->
-      <div>
-        <polymart-ticker ticker="APEX"></polymart-ticker>
+
+      <div class="hero-widget-frame">
+        <div class="hero-widget-inner">
+          <div class="hero-widget-chrome">
+            <span class="chrome-dot" style="background:#ff5f57"></span>
+            <span class="chrome-dot" style="background:#febc2e"></span>
+            <span class="chrome-dot" style="background:#28c840"></span>
+            <span class="chrome-title">NYSE: APEX — Live</span>
+          </div>
+          <div class="hero-widget-body">
+            <polymart-ticker ticker="APEX"></polymart-ticker>
+          </div>
+        </div>
       </div>
     </div>
   </section>
 
-  <!-- ── Stats strip ── -->
+  <!-- Stats -->
   <div class="stats">
     <div class="stats-inner">
       <div class="stat-cell">
@@ -488,231 +608,218 @@
     </div>
   </div>
 
-  <!-- ── About ── -->
-  <section class="section" id="about" style="background: var(--surface);">
+  <!-- About -->
+  <section class="section" id="about">
     <div class="section-inner">
-      <p class="section-kicker">Who we are</p>
-      <h2 class="section-title">Infrastructure built for<br>the intelligence era</h2>
-      <p class="section-desc">
-        Founded in 2019, Apex Systems Corporation has grown from a seed-stage startup into
-        one of the most trusted names in enterprise AI infrastructure. We design, build, and
-        operate the systems that power machine learning at scale - from training clusters to
-        production inference pipelines.
-      </p>
+      <div class="section-header">
+        <p class="kicker">Who we are</p>
+        <h2 class="section-title">Infrastructure built for<br>the intelligence era</h2>
+        <p class="section-desc">
+          Founded in 2019, Apex Systems Corporation has grown from a seed-stage startup into
+          one of the most trusted names in enterprise AI infrastructure. We design, build, and
+          operate the systems that power machine learning at scale.
+        </p>
+      </div>
 
       <div class="features-grid">
         <div class="feature">
-          <div class="feature-icon">⚡</div>
+          <div class="feature-icon fi-blue">⚡</div>
           <div class="feature-title">Hardware-accelerated compute</div>
-          <p class="feature-desc">
-            Purpose-built GPU and TPU clusters optimized for deep learning training and
-            high-throughput inference. Up to 40% lower cost per FLOP versus generic cloud.
-          </p>
+          <p class="feature-desc">Purpose-built GPU and TPU clusters optimized for deep learning training and high-throughput inference. Up to 40% lower cost per FLOP versus generic cloud.</p>
         </div>
         <div class="feature">
-          <div class="feature-icon">🌐</div>
+          <div class="feature-icon fi-indigo">🌐</div>
           <div class="feature-title">Global edge network</div>
-          <p class="feature-desc">
-            140+ edge PoPs across 28 countries. Sub-20ms inference latency for end users
-            worldwide. Seamless failover with no cold-start penalties.
-          </p>
+          <p class="feature-desc">140+ edge PoPs across 28 countries. Sub-20ms inference latency for end users worldwide. Seamless failover with no cold-start penalties.</p>
         </div>
         <div class="feature">
-          <div class="feature-icon">🔒</div>
+          <div class="feature-icon fi-purple">🔒</div>
           <div class="feature-title">Compliance by default</div>
-          <p class="feature-desc">
-            SOC 2 Type II, ISO 27001, HIPAA, and GDPR compliant out of the box.
-            Data sovereignty controls for regulated industries and government contracts.
-          </p>
+          <p class="feature-desc">SOC 2 Type II, ISO 27001, HIPAA, and GDPR compliant out of the box. Data sovereignty controls for regulated industries and government contracts.</p>
         </div>
         <div class="feature">
-          <div class="feature-icon">📊</div>
+          <div class="feature-icon fi-teal">📊</div>
           <div class="feature-title">Observability suite</div>
-          <p class="feature-desc">
-            Real-time model performance monitoring, drift detection, and cost analytics.
-            One dashboard for every workload from dev to production.
-          </p>
+          <p class="feature-desc">Real-time model performance monitoring, drift detection, and cost analytics. One dashboard for every workload from dev to production.</p>
         </div>
         <div class="feature">
-          <div class="feature-icon">🔄</div>
+          <div class="feature-icon fi-rose">🔄</div>
           <div class="feature-title">Model lifecycle management</div>
-          <p class="feature-desc">
-            Versioned model registry, A/B traffic splitting, shadow deployment, and
-            automated rollback. Ship models with the same confidence as code.
-          </p>
+          <p class="feature-desc">Versioned model registry, A/B traffic splitting, shadow deployment, and automated rollback. Ship models with the same confidence as code.</p>
         </div>
         <div class="feature">
-          <div class="feature-icon">🤝</div>
+          <div class="feature-icon fi-amber">🤝</div>
           <div class="feature-title">Dedicated support</div>
-          <p class="feature-desc">
-            24/7 infrastructure support with guaranteed 15-minute response SLAs for
-            P0 incidents. Assigned solutions architect for every enterprise account.
-          </p>
+          <p class="feature-desc">24/7 infrastructure support with guaranteed 15-minute response SLAs for P0 incidents. Assigned solutions architect for every enterprise account.</p>
         </div>
       </div>
     </div>
   </section>
 
-  <!-- ── Products ── -->
-  <section class="section products" id="products">
+  <div class="divider"></div>
+
+  <!-- Products -->
+  <section class="section" id="products">
     <div class="section-inner">
-      <p class="section-kicker">Products</p>
-      <h2 class="section-title">Three platforms.<br>One unified stack.</h2>
-      <p class="section-desc">
-        From model training to edge deployment, every Apex product is designed to
-        interoperate seamlessly - or integrate with whatever you already run.
-      </p>
+      <div class="section-header">
+        <p class="kicker">Products</p>
+        <h2 class="section-title">Three platforms.<br>One unified stack.</h2>
+        <p class="section-desc">
+          From model training to edge deployment, every Apex product is designed to
+          interoperate seamlessly — or integrate with whatever you already run.
+        </p>
+      </div>
 
       <div class="products-grid">
-        <div class="product-card">
-          <div class="product-badge badge-blue">Cloud · GA</div>
+        <div class="product-card pc-blue">
+          <div class="product-badge pb-blue">Cloud · GA</div>
           <div class="product-name">ApexCloud</div>
-          <p class="product-desc">
-            Hyperscale GPU cloud infrastructure for training foundation models and serving
-            large-scale production workloads. Spot, reserved, and dedicated capacity options
-            with instant provisioning and minute-level billing.
-          </p>
+          <p class="product-desc">Hyperscale GPU cloud infrastructure for training foundation models and serving large-scale production workloads. Spot, reserved, and dedicated capacity with instant provisioning and minute-level billing.</p>
           <div class="product-metrics">
-            <div class="pm-item">
-              <span class="pm-val">8,000<span style="font-size:13px;font-weight:500">+</span></span>
-              H100 GPUs available
-            </div>
-            <div class="pm-item">
-              <span class="pm-val">$1.89</span>
-              per GPU-hour
-            </div>
+            <div class="pm-item"><span class="pm-val">8,000<span style="font-size:13px;font-weight:500">+</span></span>H100 GPUs available</div>
+            <div class="pm-item"><span class="pm-val">$1.89</span>per GPU-hour</div>
           </div>
-          <a href="#" class="product-link">Learn more →</a>
         </div>
 
-        <div class="product-card">
-          <div class="product-badge badge-indigo">ML Platform · GA</div>
+        <div class="product-card pc-indigo">
+          <div class="product-badge pb-indigo">ML Platform · GA</div>
           <div class="product-name">ApexAI</div>
-          <p class="product-desc">
-            End-to-end MLOps platform for teams that ship models to production. Experiment
-            tracking, distributed training orchestration, automated hyperparameter tuning,
-            and one-click production deployment with autoscaling.
-          </p>
+          <p class="product-desc">End-to-end MLOps platform for teams that ship models to production. Experiment tracking, distributed training orchestration, automated hyperparameter tuning, and one-click production deployment.</p>
           <div class="product-metrics">
-            <div class="pm-item">
-              <span class="pm-val">3×</span>
-              faster time-to-deploy
-            </div>
-            <div class="pm-item">
-              <span class="pm-val">60%</span>
-              infra cost reduction
-            </div>
+            <div class="pm-item"><span class="pm-val">3×</span>faster time-to-deploy</div>
+            <div class="pm-item"><span class="pm-val">60%</span>infra cost reduction</div>
           </div>
-          <a href="#" class="product-link">Learn more →</a>
         </div>
 
-        <div class="product-card">
-          <div class="product-badge badge-purple">Edge · Beta</div>
+        <div class="product-card pc-purple">
+          <div class="product-badge pb-purple">Edge · Beta</div>
           <div class="product-name">ApexEdge</div>
-          <p class="product-desc">
-            Distributed edge inference network for latency-sensitive AI applications.
-            Deploy quantized models to 140+ global PoPs with automatic load balancing
-            and regional data residency guarantees.
-          </p>
+          <p class="product-desc">Distributed edge inference network for latency-sensitive AI applications. Deploy quantized models to 140+ global PoPs with automatic load balancing and regional data residency guarantees.</p>
           <div class="product-metrics">
-            <div class="pm-item">
-              <span class="pm-val">&lt;20ms</span>
-              p99 latency
-            </div>
-            <div class="pm-item">
-              <span class="pm-val">140<span style="font-size:13px">+</span></span>
-              global PoPs
-            </div>
+            <div class="pm-item"><span class="pm-val">&lt;20ms</span>p99 latency</div>
+            <div class="pm-item"><span class="pm-val">140<span style="font-size:13px">+</span></span>global PoPs</div>
           </div>
-          <a href="#" class="product-link">Learn more →</a>
         </div>
       </div>
     </div>
   </section>
 
-  <!-- ── Investor Relations ── -->
+  <div class="divider"></div>
+
+  <!-- Investor Relations -->
   <section class="section ir" id="investors">
     <div class="section-inner">
-      <p class="section-kicker">Investor Relations</p>
-      <h2 class="section-title">Live market data</h2>
-      <p class="section-desc">
-        APEX is publicly traded. Real-time stock data, market conditions, and sector
-        performance are powered by <a href="https://polymart.co" target="_blank" style="color:var(--blue);text-decoration:none;font-weight:600">Polymart</a> - the open simulated exchange API.
-      </p>
+      <div class="section-header">
+        <p class="kicker">Investor Relations</p>
+        <h2 class="section-title">Live market data</h2>
+        <p class="section-desc">
+          APEX is publicly traded on the NYSE. Real-time stock data, market conditions, and sector
+          performance are powered by <a href="https://polymart.co" target="_blank">Polymart</a> — the open simulated exchange.
+        </p>
+      </div>
 
-      <!-- Row 1: Market summary + Sector -->
-      <div class="ir-grid-2">
-        <div>
-          <p class="widget-label">Market Overview</p>
-          <polymart-market></polymart-market>
+      <div class="ir-layout">
+        <div class="ir-panel">
+          <div class="ir-panel-header">
+            <span class="ir-panel-title">Market Overview</span>
+            <span class="live-dot">Live</span>
+          </div>
+          <div class="ir-panel-body">
+            <polymart-market style="display:block;max-width:100%"></polymart-market>
+          </div>
         </div>
-        <div>
-          <p class="widget-label">Technology Sector</p>
-          <polymart-sector sector="tech"></polymart-sector>
+        <div class="ir-panel">
+          <div class="ir-panel-header">
+            <span class="ir-panel-title">Technology Sector</span>
+            <span class="live-dot">Live</span>
+          </div>
+          <div class="ir-panel-body">
+            <polymart-sector sector="tech" style="display:block;max-width:100%"></polymart-sector>
+          </div>
         </div>
       </div>
 
-      <!-- Row 2: Leaderboard + Events -->
-      <div class="ir-grid-2b">
-        <div>
-          <p class="widget-label">Tech Sector Leaders</p>
-          <polymart-leaderboard by="change" limit="8" title="Top Technology Stocks" sector="tech"></polymart-leaderboard>
+      <div class="ir-layout-wide">
+        <div class="ir-panel">
+          <div class="ir-panel-header">
+            <span class="ir-panel-title">Top Technology Stocks</span>
+            <span class="live-dot">Live</span>
+          </div>
+          <div class="ir-panel-body">
+            <polymart-leaderboard by="change" limit="8" title="Tech Sector Leaders" style="display:block;max-width:100%"></polymart-leaderboard>
+          </div>
         </div>
-        <div>
-          <p class="widget-label">Latest Market Events</p>
-          <polymart-events limit="6"></polymart-events>
+        <div class="ir-panel">
+          <div class="ir-panel-header">
+            <span class="ir-panel-title">Market Events</span>
+            <span class="live-dot">Live</span>
+          </div>
+          <div class="ir-panel-body">
+            <polymart-events limit="6" style="display:block;max-width:100%"></polymart-events>
+          </div>
         </div>
       </div>
     </div>
   </section>
 
-  <!-- ── Polymart callout ── -->
-  <div class="pm-callout">
-    <div class="pm-callout-inner">
-      <div class="pm-callout-text">
+  <!-- Callout -->
+  <div class="callout">
+    <div class="callout-inner">
+      <div>
         <p class="kicker">Powered by Polymart Widgets</p>
-        <h2>Add live market data<br>to any website</h2>
-        <p>
-          Every data widget you see on this page is a drop-in web component from Polymart -
+        <h2 class="callout-title">Add live market data<br>to any website</h2>
+        <p class="callout-desc">
+          Every data widget you see on this page is a drop-in web component from Polymart —
           one script tag, zero dependencies, no API key required. Embed price cards,
-          leaderboards, sector views, event feeds, and more on any site in minutes.
+          leaderboards, sector views, event feeds, and more in minutes.
         </p>
-        <div class="pm-cta">
-          <a href="https://polymart.co/#/widgets" target="_blank" class="pm-cta-primary">View all widgets</a>
-          <a href="https://polymart.co/#/docs/api" target="_blank" class="pm-cta-secondary">API Reference</a>
+        <div class="callout-btns">
+          <a href="https://polymart.co/#/widgets" target="_blank" class="btn-cta-p">View all widgets</a>
+          <a href="https://polymart.co/#/api" target="_blank" class="btn-cta-s">API Reference</a>
         </div>
       </div>
+
       <div>
-        <div style="margin-bottom: 12px; font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.1em; color: rgba(255,255,255,0.25);">Available widgets</div>
-        <div style="display: flex; flex-wrap: wrap; gap: 8px; max-width: 360px;">
-          <span class="pm-widget-chip">&lt;polymart-ticker&gt;</span>
-          <span class="pm-widget-chip">&lt;polymart-market&gt;</span>
-          <span class="pm-widget-chip">&lt;polymart-leaderboard&gt;</span>
-          <span class="pm-widget-chip">&lt;polymart-tape&gt;</span>
-          <span class="pm-widget-chip">&lt;polymart-sparkline&gt;</span>
-          <span class="pm-widget-chip">&lt;polymart-sector&gt;</span>
-          <span class="pm-widget-chip">&lt;polymart-events&gt;</span>
+        <div class="callout-code">
+          <div class="callout-code-header">
+            <span class="callout-code-lang">HTML</span>
+          </div>
+          <div class="callout-code-body"><span class="code-comment">&lt;!-- Add once to &lt;head&gt; --&gt;</span>
+<span class="code-tag">&lt;script</span> <span class="code-attr">src</span>=<span class="code-val">"https://polymart.co/widgets/polymart-widgets.js"</span>
+        <span class="code-attr">defer</span><span class="code-tag">&gt;&lt;/script&gt;</span>
+
+<span class="code-comment">&lt;!-- Then use anywhere --&gt;</span>
+<span class="code-tag">&lt;polymart-ticker</span> <span class="code-attr">ticker</span>=<span class="code-val">"APEX"</span><span class="code-tag">&gt;&lt;/polymart-ticker&gt;</span>
+<span class="code-tag">&lt;polymart-market</span><span class="code-tag">&gt;&lt;/polymart-market&gt;</span>
+<span class="code-tag">&lt;polymart-leaderboard</span> <span class="code-attr">by</span>=<span class="code-val">"change"</span><span class="code-tag">&gt;&lt;/polymart-leaderboard&gt;</span>
+<span class="code-tag">&lt;polymart-tape</span><span class="code-tag">&gt;&lt;/polymart-tape&gt;</span></div>
         </div>
-        <div style="margin-top: 20px; padding: 14px 16px; background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.06); border-radius: 8px; font-family: 'JetBrains Mono', monospace; font-size: 12px; color: rgba(255,255,255,0.35); line-height: 1.8;">
-          &lt;script src="https://polymart.co/<br>&nbsp;&nbsp;widgets/polymart-widgets.js"<br>&nbsp;&nbsp;defer&gt;&lt;/script&gt;
+        <div class="callout-chips">
+          <span class="chip">&lt;polymart-ticker&gt;</span>
+          <span class="chip">&lt;polymart-market&gt;</span>
+          <span class="chip">&lt;polymart-leaderboard&gt;</span>
+          <span class="chip">&lt;polymart-tape&gt;</span>
+          <span class="chip">&lt;polymart-sparkline&gt;</span>
+          <span class="chip">&lt;polymart-sector&gt;</span>
+          <span class="chip">&lt;polymart-events&gt;</span>
         </div>
       </div>
     </div>
   </div>
 
-  <!-- ── Footer ── -->
+  <!-- Footer -->
   <footer class="footer" id="contact">
     <div class="footer-inner">
       <div class="footer-top">
-        <div class="footer-brand">
-          <a href="#" class="logo" style="margin-bottom: 0;">
+        <div>
+          <a href="#" class="logo" style="margin-bottom:0">
             <div class="logo-mark">A</div>
-            <div class="logo-text-wrap">
+            <div class="logo-text">
               <span class="logo-name">Apex Systems</span>
-              <span class="logo-tag">Corp · NYSE: APEX</span>
+              <span class="logo-tag">NYSE: APEX</span>
             </div>
           </a>
-          <p>Enterprise AI infrastructure for the world's most demanding workloads.</p>
+          <p class="footer-brand-desc">Enterprise AI infrastructure for the world's most demanding workloads.</p>
         </div>
 
         <div class="footer-col">
@@ -729,7 +836,7 @@
           <a href="#">About us</a>
           <a href="#">Careers</a>
           <a href="#">Blog</a>
-          <a href="#">Press kit</a>
+          <a href="#">Press</a>
           <a href="#investors">Investors</a>
         </div>
 
@@ -745,18 +852,14 @@
 
       <div class="footer-bottom">
         <div>
-          <p style="color: rgba(255,255,255,0.25); font-size: 13px;">
-            © 2026 Apex Systems Corporation. All rights reserved.
-          </p>
+          <p class="footer-copy">© 2026 Apex Systems Corporation. All rights reserved.</p>
           <p class="footer-disclaimer">
-            Market data provided by <a href="https://polymart.co" target="_blank" style="color: rgba(255,255,255,0.35); text-decoration: none;">Polymart</a>.
-            All prices are simulated and fictional. This website is a demonstration of Polymart's
+            Market data provided by <a href="https://polymart.co" target="_blank">Polymart</a>.
+            All prices are simulated and fictional. This is a demonstration of Polymart's
             embeddable widget system and does not represent a real publicly-traded company.
           </p>
         </div>
-        <div>
-          <span class="demo-badge">⚠ Demo Site</span>
-        </div>
+        <span class="demo-badge">Demo Site</span>
       </div>
     </div>
   </footer>
