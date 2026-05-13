@@ -348,7 +348,7 @@ const PRODUCTS: Product[] = [
           { name: "peers",         type: "string[]", desc: "Tickers of sector peers" },
           { name: "market",        type: "object",   desc: "Live snapshot: price, change, rsi, sma20, sma50, bbUpper, bbLower, atr, beta, streak, etc." },
           { name: "macro",         type: "object",   desc: "Current macro: fearGreed, interestRate, inflation, vix" },
-          { name: "analystRating", type: "object",   desc: "{ rating, score, analystCount } — derived from RSI and price trend" },
+          { name: "analystRating", type: "object",   desc: "{ rating, score, analystCount } - derived from RSI and price trend" },
           { name: "news",          type: "object[]", desc: "3–5 contextual news items: { headline, sentiment, source, publishedAt }" },
         ],
         example: `${BASE}/api/v1/info?ticker=APEX`,

@@ -34,12 +34,12 @@ const PERKS = [
   {
     icon: <Shield className="w-4 h-4" />,
     title: "Fund new features",
-    desc: "Widgets, API endpoints, charting tools, education content — sponsorships directly fund what gets built next.",
+    desc: "Widgets, API endpoints, charting tools, education content - sponsorships directly fund what gets built next.",
   },
   {
     icon: <Heart className="w-4 h-4" />,
     title: "Support open data",
-    desc: "Polymart is free for everyone — students, developers, teachers. Sponsors make that possible.",
+    desc: "Polymart is free for everyone - students, developers, teachers. Sponsors make that possible.",
   },
 ]
 
@@ -62,7 +62,7 @@ export default function SponsorPage({
         </h1>
 
         <p className="text-base text-muted-foreground leading-relaxed max-w-xl mb-8">
-          Polymart is a free, open simulated stock market — no ads, no
+          Polymart is a free, open simulated stock market - no ads, no
           paywalls. If you find it useful, buying a coffee helps keep the
           servers running and new features shipping.
         </p>
@@ -136,7 +136,7 @@ export default function SponsorPage({
           </p>
 
           <p className="text-sm text-muted-foreground leading-relaxed">
-            One-time or recurring — whatever works for you. Thank you for
+            One-time or recurring - whatever works for you. Thank you for
             supporting independent open-source projects.
           </p>
         </div>

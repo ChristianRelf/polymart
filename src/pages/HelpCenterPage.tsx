@@ -25,7 +25,7 @@ const ARTICLES: Article[] = [
   {
     category: "Getting Started",
     q: "What is Polymart?",
-    a: "Polymart is a persistent simulated stock exchange. A continuous price engine drives 132 fictional tickers across 20 sectors, updating every 5 seconds. Everything — companies, prices, events — is entirely fictional. It exists for learning, building, and experimenting with market mechanics without any real financial risk.",
+    a: "Polymart is a persistent simulated stock exchange. A continuous price engine drives 132 fictional tickers across 20 sectors, updating every 5 seconds. Everything - companies, prices, events - is entirely fictional. It exists for learning, building, and experimenting with market mechanics without any real financial risk.",
     search: "what is polymart intro overview",
   },
   {
@@ -171,7 +171,7 @@ const ARTICLES: Article[] = [
   {
     category: "The Market",
     q: "How are 52-week highs and lows tracked?",
-    a: "They are maintained as running extremes across the entire life of the simulation — not a rolling calendar year. As prices update every tick, the 52-week high and low update whenever the current price sets a new extreme.",
+    a: "They are maintained as running extremes across the entire life of the simulation - not a rolling calendar year. As prices update every tick, the 52-week high and low update whenever the current price sets a new extreme.",
     search: "52 week high low range extreme",
   },
   {
@@ -252,7 +252,7 @@ const ARTICLES: Article[] = [
   {
     category: "API",
     q: "Is there a rate limit?",
-    a: "Yes — a sliding window of 60 tokens per minute per IP. Lightweight endpoints cost 1 token per call. The /getStocks and /getHistory endpoints cost 3 tokens due to payload size. For typical use (polling every 5 seconds) the limit is never reached. Exceeding it returns HTTP 429.",
+    a: "Yes - a sliding window of 60 tokens per minute per IP. Lightweight endpoints cost 1 token per call. The /getStocks and /getHistory endpoints cost 3 tokens due to payload size. For typical use (polling every 5 seconds) the limit is never reached. Exceeding it returns HTTP 429.",
     search: "rate limit 429 too many requests throttle",
   },
   {
@@ -398,8 +398,8 @@ const ARTICLES: Article[] = [
   },
   {
     category: "Discord",
-    q: "The bot isn't responding — what do I do?",
-    a: "First check the bot is still in your server (Server Settings → Integrations). Then try /price APEX as a test — this command always works if the bot is online. If there is no response, the bot may be restarting; try again in a minute.",
+    q: "The bot isn't responding - what do I do?",
+    a: "First check the bot is still in your server (Server Settings → Integrations). Then try /price APEX as a test - this command always works if the bot is online. If there is no response, the bot may be restarting; try again in a minute.",
     search: "bot not responding offline down broken",
   },
   {
@@ -411,7 +411,7 @@ const ARTICLES: Article[] = [
   {
     category: "Discord",
     q: "How fresh is the bot's data?",
-    a: "Each command makes a live request to the API, so responses are as fresh as the last simulation tick — typically within 5 seconds. There is no caching layer in the bot.",
+    a: "Each command makes a live request to the API, so responses are as fresh as the last simulation tick - typically within 5 seconds. There is no caching layer in the bot.",
     search: "fresh data latency delay cache bot",
   },
   {
@@ -425,13 +425,13 @@ const ARTICLES: Article[] = [
   {
     category: "Indicators",
     q: "What is RSI and how does it work here?",
-    a: "RSI (Relative Strength Index) measures price momentum on a 0–100 scale. Readings above 70 signal a stock is potentially overbought; below 30 signals potentially oversold. In Polymart's simulation, RSI feeds back into price movement — an overbought stock accumulates incremental downward bias each tick, and an oversold stock gains upward bias.",
+    a: "RSI (Relative Strength Index) measures price momentum on a 0–100 scale. Readings above 70 signal a stock is potentially overbought; below 30 signals potentially oversold. In Polymart's simulation, RSI feeds back into price movement - an overbought stock accumulates incremental downward bias each tick, and an oversold stock gains upward bias.",
     search: "rsi relative strength index overbought oversold",
   },
   {
     category: "Indicators",
     q: "What are Bollinger Bands?",
-    a: "Bollinger Bands plot a 20-period simple moving average (the middle band) with upper and lower bands set 2 standard deviations away. When price touches the upper band, the stock may be extended. Touching the lower band may signal oversold conditions. The gap between the bands (bandwidth) reflects current volatility — a squeeze often precedes a breakout.",
+    a: "Bollinger Bands plot a 20-period simple moving average (the middle band) with upper and lower bands set 2 standard deviations away. When price touches the upper band, the stock may be extended. Touching the lower band may signal oversold conditions. The gap between the bands (bandwidth) reflects current volatility - a squeeze often precedes a breakout.",
     search: "bollinger bands upper lower middle squeeze bandwidth",
   },
   {
@@ -443,7 +443,7 @@ const ARTICLES: Article[] = [
   {
     category: "Indicators",
     q: "What does ATR measure?",
-    a: "ATR (Average True Range) measures volatility — specifically the average of the high-low range over the last 14 periods. A rising ATR means the market is becoming more volatile. A falling ATR signals calmer, more range-bound conditions. It is useful for setting stop-loss distances.",
+    a: "ATR (Average True Range) measures volatility - specifically the average of the high-low range over the last 14 periods. A rising ATR means the market is becoming more volatile. A falling ATR signals calmer, more range-bound conditions. It is useful for setting stop-loss distances.",
     search: "atr average true range volatility range",
   },
   {
@@ -479,7 +479,7 @@ const ARTICLES: Article[] = [
   {
     category: "Indicators",
     q: "What is the momentum field?",
-    a: "Momentum is the rate of price change — specifically a weighted average of recent per-tick returns. It is separate from RSI and decays over time. A strong positive momentum means the stock has been accelerating upward across recent ticks.",
+    a: "Momentum is the rate of price change - specifically a weighted average of recent per-tick returns. It is separate from RSI and decays over time. A strong positive momentum means the stock has been accelerating upward across recent ticks.",
     search: "momentum rate of change price acceleration",
   },
   {
@@ -541,7 +541,7 @@ const ARTICLES: Article[] = [
       <span>
         Not in a single request. Use a loop over all tickers calling{" "}
         <code className="bg-muted text-foreground px-1.5 py-0.5 rounded text-[11px] font-mono">/getHistory?ticker=X&limit=400</code>.
-        Be mindful of the rate limit — space requests out or run during off-peak hours.
+        Be mindful of the rate limit - space requests out or run during off-peak hours.
       </span>
     ),
     search: "bulk historical all tickers export loop",
@@ -562,7 +562,7 @@ const ARTICLES: Article[] = [
   // ── Troubleshooting ────────────────────────────────────────────────────────
   {
     category: "Troubleshooting",
-    q: "The market page isn't loading — what do I do?",
+    q: "The market page isn't loading - what do I do?",
     a: "Try a hard refresh (Ctrl+Shift+R or Cmd+Shift+R). If that doesn't help, open the browser console and check for network errors. The page connects to the API on load; if the API is unreachable, it will show a loading spinner indefinitely.",
     search: "loading spinner not loading page broken",
   },
@@ -584,25 +584,25 @@ const ARTICLES: Article[] = [
   },
   {
     category: "Troubleshooting",
-    q: "My chart isn't updating — why?",
+    q: "My chart isn't updating - why?",
     a: "The chart polls every 5 seconds. If it stops updating, check your network tab in the browser dev tools for failed requests. If requests are succeeding but the chart is frozen, try navigating away and back.",
     search: "chart frozen not updating refresh stuck",
   },
   {
     category: "Troubleshooting",
     q: "I'm getting 429 Too Many Requests from the API",
-    a: "You've exceeded 60 tokens per minute. Slow down your request rate. If you're polling /getStocks every second, note that it costs 3 tokens per call — you'd hit the limit in 20 seconds. Poll every 5–10 seconds instead.",
+    a: "You've exceeded 60 tokens per minute. Slow down your request rate. If you're polling /getStocks every second, note that it costs 3 tokens per call - you'd hit the limit in 20 seconds. Poll every 5–10 seconds instead.",
     search: "429 rate limit too many requests throttle",
   },
   {
     category: "Troubleshooting",
     q: "Why is a stock halted?",
-    a: "A circuit breaker fires when price movement in a single tick exceeds a safety threshold. The stock is flagged as halted for a few ticks to let the simulation stabilise. It resumes automatically — no manual intervention needed.",
+    a: "A circuit breaker fires when price movement in a single tick exceeds a safety threshold. The stock is flagged as halted for a few ticks to let the simulation stabilise. It resumes automatically - no manual intervention needed.",
     search: "halted halt stock circuit breaker resume",
   },
   {
     category: "Troubleshooting",
-    q: "The simulation seems paused — is it down?",
+    q: "The simulation seems paused - is it down?",
     a: (
       <span>
         Call{" "}
@@ -614,8 +614,8 @@ const ARTICLES: Article[] = [
   },
   {
     category: "Troubleshooting",
-    q: "Prices seem unrealistically extreme — is that normal?",
-    a: "Occasionally. The simulation can experience flash crashes or booms triggered by event cascades — multiple high-impact events firing close together. Check the events ticker on the market page. Prices typically mean-revert within a few minutes.",
+    q: "Prices seem unrealistically extreme - is that normal?",
+    a: "Occasionally. The simulation can experience flash crashes or booms triggered by event cascades - multiple high-impact events firing close together. Check the events ticker on the market page. Prices typically mean-revert within a few minutes.",
     search: "extreme price crash boom unrealistic event",
   },
   {

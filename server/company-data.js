@@ -3,95 +3,95 @@
 const SECTOR_NEWS_TEMPLATES = {
   tech: [
     "{name} accelerates cloud migration strategy across enterprise verticals",
-    "{ticker} opens new R&D centre — 500 engineering roles to be filled",
+    "{ticker} opens new R&D centre - 500 engineering roles to be filled",
     "Patent filing reveals {name}'s next-generation architecture plans",
-    "{name} deepens partnership with hyperscaler — multi-year contract signed",
+    "{name} deepens partnership with hyperscaler - multi-year contract signed",
     "Analyst upgrades {ticker} citing strong secular tailwinds in cloud adoption",
     "{name} wins $120M federal IT modernisation contract",
     "{ticker} CTO presents product roadmap at annual developer conference",
     "{name} rolls out new security suite amid industry-wide compliance push",
   ],
   food: [
-    "{name} launches limited-edition product line — viral social media response",
+    "{name} launches limited-edition product line - viral social media response",
     "Supply chain diversification strengthens {name}'s gross margin outlook",
     "{ticker} expands into 12 new international markets this quarter",
     "{name} acquires artisan brand to strengthen premium segment presence",
     "Commodity cost tailwinds benefit {ticker} profitability ahead of guidance",
-    "{name} announces sustainability pledge — 100% renewable packaging by 2027",
+    "{name} announces sustainability pledge - 100% renewable packaging by 2027",
   ],
   space: [
-    "{name} secures launch manifest slot for Q3 — second mission this calendar year",
+    "{name} secures launch manifest slot for Q3 - second mission this calendar year",
     "Regulatory approval clears path for {ticker}'s next orbital services contract",
     "{name} announces joint venture with European Space Agency partners",
     "{ticker} awarded reusable rocket recertification ahead of schedule",
-    "{name} reveals next-gen propulsion test results — performance exceeds specification",
+    "{name} reveals next-gen propulsion test results - performance exceeds specification",
     "Defence partnership expands {ticker} revenue visibility by three years",
   ],
   meme: [
-    "{ticker} trending on social media — retail trading activity spikes 4x",
+    "{ticker} trending on social media - retail trading activity spikes 4x",
     "Community governance vote greenlights {name}'s new tokenomics proposal",
-    "{ticker} short interest climbs to 38% — squeeze potential under scrutiny",
+    "{ticker} short interest climbs to 38% - squeeze potential under scrutiny",
     "Celebrity endorsement drives renewed retail interest in {name}",
-    "Forum activity for {ticker} at 3-month high — community sentiment bullish",
+    "Forum activity for {ticker} at 3-month high - community sentiment bullish",
   ],
   green: [
     "{name} signs 500MW power purchase agreement with national grid operator",
     "Government subsidy approval boosts {ticker}'s project pipeline by 40%",
     "{name} breaks efficiency record in latest commercial field deployment",
-    "{ticker} secures EU Green Bond certification — first issuer in its sector",
-    "{name} expands manufacturing capacity — new GW-scale facility breaks ground",
+    "{ticker} secures EU Green Bond certification - first issuer in its sector",
+    "{name} expands manufacturing capacity - new GW-scale facility breaks ground",
     "Carbon credit revenue stream provides {ticker} earnings upside this quarter",
   ],
   finance: [
-    "{name} reports loan book quality above sector peers — NPL ratio at record low",
+    "{name} reports loan book quality above sector peers - NPL ratio at record low",
     "{ticker} announces $500M share buyback programme effective immediately",
     "{name} launches AI-powered digital wealth management platform for retail clients",
-    "Regulatory stress test passed — {ticker} cleared for dividend increase",
+    "Regulatory stress test passed - {ticker} cleared for dividend increase",
     "{name} expands SME lending via embedded finance platform partnerships",
-    "{ticker} net interest margin holds above 4% — analyst consensus turns constructive",
+    "{ticker} net interest margin holds above 4% - analyst consensus turns constructive",
   ],
   gaming: [
     "{name} confirms next major title entering closed beta next quarter",
-    "Live-service revenue for {ticker} up 28% quarter-on-quarter — above consensus",
+    "Live-service revenue for {ticker} up 28% quarter-on-quarter - above consensus",
     "{name} acquires indie studio to bolster owned IP library",
     "{ticker} mobile spinoff surpasses 10M downloads in launch week",
     "Esports division drives record community engagement and sponsorship for {name}",
-    "{ticker} passes internal playtesting milestone — Q4 commercial launch on track",
+    "{ticker} passes internal playtesting milestone - Q4 commercial launch on track",
   ],
   health: [
-    "{name} initiates Phase 2 clinical study — data readout expected in 9 months",
+    "{name} initiates Phase 2 clinical study - data readout expected in 9 months",
     "{ticker} partners with NHS for large-scale real-world evidence programme",
     "{name} receives breakthrough device designation from FDA",
-    "Payer coverage expanded for {ticker}'s flagship product — access widens",
+    "Payer coverage expanded for {ticker}'s flagship product - access widens",
     "{name} announces research collaboration with leading academic medical centre",
-    "{ticker} patient volume grew 18% in Q3 — well above analyst estimates",
+    "{ticker} patient volume grew 18% in Q3 - well above analyst estimates",
   ],
   crypto: [
-    "{name} integrates Layer-2 scaling — transaction throughput triples overnight",
-    "{ticker} treasury diversification announcement — BTC allocation increased",
+    "{name} integrates Layer-2 scaling - transaction throughput triples overnight",
+    "{ticker} treasury diversification announcement - BTC allocation increased",
     "{name} launches enhanced staking rewards programme for long-term holders",
     "On-chain analytics show {ticker} whale accumulation trend over 30 days",
-    "{name} completes third-party security audit — zero critical findings reported",
+    "{name} completes third-party security audit - zero critical findings reported",
     "{ticker} adds new institutional custody partnership with tier-1 bank",
   ],
   defence: [
     "{name} awarded multi-year maintenance contract for existing deployed fleet",
-    "{ticker} production ramp cleared — delivery schedule met ahead of deadline",
+    "{ticker} production ramp cleared - delivery schedule met ahead of deadline",
     "{name} unveils next-generation system at international defence expo",
-    "Export licence approved — {ticker} set to deliver hardware to allied nation",
-    "{name} wins $2.4B contract extension — programme backlog at record levels",
-    "{ticker} R&D spend rises to 14% of revenue — long-term capability investment",
+    "Export licence approved - {ticker} set to deliver hardware to allied nation",
+    "{name} wins $2.4B contract extension - programme backlog at record levels",
+    "{ticker} R&D spend rises to 14% of revenue - long-term capability investment",
   ],
   retail: [
-    "{name} reports same-store sales growth of 4.2% — above analyst expectations",
-    "{ticker} opens 50 new locations in Q3 — expansion programme ahead of plan",
+    "{name} reports same-store sales growth of 4.2% - above analyst expectations",
+    "{ticker} opens 50 new locations in Q3 - expansion programme ahead of plan",
     "{name} rolls out AI personalisation engine across all digital channels",
     "Loyalty programme membership at {ticker} crosses 20M milestone",
     "{name} supply chain optimisation initiative delivers $80M in annual savings",
     "{ticker} private label margin expansion drives consensus-beating earnings",
   ],
   media: [
-    "{name} subscriber count reaches all-time high — churn rate at record low",
+    "{name} subscriber count reaches all-time high - churn rate at record low",
     "{ticker} inks exclusive content deal valued at $400M over three years",
     "{name} international expansion targets 8 new territories in H2",
     "Advertising revenue recovery boosts {ticker} Q3 earnings trajectory",
@@ -99,55 +99,55 @@ const SECTOR_NEWS_TEMPLATES = {
     "{ticker} original series receives 7 industry award nominations",
   ],
   auto: [
-    "{name} hits quarterly production record — assembly line efficiency up 12%",
-    "{ticker} reveals new vehicle platform — 600km WLTP certified range",
+    "{name} hits quarterly production record - assembly line efficiency up 12%",
+    "{ticker} reveals new vehicle platform - 600km WLTP certified range",
     "{name} battery supply agreement secured with tier-1 supplier through 2029",
     "{ticker} autonomous driving miles logged surpass 200M commercially",
-    "{name} opens gigafactory phase 2 — 150GWh annual nameplate capacity",
+    "{name} opens gigafactory phase 2 - 150GWh annual nameplate capacity",
     "Fleet order from major logistics operator adds significant backlog for {ticker}",
   ],
   realty: [
-    "{name} reports 96.4% portfolio occupancy — strongest in two years",
-    "{ticker} completes $1.2B acquisition — enters new metropolitan market",
+    "{name} reports 96.4% portfolio occupancy - strongest in two years",
+    "{ticker} completes $1.2B acquisition - enters new metropolitan market",
     "{name} refinancing reduces weighted cost of debt by 40 basis points",
     "{ticker} development pipeline shows $3B in approved and permitted projects",
-    "{name} dividend maintained at current level — coverage ratio robust at 1.4x",
+    "{name} dividend maintained at current level - coverage ratio robust at 1.4x",
   ],
   travel: [
-    "{name} load factor hits 89% — capacity utilisation at post-2020 high",
-    "{ticker} launches expanded route network — 15 new destinations added",
+    "{name} load factor hits 89% - capacity utilisation at post-2020 high",
+    "{ticker} launches expanded route network - 15 new destinations added",
     "{name} premium cabin upgrade programme drives revenue per seat higher",
     "Corporate travel recovery provides strong forward booking support for {ticker}",
     "{name} loyalty programme redesign initiative boosts ancillary revenue mix",
-    "{ticker} fleet renewal accelerates — 30 new-generation aircraft on order",
+    "{ticker} fleet renewal accelerates - 30 new-generation aircraft on order",
   ],
   ai: [
-    "{name} releases new foundation model — benchmark scores top public leaderboard",
-    "Enterprise pilot converts to full deployment — {ticker} ARR expands",
+    "{name} releases new foundation model - benchmark scores top public leaderboard",
+    "Enterprise pilot converts to full deployment - {ticker} ARR expands",
     "{name} secures $800M compute infrastructure deal with major cloud provider",
     "{ticker} model efficiency gains cut inference cost per token by 35%",
-    "{name} publishes AI safety research — alignment framework gains industry traction",
+    "{name} publishes AI safety research - alignment framework gains industry traction",
     "{ticker} new API pricing tier attracts 2,000 enterprise clients in first month",
   ],
   bio: [
-    "{name} positive interim data readout — probability of success raised to 68%",
+    "{name} positive interim data readout - probability of success raised to 68%",
     "{ticker} files IND application for next-generation pipeline candidate",
-    "{name} manufacturing scale-up completed — commercial launch timeline confirmed",
+    "{name} manufacturing scale-up completed - commercial launch timeline confirmed",
     "Peer-reviewed publication validates {ticker}'s core mechanism of action",
-    "{name} receives orphan drug designation — 7-year market exclusivity secured",
+    "{name} receives orphan drug designation - 7-year market exclusivity secured",
     "{ticker} M&A speculation rises as sector consolidation wave continues",
   ],
   energy: [
     "{name} production output exceeded quarterly guidance by 4%",
-    "{ticker} cost-per-barrel falls to sector-low — operational efficiency improving",
+    "{ticker} cost-per-barrel falls to sector-low - operational efficiency improving",
     "{name} announces $2B capital return programme via buybacks and dividends",
     "New reserve certification adds 8 years to {ticker}'s production life estimate",
     "{name} emissions reduction target validated by Science Based Targets initiative",
-    "{ticker} refinery throughput at 95% utilisation — crack spreads remain strong",
+    "{ticker} refinery throughput at 95% utilisation - crack spreads remain strong",
   ],
   logistics: [
     "{name} network expansion adds 12 new fulfilment centres across North America",
-    "{ticker} on-time delivery rate reaches 97.8% — industry-leading performance",
+    "{ticker} on-time delivery rate reaches 97.8% - industry-leading performance",
     "{name} AI route optimisation deployment cuts fuel costs by 9% annually",
     "{ticker} B2B contract win adds $180M to annual recurring revenue",
     "{name} drone delivery network receives approval across 5 new urban zones",
@@ -361,7 +361,7 @@ export function generateNews(ticker, stock, macro, sector) {
   if (Math.abs(pct) >= 3) {
     const verb = pct > 0 ? "surges" : "tumbles";
     news.push({
-      headline:    `${name} ${verb} ${Math.abs(pct).toFixed(1)}% — ${pct > 0 ? "bulls" : "sellers"} dominate session`,
+      headline:    `${name} ${verb} ${Math.abs(pct).toFixed(1)}% - ${pct > 0 ? "bulls" : "sellers"} dominate session`,
       sentiment:   pct > 0 ? "positive" : "negative",
       source:      "MarketPulse",
       publishedAt: new Date(now - (Math.floor(Math.random() * 20) + 5) * 60000).toISOString(),
@@ -369,7 +369,7 @@ export function generateNews(ticker, stock, macro, sector) {
   } else if (Math.abs(pct) >= 0.8) {
     news.push({
       headline:    pct > 0
-        ? `${ticker} extends gains — buying interest persists into the session`
+        ? `${ticker} extends gains - buying interest persists into the session`
         : `${ticker} slips back as profit-taking accelerates`,
       sentiment:   pct > 0 ? "positive" : "negative",
       source:      "TradeWire",
@@ -387,14 +387,14 @@ export function generateNews(ticker, stock, macro, sector) {
   // 2. Technical conditions (RSI / streak)
   if (rsi > 75) {
     news.push({
-      headline:    `Technical warning: ${ticker} RSI at ${Math.round(rsi)} — analysts flag overbought conditions`,
+      headline:    `Technical warning: ${ticker} RSI at ${Math.round(rsi)} - analysts flag overbought conditions`,
       sentiment:   "neutral",
       source:      "TechAnalyst Weekly",
       publishedAt: new Date(now - (Math.floor(Math.random() * 90) + 30) * 60000).toISOString(),
     });
   } else if (rsi < 25) {
     news.push({
-      headline:    `${ticker} oversold: RSI dips to ${Math.round(rsi)} — contrarian buyers watching closely`,
+      headline:    `${ticker} oversold: RSI dips to ${Math.round(rsi)} - contrarian buyers watching closely`,
       sentiment:   "neutral",
       source:      "TechAnalyst Weekly",
       publishedAt: new Date(now - (Math.floor(Math.random() * 90) + 30) * 60000).toISOString(),
@@ -403,14 +403,14 @@ export function generateNews(ticker, stock, macro, sector) {
 
   if (streak >= 5) {
     news.push({
-      headline:    `${name} posts ${streak}-session winning streak — momentum traders add exposure`,
+      headline:    `${name} posts ${streak}-session winning streak - momentum traders add exposure`,
       sentiment:   "positive",
       source:      "MomentumTracker",
       publishedAt: new Date(now - (Math.floor(Math.random() * 120) + 60) * 60000).toISOString(),
     });
   } else if (streak <= -5) {
     news.push({
-      headline:    `${ticker} loses ground for ${Math.abs(streak)} straight sessions — support levels under pressure`,
+      headline:    `${ticker} loses ground for ${Math.abs(streak)} straight sessions - support levels under pressure`,
       sentiment:   "negative",
       source:      "MomentumTracker",
       publishedAt: new Date(now - (Math.floor(Math.random() * 120) + 60) * 60000).toISOString(),
@@ -420,21 +420,21 @@ export function generateNews(ticker, stock, macro, sector) {
   // 3. Macro / market-wide context
   if (fg < 25) {
     news.push({
-      headline:    `Fear grips market — ${profile.industry} stocks including ${ticker} face broad selling pressure`,
+      headline:    `Fear grips market - ${profile.industry} stocks including ${ticker} face broad selling pressure`,
       sentiment:   "negative",
       source:      "MacroView",
       publishedAt: new Date(now - (Math.floor(Math.random() * 180) + 60) * 60000).toISOString(),
     });
   } else if (fg > 75) {
     news.push({
-      headline:    `Risk-on sentiment lifts ${profile.industry} names — ${ticker} among session beneficiaries`,
+      headline:    `Risk-on sentiment lifts ${profile.industry} names - ${ticker} among session beneficiaries`,
       sentiment:   "positive",
       source:      "MacroView",
       publishedAt: new Date(now - (Math.floor(Math.random() * 180) + 60) * 60000).toISOString(),
     });
   } else if (rate > 6) {
     news.push({
-      headline:    `Elevated rates weigh on ${profile.industry} valuations — ${ticker} navigates cost-of-capital pressure`,
+      headline:    `Elevated rates weigh on ${profile.industry} valuations - ${ticker} navigates cost-of-capital pressure`,
       sentiment:   "negative",
       source:      "RateWatch",
       publishedAt: new Date(now - (Math.floor(Math.random() * 240) + 120) * 60000).toISOString(),

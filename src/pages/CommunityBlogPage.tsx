@@ -16,7 +16,7 @@ const POST_TYPES = [
     icon: TrendingUp,
     accent: "#6366f1",
     label: "Market Analyses",
-    desc: "Deep-dives into sector trends, RSI conditions, macro impacts, and price action — all using live Polymart simulation data.",
+    desc: "Deep-dives into sector trends, RSI conditions, macro impacts, and price action - all using live Polymart simulation data.",
   },
   {
     icon: FlaskConical,
@@ -67,7 +67,7 @@ export default function CommunityBlogPage({ onNavigate }: Props) {
         </h1>
         <p className="text-lg text-muted-foreground leading-relaxed max-w-xl">
           We're building a space for the Polymart community to share analyses, strategies,
-          tutorials, and research — all built on real simulation data.
+          tutorials, and research - all built on real simulation data.
         </p>
       </div>
 

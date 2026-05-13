@@ -114,7 +114,7 @@ export default function WidgetsPage({ onNavigate }: Props) {
           widgets, Shadow DOM isolated, zero dependencies, no API key required.
         </p>
         <CodeBlock
-          lang="Setup — add once to your page"
+          lang="Setup - add once to your page"
           code={`<script src="https://polymart.co/widgets/polymart-widgets.js" defer></script>`}
         />
         <a
@@ -195,7 +195,7 @@ export default function WidgetsPage({ onNavigate }: Props) {
         <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-[0.15em] mb-2">Widget 3 of 7</p>
         <h2 className="text-2xl font-bold text-foreground mb-2">Leaderboard</h2>
         <p className="text-sm text-muted-foreground mb-6 max-w-xl">
-          Ranked table of stocks sorted by any metric — change, price, volume, RSI, streak, or all-time high.
+          Ranked table of stocks sorted by any metric - change, price, volume, RSI, streak, or all-time high.
         </p>
         <PreviewFrame>
           <polymart-leaderboard by="change" limit="8" title="Top Gainers" />
@@ -245,7 +245,7 @@ export default function WidgetsPage({ onNavigate }: Props) {
         <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-[0.15em] mb-2">Widget 5 of 7</p>
         <h2 className="text-2xl font-bold text-foreground mb-2">Sparkline</h2>
         <p className="text-sm text-muted-foreground mb-6 max-w-xl">
-          Tiny inline price chart — drop it into tables, paragraphs, or headers alongside other content.
+          Tiny inline price chart - drop it into tables, paragraphs, or headers alongside other content.
         </p>
         <PreviewFrame>
           {["APEX", "VOID", "LUNATEK"].map(t => (
@@ -292,7 +292,7 @@ export default function WidgetsPage({ onNavigate }: Props) {
         <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-[0.15em] mb-2">Widget 7 of 7</p>
         <h2 className="text-2xl font-bold text-foreground mb-2">Market Events</h2>
         <p className="text-sm text-muted-foreground mb-6 max-w-xl">
-          Live feed of market events — flash crashes, sector booms, meme frenzies — with bullish/bearish indicators.
+          Live feed of market events - flash crashes, sector booms, meme frenzies - with bullish/bearish indicators.
         </p>
         <PreviewFrame>
           <polymart-events limit="5" />

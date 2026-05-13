@@ -7,7 +7,7 @@ USE polymart;
 
 -- ── market_state (singleton row, id=1) ───────────────────────────────────────
 -- tick_count is the only permanent metric; it is never culled or reset.
--- No concurrent-users column — tick_count serves as the all-time peak indicator.
+-- No concurrent-users column - tick_count serves as the all-time peak indicator.
 CREATE TABLE IF NOT EXISTS market_state (
   id              TINYINT      NOT NULL DEFAULT 1,
   index_value     DOUBLE       NOT NULL DEFAULT 1000,
@@ -112,7 +112,7 @@ CREATE TABLE IF NOT EXISTS events_log (
 -- ── 24-hour cull event ────────────────────────────────────────────────────────
 -- Purges events_log rows older than 24 hours every day.
 -- market_state (including tick_count), stocks_state, and sector_state are NOT
--- touched — only events_log data rows are cleared.
+-- touched - only events_log data rows are cleared.
 -- MySQL Event Scheduler must be enabled: SET GLOBAL event_scheduler = ON;
 DROP EVENT IF EXISTS purge_old_events;
 CREATE EVENT purge_old_events

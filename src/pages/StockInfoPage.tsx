@@ -329,7 +329,7 @@ export default function StockInfoPage({ ticker, onNavigate, onNavigateToInfo }: 
                 { label: "ATR (14)",  val: mkt.atr.toFixed(2),                color: undefined },
                 { label: "SMA 20",    val: mkt.sma20.toFixed(2),              color: mkt.price > mkt.sma20 ? GAIN : LOSS },
                 { label: "SMA 50",    val: mkt.sma50.toFixed(2),              color: mkt.price > mkt.sma50 ? GAIN : LOSS },
-                { label: "Streak",    val: `${mkt.streak > 0 ? "▲" : mkt.streak < 0 ? "▼" : "—"} ${Math.abs(mkt.streak)}`, color: mkt.streak > 0 ? GAIN : mkt.streak < 0 ? LOSS : undefined },
+                { label: "Streak",    val: `${mkt.streak > 0 ? "▲" : mkt.streak < 0 ? "▼" : "-"} ${Math.abs(mkt.streak)}`, color: mkt.streak > 0 ? GAIN : mkt.streak < 0 ? LOSS : undefined },
                 { label: "ATH",       val: mkt.allTimeHigh.toFixed(2),        color: undefined },
               ].map((r, i) => (
                 <div key={i} className="flex justify-between items-center py-2 border-b border-border/30 last:border-0">
