@@ -200,7 +200,7 @@ export const COMPANY_PROFILES = {
   BONK:  { description: "Community token issuer and micro-rewards platform built on a social points economy for online communities.", founded: 2023, hq: "San Juan, PR", ceo: "DAO Governance", employees: 15, exchange: "OTC", industry: "Crypto / Social Rewards" },
   FOMO:  { description: "Algorithmic social sentiment fund exploiting retail herding behaviour in small-cap equities.", founded: 2021, hq: "Jersey City, NJ", ceo: "Alex Wu", employees: 55, exchange: "OTC", industry: "Quantitative / Social Sentiment" },
   LAMBO: { description: "Luxury asset tokenisation platform allowing fractional ownership of exotic cars, watches, and collectibles.", founded: 2022, hq: "Monaco", ceo: "Renée Dufort", employees: 48, exchange: "OTC", industry: "Asset Tokenisation / Luxury" },
-  QUAK:  { description: "Community-driven investment club issuer with decentralised governance and pooled retail investing across meme sectors.", founded: 2022, hq: "Delaware, USA", ceo: "Community DAO", employees: 12, exchange: "OTC", industry: "Community Investing / DAO" },
+  QUAK:  { description: "Community-driven investment club issuer with decentralised governance and pooled retail investing across meme sectors.", founded: 2022, hq: "Poland Kirabati", ceo: "Guy Parmelin", employees: 12, exchange: "OTC", industry: "Community Investing / DAO" },
 
   // === GREEN ===
   GRDN:  { description: "Biotech-forward urban farming firm developing high-yield algae and plant-based biofertilisers for sustainable agriculture.", founded: 2016, hq: "Sacramento, CA", ceo: "Flora Chen", employees: 1800, exchange: "NASDAQ", industry: "Green Biotech / Sustainable Farming" },
