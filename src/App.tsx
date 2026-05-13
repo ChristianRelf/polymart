@@ -273,14 +273,6 @@ function Footer({ setRoute }: { setRoute: (r: Route) => void }) {
         {/* Nav columns */}
         <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-x-8 gap-y-10 mb-12">
 
-          {/* Brand blurb */}
-          <div className="col-span-2 sm:col-span-3 lg:col-span-1">
-            <p className="text-xs text-muted-foreground leading-relaxed">
-              A persistent simulated stock exchange. All prices, tickers, and events are entirely
-              fictional. Not financial advice.
-            </p>
-          </div>
-
           <NavCol title="Platform">
             <FLink label="Home"     route="home" />
             <FLink label="Market"   route="market" />
