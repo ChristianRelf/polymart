@@ -316,7 +316,9 @@ export const EVENTS_RAW = [
 
 export function gaussian() {
   const u1 = Math.random(), u2 = Math.random();
-  return Math.sqrt(-2 * Math.log(Math.max(u1, 1e-10))) * Math.cos(2 * Math.PI * u2);
+  const z = Math.sqrt(-2 * Math.log(Math.max(u1, 1e-10))) * Math.cos(2 * Math.PI * u2);
+  if (Math.random() < 0.08) return z * (2.5 + Math.random() * 1.5);
+  return z;
 }
 
 function mcapMult(m) {
@@ -451,16 +453,43 @@ export function runTick(ms, stocks, sectors) {
   const sec = {};
   for (const s of sectors) sec[s.sector_key] = { ...s };
 
-  // Macro drift
-  m.interest_rate = Math.max(0, Math.min(12, m.interest_rate + (Math.random() - .5) * .02));
-  m.inflation     = Math.max(-.5, Math.min(8,  m.inflation     + (Math.random() - .5) * .01));
-  m.gdp_growth    = Math.max(-3,  Math.min(7,  m.gdp_growth    + (Math.random() - .5) * .02));
+  // ── Macro regime cycle ─────────────────────────────────────────────────────
+  const REGIME_SEQUENCE = ['expansion','peak','contraction','trough','recovery'];
+  const REGIME_DURATIONS = {
+    expansion:   [900,  2400],
+    peak:        [400,  800],
+    contraction: [700,  1800],
+    trough:      [300,  700],
+    recovery:    [600,  1400],
+  };
+  if (!m.macro_regime) m.macro_regime = 'expansion';
+  if (!m.regime_ticks_remaining || m.regime_ticks_remaining <= 0) {
+    const ri = REGIME_SEQUENCE.indexOf(m.macro_regime);
+    m.macro_regime = REGIME_SEQUENCE[(ri + 1) % REGIME_SEQUENCE.length];
+    const [lo, hi] = REGIME_DURATIONS[m.macro_regime];
+    m.regime_ticks_remaining = Math.floor(lo + Math.random() * (hi - lo));
+  } else {
+    m.regime_ticks_remaining--;
+  }
+  const regimeBias = {
+    expansion:   { gdp: +0.012, inf: +0.003, rate: +0.002, fg: +0.15 },
+    peak:        { gdp: -0.005, inf: +0.010, rate: +0.008, fg: -0.05 },
+    contraction: { gdp: -0.018, inf: +0.004, rate: +0.003, fg: -0.30 },
+    trough:      { gdp: -0.005, inf: -0.005, rate: -0.010, fg: -0.10 },
+    recovery:    { gdp: +0.008, inf: -0.003, rate: -0.005, fg: +0.20 },
+  }[m.macro_regime] || { gdp: 0, inf: 0, rate: 0, fg: 0 };
+
+  // Macro drift (regime-biased)
+  m.interest_rate = Math.max(0, Math.min(12, m.interest_rate + (Math.random() - .5) * .02 + regimeBias.rate));
+  m.inflation     = Math.max(-.5, Math.min(8,  m.inflation     + (Math.random() - .5) * .01 + regimeBias.inf));
+  m.gdp_growth    = Math.max(-3,  Math.min(7,  m.gdp_growth    + (Math.random() - .5) * .02 + regimeBias.gdp));
   m.fear_greed    = Math.max(0, Math.min(100,
     m.fear_greed
-    + (Math.random() - 0.5) * 0.22            // dampened random walk (was 0.8)
-    + (50 - m.fear_greed) * 0.004             // mean-reversion toward 50
-    + (m.gdp_growth - 2) * 0.04              // macro influence (reduced)
-    - (m.inflation - 2.5) * 0.03             // inflation drag (reduced)
+    + (Math.random() - 0.5) * 0.65            // wider random walk (was 0.22)
+    + (50 - m.fear_greed) * 0.0008            // much weaker mean-reversion (was 0.004)
+    + (m.gdp_growth - 2) * 0.06
+    - (m.inflation - 2.5) * 0.04
+    + regimeBias.fg                            // regime-driven sentiment push
   ));
 
   const session     = sessionPhase(m.tick_count);
@@ -577,18 +606,32 @@ export function runTick(ms, stocks, sectors) {
     if (def.sector === "food")      cor = -(m.inflation - 2.5) * .0002;
     if (def.sector === "health")    cor = (50 - m.fear_greed) / 50 * .0005;
     if (def.sector === "gaming")    cor = (sec.media?.trend || 0) * .02 + (sec.tech?.trend || 0) * .01;
+    if (cm < 0) cor += 0.015;
 
-    const prevVol = h.length >= 3 ? Math.abs(h[h.length - 1] - h[h.length - 2]) / p : 0;
-    const volCluster = 1 + prevVol * 8;
+    let recentVol = 0;
+    if (h.length >= 3) {
+      const lookback = Math.min(8, h.length - 1);
+      let sumSq = 0;
+      for (let i = h.length - lookback; i < h.length; i++) {
+        const ret = (h[i] - h[i - 1]) / h[i - 1];
+        sumSq += ret * ret;
+      }
+      recentVol = Math.sqrt(sumSq / lookback);
+    }
+    const clusterMult = def.sector === 'meme' ? 20 : 35;
+    const volCluster = 1 + recentVol * clusterMult;
+    const trendDrift = Math.min(1 + def.trend * (updated.earnings_cycle / 300), 10);
+    const fairValue = def.basePrice * Math.max(0.1, trendDrift);
+
     const tv = def.volatility * .03 * mcm * sesVolatMult * volCluster;
     let np = p + p * (def.trend * .02 + tv * n * Math.abs(cm) + se * .04 + ee + nc + updated.momentum * .3 + sk + gs * .08 + cor + rsiP + updated.insider_bias + eE + rp + ip + gb) * (cm < 0 ? -1 : 1);
 
-    np += -(np - def.basePrice) / def.basePrice * def.basePrice * .007;
-    np = Math.round(Math.max(.25, Math.min(np, def.basePrice * 6)) * 100) / 100;
+    np += -(np - fairValue) * 0.002;
+    np = Math.round(Math.max(0.10, Math.min(np, def.basePrice * 10)) * 100) / 100;
 
     if (session === "open" && m.tick_count % 1440 === 54) {
       const gapShock = gaussian() * def.volatility * 0.5 + (sec[def.sector]?.trend || 0) * 2;
-      np = Math.round(Math.max(.25, np * (1 + gapShock)) * 100) / 100;
+      np = Math.round(Math.max(0.10, np * (1 + gapShock)) * 100) / 100;
       updated.open_price = np; updated.candle_open = np;
       updated.candle_high = np; updated.candle_low = np; updated.candle_ticks = 0;
     }

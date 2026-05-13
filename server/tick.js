@@ -12,8 +12,8 @@ async function writeMysqlBatch(ms, stocks, sectors, newEvent) {
     await conn.query(
       `INSERT INTO market_state (id,index_value,index_prev,fear_greed,interest_rate,inflation,gdp_growth,
         crash_cooldown,boom_cooldown,up_streak,down_streak,tick_count,vix,market_session,
-        advance_decline,new_highs,new_lows,updated_at)
-       VALUES (1,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,NOW(3))
+        advance_decline,new_highs,new_lows,macro_regime,regime_ticks_remaining,updated_at)
+       VALUES (1,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,NOW(3))
        ON DUPLICATE KEY UPDATE
         index_value=VALUES(index_value),index_prev=VALUES(index_prev),
         fear_greed=VALUES(fear_greed),interest_rate=VALUES(interest_rate),
@@ -22,10 +22,11 @@ async function writeMysqlBatch(ms, stocks, sectors, newEvent) {
         up_streak=VALUES(up_streak),down_streak=VALUES(down_streak),
         tick_count=VALUES(tick_count),vix=VALUES(vix),market_session=VALUES(market_session),
         advance_decline=VALUES(advance_decline),new_highs=VALUES(new_highs),
-        new_lows=VALUES(new_lows),updated_at=NOW(3)`,
+        new_lows=VALUES(new_lows),macro_regime=VALUES(macro_regime),
+        regime_ticks_remaining=VALUES(regime_ticks_remaining),updated_at=NOW(3)`,
       [ms.index_value,ms.index_prev,ms.fear_greed,ms.interest_rate,ms.inflation,ms.gdp_growth,
        ms.crash_cooldown,ms.boom_cooldown,ms.up_streak,ms.down_streak,ms.tick_count,ms.vix,ms.market_session,
-       ms.advance_decline,ms.new_highs,ms.new_lows]
+       ms.advance_decline,ms.new_highs,ms.new_lows,ms.macro_regime,ms.regime_ticks_remaining]
     );
 
     // stocks_state batch upsert - chunk by 20 to avoid huge queries
@@ -99,6 +100,8 @@ async function readState() {
     advance_decline: rawMs.advance_decline ?? 0,
     new_highs: rawMs.new_highs ?? 0,
     new_lows: rawMs.new_lows ?? 0,
+    macro_regime: rawMs.macro_regime ?? 'expansion',
+    regime_ticks_remaining: rawMs.regime_ticks_remaining ?? 1200,
   } : null;
 
   const stocks = stockRows.map(s => ({
@@ -148,6 +151,7 @@ async function ensureInitialised(ms, stocks, sectors) {
     crash_cooldown: 0, boom_cooldown: 0, up_streak: 0, down_streak: 0, tick_count: 0,
     vix: 18, market_session: "open",
     advance_decline: 0, new_highs: 0, new_lows: 0,
+    macro_regime: 'expansion', regime_ticks_remaining: 1200,
   };
 
   let curStocks = [...stocks];

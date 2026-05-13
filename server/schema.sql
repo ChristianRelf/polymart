@@ -26,6 +26,8 @@ CREATE TABLE IF NOT EXISTS market_state (
   advance_decline INT          NOT NULL DEFAULT 0,
   new_highs       INT          NOT NULL DEFAULT 0,
   new_lows        INT          NOT NULL DEFAULT 0,
+  macro_regime           VARCHAR(16)  NOT NULL DEFAULT 'expansion',
+  regime_ticks_remaining INT          NOT NULL DEFAULT 1200,
   updated_at      DATETIME(3)  NOT NULL DEFAULT CURRENT_TIMESTAMP(3) ON UPDATE CURRENT_TIMESTAMP(3),
   PRIMARY KEY (id),
   CONSTRAINT singleton CHECK (id = 1)
@@ -118,6 +120,12 @@ CREATE EVENT purge_old_events
   STARTS CURRENT_TIMESTAMP
   DO
     DELETE FROM events_log WHERE fired_at < DATE_SUB(NOW(), INTERVAL 1 DAY);
+
+-- ── Migration for macro regime columns (existing installs) ───────────────────
+-- Run manually if upgrading a live DB:
+--   ALTER TABLE market_state
+--     ADD COLUMN macro_regime VARCHAR(16) NOT NULL DEFAULT 'expansion' AFTER new_lows,
+--     ADD COLUMN regime_ticks_remaining INT NOT NULL DEFAULT 1200 AFTER macro_regime;
 
 -- ── Migration for existing installs ──────────────────────────────────────────
 -- Run manually if upgrading a live DB to shrink oversized JSON blobs:

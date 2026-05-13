@@ -4,7 +4,8 @@
       "Bash(Get-ChildItem -Path \"c:\\\\Users\\\\chris\\\\Documents\\\\GitHub\\\\polymart\" -Force)",
       "Bash(Format-Table -AutoSize)",
       "PowerShell(Get-Command node, npm, npx -ErrorAction SilentlyContinue)",
-      "Bash(node -e \"const m = require\\('c:/Users/chris/Documents/GitHub/polymart/node_modules/lucide-react'\\); console.log\\('Coins:', !!m.Coins, 'CandlestickChart:', !!m.CandlestickChart, 'Bitcoin:', !!m.Bitcoin, 'Globe:', !!m.Globe\\)\")"
+      "Bash(node -e \"const m = require\\('c:/Users/chris/Documents/GitHub/polymart/node_modules/lucide-react'\\); console.log\\('Coins:', !!m.Coins, 'CandlestickChart:', !!m.CandlestickChart, 'Bitcoin:', !!m.Bitcoin, 'Globe:', !!m.Globe\\)\")",
+      "Bash(xargs grep -l \"users\\\\|portfolio\\\\|positions\\\\|cash\\\\|buying\\\\|selling\")"
     ]
   }
 }

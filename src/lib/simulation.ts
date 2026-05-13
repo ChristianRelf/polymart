@@ -331,7 +331,9 @@ const EVENTS_RAW = [
 
 function gaussian(): number {
   const u1 = Math.random(), u2 = Math.random()
-  return Math.sqrt(-2 * Math.log(u1)) * Math.cos(2 * Math.PI * u2)
+  const z = Math.sqrt(-2 * Math.log(Math.max(u1, 1e-10))) * Math.cos(2 * Math.PI * u2)
+  if (Math.random() < 0.08) return z * (2.5 + Math.random() * 1.5)
+  return z
 }
 
 export function fgLabel(v: number): string {
@@ -394,7 +396,11 @@ export function simTick(
   m.inflation    = Math.max(-.5, Math.min(8, m.inflation + (Math.random() - .5) * .01))
   m.gdpGrowth    = Math.max(-3, Math.min(7, m.gdpGrowth + (Math.random() - .5) * .02))
   m.fg = Math.max(0, Math.min(100,
-    m.fg + (Math.random() - .49) * .8 + (m.gdpGrowth - 2) * .1 - (m.inflation - 2.5) * .08
+    m.fg
+    + (Math.random() - 0.5) * 0.65
+    + (50 - m.fg) * 0.0008
+    + (m.gdpGrowth - 2) * 0.06
+    - (m.inflation - 2.5) * 0.04
   ))
 
   const gs = (m.fg - 50) / 50 * .003
@@ -483,9 +489,11 @@ export function simTick(
     if (def.sector === "agri")      cor = (m.inflation - 2.5) * .0004 - (m.gdpGrowth - 2.8) * .0002
 
     const tv = def.volatility * .03 * mcm
+    const trendDrift = Math.min(1 + def.trend * (st.earningsCycle / 300), 10)
+    const fairValue = def.basePrice * Math.max(0.1, trendDrift)
     let np = p + p * (def.trend * .02 + tv * n * Math.abs(cm) + se * .04 + ee + nc + st.momentum * .3 + sk + gs * .08 + cor + rsiP + st.insiderBias + eE + rp + ip + gb) * (cm < 0 ? -1 : 1)
-    np += -(np - def.basePrice) / def.basePrice * def.basePrice * .007
-    np = Math.round(Math.max(.25, Math.min(np, def.basePrice * 6)) * 100) / 100
+    np += -(np - fairValue) * 0.002
+    np = Math.round(Math.max(0.10, Math.min(np, def.basePrice * 10)) * 100) / 100
 
     st.vol += Math.floor(600 + Math.abs(np - p) / p * 100000 + Math.random() * 3000)
 
