@@ -313,21 +313,6 @@ function Footer({ setRoute }: { setRoute: (r: Route) => void }) {
         </div>
 
         {/* Bottom bar */}
-        <div className="flex flex-wrap items-center justify-between gap-4 pt-6 border-t border-border/40">
-          <p className="text-xs text-muted-foreground">
-            
-          </p>
-          <a
-            href="https://discord.com/oauth2/authorize?client_id=1503197938027860102"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="flex items-center gap-2 px-3 py-1.5 bg-foreground text-background rounded-lg text-xs font-semibold hover:opacity-90 transition-opacity no-underline"
-          >
-            <Bot className="w-3 h-3" />
-            Add to Discord
-          </a>
-        </div>
-      </div>
 
       {/* Large logo strip - full bleed */}
       <div
