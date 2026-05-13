@@ -1,6 +1,7 @@
 import express from "express";
 import pool from "./db.js";
 import { STOCK_DEFS, SECTORS } from "./simulation.js";
+import { COMPANY_PROFILES, generateNews } from "./company-data.js";
 
 const router = express.Router();
 
@@ -348,6 +349,88 @@ router.get("/getHealth", async (req, res) => {
     const ms = rows[0];
     const secsAgo = ms ? Math.floor((Date.now() - new Date(ms.updated_at).getTime()) / 1000) : null;
     res.json({ status: ms ? "ok" : "uninitialised", tickCount: ms?.tick_count ?? 0, secondsSinceLastTick: secsAgo, stale: secsAgo !== null ? secsAgo > 30 : true, vix: ms ? +ms.vix : null, marketSession: ms?.market_session ?? null, fearGreed: ms ? Math.round(ms.fear_greed) : null, totalStocks: Object.keys(STOCK_DEFS).length, totalSectors: Object.keys(SECTORS).length, updatedAt: ms?.updated_at ?? null });
+  } catch (e) { res.status(500).json({ error: String(e) }); }
+});
+
+// ── GET /api/v1/info?ticker= ──────────────────────────────────────────────────
+router.get("/info", async (req, res) => {
+  setCors(res);
+  try {
+    const ticker = (req.query.ticker || "").toUpperCase();
+    if (!ticker) return res.status(400).json({ error: "Missing ?ticker= parameter" });
+
+    const profile = COMPANY_PROFILES[ticker];
+    if (!profile) return res.status(404).json({ error: `No company info for ticker: ${ticker}` });
+
+    const [[stockRow], [msRow]] = await Promise.all([
+      pool.query("SELECT price, prev_price, open_price, rsi, streak, volume, hi52w, lo52w, ath, session, beta, atr, sma20, sma50, macd, macd_signal, macd_hist, bb_upper, bb_middle, bb_lower FROM stocks_state WHERE ticker = ? LIMIT 1", [ticker]).then(([r]) => r),
+      pool.query("SELECT fear_greed, inflation, interest_rate, gdp_growth, vix, market_session FROM market_state WHERE id = 1 LIMIT 1").then(([r]) => r),
+    ]);
+
+    if (!stockRow) return res.status(404).json({ error: `Ticker not found: ${ticker}` });
+
+    const def = STOCK_DEFS[ticker];
+    const sector = def?.sector ?? null;
+    const peers = def ? Object.keys(STOCK_DEFS).filter(k => STOCK_DEFS[k].sector === sector && k !== ticker) : [];
+
+    const pct = stockRow.prev_price > 0 ? (stockRow.price - stockRow.prev_price) / stockRow.prev_price * 100 : 0;
+    const openPct = stockRow.open_price > 0 ? (stockRow.price - stockRow.open_price) / stockRow.open_price * 100 : 0;
+
+    const macro = {
+      fearGreed:    msRow ? Math.round(msRow.fear_greed) : 50,
+      interestRate: msRow ? +msRow.interest_rate : 5,
+      inflation:    msRow ? +msRow.inflation : 2.5,
+      gdpGrowth:    msRow ? +msRow.gdp_growth : 2.8,
+      vix:          msRow ? +msRow.vix : 20,
+    };
+
+    // Analyst rating derived from RSI and trend vs base price
+    const rsi = +stockRow.rsi;
+    const priceVsBase = def ? (stockRow.price - def.basePrice) / def.basePrice : 0;
+    let rating, ratingScore;
+    if (rsi > 78 || priceVsBase > 1.5) { rating = "Underperform"; ratingScore = 1.8; }
+    else if (rsi > 65)                  { rating = "Hold";          ratingScore = 3.0; }
+    else if (rsi < 22 || priceVsBase < -0.4) { rating = "Strong Buy"; ratingScore = 4.8; }
+    else if (rsi < 40)                  { rating = "Buy";           ratingScore = 4.1; }
+    else                                { rating = "Hold";          ratingScore = 3.2; }
+
+    const stockForNews = { change: +pct.toFixed(2), rsi, streak: stockRow.streak };
+    const news = generateNews(ticker, stockForNews, macro, sector);
+
+    res.json({
+      ticker,
+      companyName: STOCK_DEFS[ticker]?.name ?? ticker,
+      ...profile,
+      sectorKey:   sector,
+      sectorLabel: sector ? (SECTORS[sector]?.label ?? null) : null,
+      sectorIcon:  sector ? (SECTORS[sector]?.icon  ?? null) : null,
+      peers,
+      market: {
+        price:          +stockRow.price,
+        change:         +pct.toFixed(2),
+        changeSinceOpen: +openPct.toFixed(2),
+        hi52w:          +stockRow.hi52w,
+        lo52w:          +stockRow.lo52w,
+        allTimeHigh:    +stockRow.ath,
+        volume:         stockRow.volume,
+        session:        stockRow.session,
+        beta:           +stockRow.beta,
+        atr:            +stockRow.atr,
+        rsi,
+        streak:         stockRow.streak,
+        sma20:          +stockRow.sma20,
+        sma50:          +stockRow.sma50,
+        macd:           +stockRow.macd,
+        macdSignal:     +stockRow.macd_signal,
+        macdHist:       +stockRow.macd_hist,
+        bbUpper:        +stockRow.bb_upper,
+        bbMiddle:       +stockRow.bb_middle,
+        bbLower:        +stockRow.bb_lower,
+      },
+      macro,
+      analystRating: { rating, score: ratingScore, analystCount: Math.floor(rsi % 8) + 4 },
+      news,
+    });
   } catch (e) { res.status(500).json({ error: String(e) }); }
 });
 

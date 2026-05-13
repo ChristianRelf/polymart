@@ -456,7 +456,11 @@ export function runTick(ms, stocks, sectors) {
   m.inflation     = Math.max(-.5, Math.min(8,  m.inflation     + (Math.random() - .5) * .01));
   m.gdp_growth    = Math.max(-3,  Math.min(7,  m.gdp_growth    + (Math.random() - .5) * .02));
   m.fear_greed    = Math.max(0, Math.min(100,
-    m.fear_greed + (Math.random() - .49) * .8 + (m.gdp_growth - 2) * .1 - (m.inflation - 2.5) * .08
+    m.fear_greed
+    + (Math.random() - 0.5) * 0.22            // dampened random walk (was 0.8)
+    + (50 - m.fear_greed) * 0.004             // mean-reversion toward 50
+    + (m.gdp_growth - 2) * 0.04              // macro influence (reduced)
+    - (m.inflation - 2.5) * 0.03             // inflation drag (reduced)
   ));
 
   const session     = sessionPhase(m.tick_count);
@@ -474,12 +478,12 @@ export function runTick(ms, stocks, sectors) {
 
   // Event
   let newEvent = null;
-  const eventProb = session === "closed" ? 0.02 : 0.10;
+  const eventProb = session === "closed" ? 0.02 : 0.03;
   if (Math.random() < eventProb) {
     const w = [];
     for (const e of EVENTS_RAW) for (let i = 0; i < (e.weight || 1); i++) w.push(e);
     newEvent = w[Math.floor(Math.random() * w.length)];
-    m.fear_greed = Math.max(0, Math.min(100, m.fear_greed + newEvent.effect * 35));
+    m.fear_greed = Math.max(0, Math.min(100, m.fear_greed + newEvent.effect * 20));
     const es = newEvent.sector;
     if (es && sec[es]) sec[es].news_stack += newEvent.effect * .6;
   }
