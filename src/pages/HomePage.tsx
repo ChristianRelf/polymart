@@ -82,7 +82,7 @@ export default function HomePage({ onNavigate }: Props) {
       <section className="relative flex flex-col items-center text-center pt-16 sm:pt-24 lg:pt-32 pb-14 sm:pb-20 lg:pb-28 px-4 sm:px-8 overflow-hidden">
         {/* subtle grid background */}
         <div
-          className="pointer-events-none absolute inset-0 opacity-[0.03]"
+          className="pointer-events-none absolute inset-0 opacity-[0.1]"
           style={{
             backgroundImage:
               "linear-gradient(var(--border) 1px, transparent 1px), linear-gradient(90deg, var(--border) 1px, transparent 1px)",
