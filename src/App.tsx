@@ -549,8 +549,8 @@ export default function App() {
           {route === "community"   && <CommunityPage  onNavigate={go} />}
           {route === "bot-terms"      && <BotLegalPage      type="bot-terms"   onNavigate={go} />}
           {route === "bot-privacy"    && <BotLegalPage      type="bot-privacy" onNavigate={go} />}
-          {route === "kofi-privacy"    && <KofiLegalPage     type="bot-privacy" onNavigate={go} />}
-          {route === "kofi-terms"    && <KofiLegalPage      type="bot-terms" onNavigate={go} />}
+          {route === "kofi-privacy"    && <KofiLegalPage     type="kofi-privacy" onNavigate={go} />}
+          {route === "kofi-terms"    && <KofiLegalPage      type="kofi-terms" onNavigate={go} />}
           {route === "community-blog" && <CommunityBlogPage onNavigate={go} />}
           {route === "sponsor"        && <SponsorPage       onNavigate={go} />}
         </main>
