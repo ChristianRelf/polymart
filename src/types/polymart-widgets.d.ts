@@ -2,6 +2,7 @@ import type { HTMLAttributes } from 'react'
 
 type PolymartEl = HTMLAttributes<HTMLElement> & {
   ticker?: string
+  pair?: string
   chart?: string
   theme?: string
   interval?: string
@@ -14,6 +15,8 @@ type PolymartEl = HTMLAttributes<HTMLElement> & {
   width?: string
   height?: string
   sector?: string
+  category?: string
+  labels?: string
 }
 
 // Augment the JSX namespace used by react/jsx-runtime (React 17+ new transform)
@@ -27,6 +30,10 @@ declare module 'react/jsx-runtime' {
       'polymart-sparkline': PolymartEl
       'polymart-sector': PolymartEl
       'polymart-events': PolymartEl
+      'polymart-forex-ticker': PolymartEl
+      'polymart-forex-table': PolymartEl
+      'polymart-forex-chart': PolymartEl
+      'polymart-forex-heatmap': PolymartEl
     }
   }
 }
