@@ -1,14 +1,16 @@
-// Polymart tick worker - runs the simulation every 10 seconds, writes to MySQL
+// Polymart universal tick worker - runs stock + forex simulation every 10 seconds
 
 import pool from "./db.js";
 import { runTick, buildInitialStocks, buildInitialSectors, STOCK_DEFS, SECTORS } from "./simulation.js";
+import { runForexTick, buildInitialForex, FOREX_PAIRS } from "./forex-simulation.js";
 
 let ticking = false;
 
-async function writeMysqlBatch(ms, stocks, sectors, newEvent) {
+// ── Stock market persistence ───────────────────────────────────────────────────
+
+async function writeStocksBatch(ms, stocks, sectors, newEvent) {
   const conn = await pool.getConnection();
   try {
-    // market_state upsert
     await conn.query(
       `INSERT INTO market_state (id,index_value,index_prev,fear_greed,interest_rate,inflation,gdp_growth,
         crash_cooldown,boom_cooldown,up_streak,down_streak,tick_count,vix,market_session,
@@ -29,7 +31,6 @@ async function writeMysqlBatch(ms, stocks, sectors, newEvent) {
        ms.advance_decline,ms.new_highs,ms.new_lows,ms.macro_regime,ms.regime_ticks_remaining]
     );
 
-    // stocks_state batch upsert - chunk by 20 to avoid huge queries
     const chunkSize = 20;
     for (let i = 0; i < stocks.length; i += chunkSize) {
       const chunk = stocks.slice(i, i + chunkSize);
@@ -54,12 +55,10 @@ async function writeMysqlBatch(ms, stocks, sectors, newEvent) {
       const cols = "ticker,name,sector,mcap,price,prev_price,open_price,hi52w,lo52w,ath,volume,buy_volume,sell_volume,rsi,momentum,insider_bias,earnings_cycle,streak,beta,atr,ema12,ema26,macd,macd_signal,macd_hist,bb_upper,bb_middle,bb_lower,bb_bw,sma20,sma50,bid,ask,spread_pct,vwap,session,halted,candle_open,candle_high,candle_low,candle_ticks,history,candles";
       const placeholders = values.map(() => `(${Array(43).fill("?").join(",")})`).join(",");
       const flat = values.flat();
-      // Build ON DUPLICATE KEY UPDATE for all mutable columns
       const updateCols = "name=VALUES(name),sector=VALUES(sector),mcap=VALUES(mcap),price=VALUES(price),prev_price=VALUES(prev_price),open_price=VALUES(open_price),hi52w=VALUES(hi52w),lo52w=VALUES(lo52w),ath=VALUES(ath),volume=VALUES(volume),buy_volume=VALUES(buy_volume),sell_volume=VALUES(sell_volume),rsi=VALUES(rsi),momentum=VALUES(momentum),insider_bias=VALUES(insider_bias),earnings_cycle=VALUES(earnings_cycle),streak=VALUES(streak),beta=VALUES(beta),atr=VALUES(atr),ema12=VALUES(ema12),ema26=VALUES(ema26),macd=VALUES(macd),macd_signal=VALUES(macd_signal),macd_hist=VALUES(macd_hist),bb_upper=VALUES(bb_upper),bb_middle=VALUES(bb_middle),bb_lower=VALUES(bb_lower),bb_bw=VALUES(bb_bw),sma20=VALUES(sma20),sma50=VALUES(sma50),bid=VALUES(bid),ask=VALUES(ask),spread_pct=VALUES(spread_pct),vwap=VALUES(vwap),session=VALUES(session),halted=VALUES(halted),candle_open=VALUES(candle_open),candle_high=VALUES(candle_high),candle_low=VALUES(candle_low),candle_ticks=VALUES(candle_ticks),history=VALUES(history),candles=VALUES(candles),updated_at=NOW(3)";
       await conn.query(`INSERT INTO stocks_state (${cols}) VALUES ${placeholders} ON DUPLICATE KEY UPDATE ${updateCols}`, flat);
     }
 
-    // sector_state upsert
     for (const s of sectors) {
       await conn.query(
         `INSERT INTO sector_state (sector_key,label,icon,momentum,trend,news_stack,updated_at)
@@ -69,13 +68,11 @@ async function writeMysqlBatch(ms, stocks, sectors, newEvent) {
       );
     }
 
-    // events_log insert + prune
     if (newEvent) {
       await conn.query(
         "INSERT INTO events_log (id,event_text,effect,sector,category,weight,fired_at) VALUES (UUID(),?,?,?,?,?,NOW(3))",
         [newEvent.text, newEvent.effect, newEvent.sector ?? null, newEvent.category ?? null, newEvent.weight ?? 1]
       );
-      // Keep only the most recent 40 events
       await conn.query(
         "DELETE FROM events_log WHERE id NOT IN (SELECT id FROM (SELECT id FROM events_log ORDER BY fired_at DESC LIMIT 40) t)"
       );
@@ -85,7 +82,42 @@ async function writeMysqlBatch(ms, stocks, sectors, newEvent) {
   }
 }
 
-async function readState() {
+// ── Forex persistence ─────────────────────────────────────────────────────────
+
+async function writeForexBatch(pairs) {
+  if (!pairs || pairs.length === 0) return;
+  const conn = await pool.getConnection();
+  try {
+    const chunkSize = 14;
+    for (let i = 0; i < pairs.length; i += chunkSize) {
+      const chunk = pairs.slice(i, i + chunkSize);
+      const values = chunk.map(p => [
+        p.pair, p.base, p.quote, p.category,
+        p.price, p.prev_price, p.open_price,
+        p.hi_session, p.lo_session, p.hi52w, p.lo52w,
+        p.spread, p.bid, p.ask, p.volume,
+        p.rsi, p.momentum, p.atr,
+        p.ema12, p.ema26, p.macd, p.macd_signal, p.macd_hist,
+        p.bb_upper, p.bb_middle, p.bb_lower, p.bb_bw,
+        p.sma20, p.sma50,
+        p.candle_open, p.candle_high, p.candle_low, p.candle_ticks,
+        JSON.stringify(p.history),
+        JSON.stringify(p.candles),
+      ]);
+      const cols = "pair,base,quote,category,price,prev_price,open_price,hi_session,lo_session,hi52w,lo52w,spread,bid,ask,volume,rsi,momentum,atr,ema12,ema26,macd,macd_signal,macd_hist,bb_upper,bb_middle,bb_lower,bb_bw,sma20,sma50,candle_open,candle_high,candle_low,candle_ticks,history,candles";
+      const placeholders = values.map(() => `(${Array(35).fill("?").join(",")})`).join(",");
+      const flat = values.flat();
+      const updateCols = "base=VALUES(base),quote=VALUES(quote),category=VALUES(category),price=VALUES(price),prev_price=VALUES(prev_price),open_price=VALUES(open_price),hi_session=VALUES(hi_session),lo_session=VALUES(lo_session),hi52w=VALUES(hi52w),lo52w=VALUES(lo52w),spread=VALUES(spread),bid=VALUES(bid),ask=VALUES(ask),volume=VALUES(volume),rsi=VALUES(rsi),momentum=VALUES(momentum),atr=VALUES(atr),ema12=VALUES(ema12),ema26=VALUES(ema26),macd=VALUES(macd),macd_signal=VALUES(macd_signal),macd_hist=VALUES(macd_hist),bb_upper=VALUES(bb_upper),bb_middle=VALUES(bb_middle),bb_lower=VALUES(bb_lower),bb_bw=VALUES(bb_bw),sma20=VALUES(sma20),sma50=VALUES(sma50),candle_open=VALUES(candle_open),candle_high=VALUES(candle_high),candle_low=VALUES(candle_low),candle_ticks=VALUES(candle_ticks),history=VALUES(history),candles=VALUES(candles),updated_at=NOW(3)";
+      await conn.query(`INSERT INTO forex_state (${cols}) VALUES ${placeholders} ON DUPLICATE KEY UPDATE ${updateCols}`, flat);
+    }
+  } finally {
+    conn.release();
+  }
+}
+
+// ── State readers ─────────────────────────────────────────────────────────────
+
+async function readStockState() {
   const [[msRows], [stockRows], [sectorRows]] = await Promise.all([
     pool.query("SELECT * FROM market_state WHERE id = 1 LIMIT 1"),
     pool.query("SELECT * FROM stocks_state"),
@@ -138,7 +170,18 @@ async function readState() {
   return { ms, stocks, sectors: sectorRows };
 }
 
-async function ensureInitialised(ms, stocks, sectors) {
+async function readForexState() {
+  const [rows] = await pool.query("SELECT * FROM forex_state");
+  return rows.map(p => ({
+    ...p,
+    history: Array.isArray(p.history) ? p.history : [],
+    candles: Array.isArray(p.candles) ? p.candles : [],
+  }));
+}
+
+// ── Initialisation helpers ────────────────────────────────────────────────────
+
+async function ensureStocksInitialised(ms, stocks, sectors) {
   const isFirstRun = !ms;
   const knownTickers = new Set(stocks.map(s => s.ticker));
   const missingTickers = Object.keys(STOCK_DEFS).filter(t => !knownTickers.has(t));
@@ -160,15 +203,13 @@ async function ensureInitialised(ms, stocks, sectors) {
   if (isFirstRun) {
     curStocks = buildInitialStocks();
     curSectors = buildInitialSectors();
-    // Warm up with 60 ticks
     for (let i = 0; i < 60; i++) {
       const r = runTick(curMs, curStocks, curSectors);
       curMs = r.ms; curStocks = r.stocks; curSectors = r.sectors;
     }
-    await writeMysqlBatch(curMs, curStocks, curSectors, null);
-    console.log("[tick] First-run initialisation complete, 60 warm-up ticks applied.");
+    await writeStocksBatch(curMs, curStocks, curSectors, null);
+    console.log("[tick] Stocks first-run init complete (60 warm-up ticks).");
   } else {
-    // Insert any missing tickers / sectors added to STOCK_DEFS / SECTORS after deploy
     if (missingTickers.length > 0) {
       const extra = buildInitialStocks().filter(s => missingTickers.includes(s.ticker));
       curStocks.push(...extra);
@@ -182,17 +223,55 @@ async function ensureInitialised(ms, stocks, sectors) {
   return { ms: curMs, stocks: curStocks, sectors: curSectors };
 }
 
+async function ensureForexInitialised(pairs) {
+  const knownPairs = new Set(pairs.map(p => p.pair));
+  const missingPairs = Object.keys(FOREX_PAIRS).filter(p => !knownPairs.has(p));
+
+  if (pairs.length === 0) {
+    let curPairs = buildInitialForex();
+    for (let i = 0; i < 40; i++) {
+      const r = runForexTick(curPairs);
+      curPairs = r.pairs;
+    }
+    await writeForexBatch(curPairs);
+    console.log("[tick] Forex first-run init complete (40 warm-up ticks).");
+    return curPairs;
+  }
+
+  if (missingPairs.length > 0) {
+    const extra = buildInitialForex().filter(p => missingPairs.includes(p.pair));
+    return [...pairs, ...extra];
+  }
+
+  return pairs;
+}
+
+// ── Universal tick ────────────────────────────────────────────────────────────
+
 export async function tick() {
   if (ticking) return;
   ticking = true;
   const t0 = Date.now();
   try {
-    let { ms, stocks, sectors } = await readState();
-    ({ ms, stocks, sectors } = await ensureInitialised(ms, stocks, sectors));
+    const [stockState, forexPairsRaw] = await Promise.all([
+      readStockState(),
+      readForexState(),
+    ]);
+
+    let { ms, stocks, sectors } = stockState;
+    ({ ms, stocks, sectors } = await ensureStocksInitialised(ms, stocks, sectors));
+    const forexPairs = await ensureForexInitialised(forexPairsRaw);
+
     const { ms: newMs, stocks: newStocks, sectors: newSectors, newEvent } = runTick(ms, stocks, sectors);
-    await writeMysqlBatch(newMs, newStocks, newSectors, newEvent);
+    const { pairs: newForexPairs } = runForexTick(forexPairs);
+
+    await Promise.all([
+      writeStocksBatch(newMs, newStocks, newSectors, newEvent),
+      writeForexBatch(newForexPairs),
+    ]);
+
     const elapsed = Date.now() - t0;
-    console.log(`[tick] #${newMs.tick_count} session=${newMs.market_session} vix=${newMs.vix.toFixed(1)} fg=${Math.round(newMs.fear_greed)} (${elapsed}ms)`);
+    console.log(`[tick] #${newMs.tick_count} stocks session=${newMs.market_session} vix=${newMs.vix.toFixed(1)} fg=${Math.round(newMs.fear_greed)} | forex=${newForexPairs.length} pairs (${elapsed}ms)`);
   } catch (err) {
     console.error("[tick] error:", err);
   } finally {
@@ -201,7 +280,7 @@ export async function tick() {
 }
 
 export function startTickLoop(intervalMs = 10000) {
-  console.log(`[tick] Starting simulation loop every ${intervalMs / 1000}s`);
-  tick(); // immediate first tick
+  console.log(`[tick] Starting universal simulation loop every ${intervalMs / 1000}s (stocks + forex)`);
+  tick();
   return setInterval(tick, intervalMs);
 }

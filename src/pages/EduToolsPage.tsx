@@ -9,7 +9,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { cn } from "@/lib/utils"
 import { Wrench, ChevronUp, ChevronDown, ChevronsUpDown, Search, Loader2, ArrowRight, TrendingUp, TrendingDown } from "lucide-react"
 
-type Route = "home" | "market" | "api" | "terms" | "privacy" | "education" | "changelog" | "products" | "help" | "widgets" | "edu-tools"
+import type { Route } from "@/lib/routes"
 
 interface Props {
   onNavigate: (r: Route) => void
@@ -223,7 +223,7 @@ function ScreenerTab() {
       </div>
 
       <p className="text-[11px] text-muted-foreground mt-3">
-        Showing {filtered.length} of {Object.keys(stocks).length} stocks · Updates every 5 seconds
+        Showing {filtered.length} of {Object.keys(stocks).length} stocks · Updates every 10 seconds
       </p>
     </div>
   )
@@ -754,7 +754,7 @@ export default function EduToolsPage({ onNavigate }: Props) {
             Student Tools
           </Badge>
           <Badge variant="outline" className="text-xs border-emerald-500/40 text-emerald-400 bg-emerald-500/5 gap-1.5">
-            Live · Updates every 5s
+            Live · Updates every 10s
           </Badge>
         </div>
         <h1 className="text-4xl sm:text-5xl font-extrabold tracking-tight text-foreground mb-4 text-balance">

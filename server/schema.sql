@@ -109,6 +109,47 @@ CREATE TABLE IF NOT EXISTS events_log (
   INDEX idx_fired_at (fired_at)
 ) ENGINE=InnoDB;
 
+-- ── forex_state (one row per pair, 28 rows) ──────────────────────────────────
+CREATE TABLE IF NOT EXISTS forex_state (
+  pair          VARCHAR(10)  NOT NULL,
+  base          VARCHAR(5)   NOT NULL DEFAULT '',
+  quote         VARCHAR(5)   NOT NULL DEFAULT '',
+  category      VARCHAR(10)  NOT NULL DEFAULT 'major',
+  price         DOUBLE       NOT NULL DEFAULT 0,
+  prev_price    DOUBLE       NOT NULL DEFAULT 0,
+  open_price    DOUBLE       NOT NULL DEFAULT 0,
+  hi_session    DOUBLE       NOT NULL DEFAULT 0,
+  lo_session    DOUBLE       NOT NULL DEFAULT 0,
+  hi52w         DOUBLE       NOT NULL DEFAULT 0,
+  lo52w         DOUBLE       NOT NULL DEFAULT 0,
+  spread        DOUBLE       NOT NULL DEFAULT 0,
+  bid           DOUBLE       NOT NULL DEFAULT 0,
+  ask           DOUBLE       NOT NULL DEFAULT 0,
+  volume        BIGINT       NOT NULL DEFAULT 0,
+  rsi           DOUBLE       NOT NULL DEFAULT 50,
+  momentum      DOUBLE       NOT NULL DEFAULT 0,
+  atr           DOUBLE       NOT NULL DEFAULT 0,
+  ema12         DOUBLE       NOT NULL DEFAULT 0,
+  ema26         DOUBLE       NOT NULL DEFAULT 0,
+  macd          DOUBLE       NOT NULL DEFAULT 0,
+  macd_signal   DOUBLE       NOT NULL DEFAULT 0,
+  macd_hist     DOUBLE       NOT NULL DEFAULT 0,
+  bb_upper      DOUBLE       NOT NULL DEFAULT 0,
+  bb_middle     DOUBLE       NOT NULL DEFAULT 0,
+  bb_lower      DOUBLE       NOT NULL DEFAULT 0,
+  bb_bw         DOUBLE       NOT NULL DEFAULT 0,
+  sma20         DOUBLE       NOT NULL DEFAULT 0,
+  sma50         DOUBLE       NOT NULL DEFAULT 0,
+  candle_open   DOUBLE       NOT NULL DEFAULT 0,
+  candle_high   DOUBLE       NOT NULL DEFAULT 0,
+  candle_low    DOUBLE       NOT NULL DEFAULT 0,
+  candle_ticks  INT          NOT NULL DEFAULT 0,
+  history       JSON         NOT NULL DEFAULT (JSON_ARRAY()),
+  candles       JSON         NOT NULL DEFAULT (JSON_ARRAY()),
+  updated_at    DATETIME(3)  NOT NULL DEFAULT CURRENT_TIMESTAMP(3) ON UPDATE CURRENT_TIMESTAMP(3),
+  PRIMARY KEY (pair)
+) ENGINE=InnoDB;
+
 -- ── 24-hour cull event ────────────────────────────────────────────────────────
 -- Purges events_log rows older than 24 hours every day.
 -- market_state (including tick_count), stocks_state, and sector_state are NOT

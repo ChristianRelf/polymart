@@ -15,12 +15,12 @@ export const SIM_CONFIGS: {
   status: "live" | "coming_soon"
   description: string
 }[] = [
-  { id: "stocks", label: "Stocks", icon: "📈", status: "live",        description: "132 simulated equities across 20 sectors. Prices update every 5 seconds." },
+  { id: "stocks", label: "Stocks", icon: "📈", status: "live",        description: "132 simulated equities across 20 sectors. Prices update every 10 seconds." },
+  { id: "forex",  label: "Forex",  icon: "💱", status: "live",        description: "40 currency pairs (major, minor, exotic) with live technical indicators." },
   { id: "crypto", label: "Crypto", icon: "₿",  status: "coming_soon", description: "Simulated cryptocurrency market with volatile assets and 24/7 trading." },
-  { id: "forex",  label: "Forex",  icon: "💱", status: "coming_soon", description: "Foreign exchange simulation with major, minor, and exotic currency pairs." },
 ]
 
-// ── Exported types ────────────────────────────────────────────────────────────
+// ── Stock types ───────────────────────────────────────────────────────────────
 
 export type MarketOverview = {
   index: number
@@ -162,6 +162,57 @@ export type MarketEvent = {
   firedAt: string
 }
 
+// ── Forex types ───────────────────────────────────────────────────────────────
+
+export type ForexPairSummary = {
+  pair: string
+  base: string
+  quote: string
+  category: "major" | "minor" | "exotic"
+  baseName: string
+  quoteName: string
+  baseCountry: string
+  quoteCountry: string
+  baseFlag: string
+  quoteFlag: string
+  price: number
+  prevPrice: number
+  change: number
+  changePct: number
+  bid: number
+  ask: number
+  spread: number
+  spreadPips: string
+  hiSession: number
+  loSession: number
+  hi52w: number
+  lo52w: number
+  volume: number
+  rsi: number
+  momentum: number
+  atr: number
+  macd: number
+  macdSignal: number
+  macdHist: number
+  bbUpper: number
+  bbMiddle: number
+  bbLower: number
+  bbBw: number
+  sma20: number
+  sma50: number
+  pipSize: number
+  decimals: number
+  updatedAt: string
+}
+
+export type ForexPairDetail = ForexPairSummary & {
+  description: string
+  economicDrivers: string[]
+  factSheet: Record<string, string>
+  history: number[]
+  candles: Candle[]
+}
+
 // ── Context ───────────────────────────────────────────────────────────────────
 
 type SimCtx = {
@@ -169,16 +220,19 @@ type SimCtx = {
   stocks: Record<string, StockSummary>
   sectors: Record<string, SectorInfo>
   events: MarketEvent[]
+  forexPairs: Record<string, ForexPairSummary>
   tickCount: number
   loading: boolean
   lastRefresh: number
   getDetail: (ticker: string) => Promise<StockDetail | null>
+  getForexPair: (pair: string) => Promise<ForexPairDetail | null>
 }
 
 const SimContext = createContext<SimCtx>({
-  market: null, stocks: {}, sectors: {}, events: [],
+  market: null, stocks: {}, sectors: {}, events: [], forexPairs: {},
   tickCount: 0, loading: true, lastRefresh: 0,
   getDetail: async () => null,
+  getForexPair: async () => null,
 })
 
 export function useSimulation() {
@@ -188,27 +242,30 @@ export function useSimulation() {
 // ── Provider ──────────────────────────────────────────────────────────────────
 
 export function SimulationProvider({ children }: { children: React.ReactNode }) {
-  const [market,    setMarket]    = useState<MarketOverview | null>(null)
-  const [stocks,    setStocks]    = useState<Record<string, StockSummary>>({})
-  const [sectors,   setSectors]   = useState<Record<string, SectorInfo>>({})
-  const [events,    setEvents]    = useState<MarketEvent[]>([])
-  const [tickCount,    setTickCount]    = useState(0)
-  const [loading,      setLoading]      = useState(true)
-  const [lastRefresh,  setLastRefresh]  = useState(0)
+  const [market,     setMarket]     = useState<MarketOverview | null>(null)
+  const [stocks,     setStocks]     = useState<Record<string, StockSummary>>({})
+  const [sectors,    setSectors]    = useState<Record<string, SectorInfo>>({})
+  const [events,     setEvents]     = useState<MarketEvent[]>([])
+  const [forexPairs, setForexPairs] = useState<Record<string, ForexPairSummary>>({})
+  const [tickCount,  setTickCount]  = useState(0)
+  const [loading,    setLoading]    = useState(true)
+  const [lastRefresh,setLastRefresh]= useState(0)
 
   const refresh = useCallback(async () => {
     try {
-      const [mkt, stks, secs, evts] = await Promise.all([
+      const [mkt, stks, secs, evts, forex] = await Promise.all([
         apiFetch("/api/v1/getMarket"),
         apiFetch("/api/v1/getStocks"),
         apiFetch("/api/v1/getSectors"),
         apiFetch("/api/v1/getEvents?limit=20"),
+        apiFetch("/api/v1/forex/getPairs"),
       ])
 
       if (mkt && !mkt.error) { setMarket(mkt); setTickCount(mkt.tickCount) }
       if (stks && !stks.error) setStocks(stks)
       if (secs && !secs.error) setSectors(secs)
       if (Array.isArray(evts)) setEvents(evts)
+      if (forex && !forex.error) setForexPairs(forex)
       setLoading(false)
       setLastRefresh(Date.now())
     } catch {
@@ -218,7 +275,7 @@ export function SimulationProvider({ children }: { children: React.ReactNode }) 
 
   useEffect(() => {
     refresh()
-    const id = setInterval(refresh, 5_000)
+    const id = setInterval(refresh, 10_000)
     return () => clearInterval(id)
   }, [refresh])
 
@@ -228,8 +285,14 @@ export function SimulationProvider({ children }: { children: React.ReactNode }) 
     return data as StockDetail
   }, [])
 
+  const getForexPair = useCallback(async (pair: string): Promise<ForexPairDetail | null> => {
+    const data = await apiFetch(`/api/v1/forex/getPair?pair=${encodeURIComponent(pair)}`)
+    if (!data || data.error) return null
+    return data as ForexPairDetail
+  }, [])
+
   return (
-    <SimContext.Provider value={{ market, stocks, sectors, events, tickCount, loading, lastRefresh, getDetail }}>
+    <SimContext.Provider value={{ market, stocks, sectors, events, forexPairs, tickCount, loading, lastRefresh, getDetail, getForexPair }}>
       {children}
     </SimContext.Provider>
   )

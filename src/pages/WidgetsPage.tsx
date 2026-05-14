@@ -3,8 +3,7 @@ import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Check, Copy, ArrowRight, ExternalLink } from "lucide-react"
 import { cn } from "@/lib/utils"
-
-type Route = "home" | "market" | "api" | "terms" | "privacy" | "changelog" | "education" | "products" | "help" | "widgets"
+import type { Route } from "@/lib/routes"
 
 interface Props {
   onNavigate: (r: Route) => void
@@ -94,11 +93,13 @@ const WIDGETS = [
 ]
 
 export default function WidgetsPage({ onNavigate }: Props) {
+  const [widgetTab, setWidgetTab] = useState<"stocks" | "forex">("stocks")
+
   return (
     <div className="max-w-[1060px] mx-auto px-8 py-16">
 
       {/* ── Hero ── */}
-      <div className="mb-14">
+      <div className="mb-10">
         <div className="flex items-center gap-2 mb-6">
           <Badge variant="outline" className="text-xs border-border">Embeds &amp; Widgets</Badge>
           <Badge variant="outline" className="text-[10px] border-emerald-500/40 text-emerald-400 bg-emerald-500/5 flex items-center gap-1.5">
@@ -110,8 +111,7 @@ export default function WidgetsPage({ onNavigate }: Props) {
           Drop-in market widgets
         </h1>
         <p className="text-base text-muted-foreground leading-relaxed max-w-2xl mb-8">
-          Embed live Polymart data on any webpage with a single script tag. Seven ready-made
-          widgets, Shadow DOM isolated, zero dependencies, no API key required.
+          Embed live Polymart data on any webpage with a single script tag. Shadow DOM isolated, zero dependencies, no API key required.
         </p>
         <CodeBlock
           lang="Setup - add once to your page"
@@ -128,6 +128,26 @@ export default function WidgetsPage({ onNavigate }: Props) {
         </a>
       </div>
 
+      {/* ── Market tab switcher ── */}
+      <div className="flex items-center gap-1 p-1 rounded-xl bg-card border border-border mb-10 w-fit">
+        {([
+          { id: "stocks", label: "📈 Stock Widgets" },
+          { id: "forex",  label: "💱 Forex Widgets" },
+        ] as const).map(t => (
+          <button
+            key={t.id}
+            onClick={() => setWidgetTab(t.id)}
+            className={cn(
+              "px-5 py-2 rounded-lg text-sm font-semibold transition-all cursor-pointer",
+              widgetTab === t.id
+                ? "bg-foreground text-background"
+                : "text-muted-foreground hover:text-foreground"
+            )}
+          >{t.label}</button>
+        ))}
+      </div>
+
+      {widgetTab === "stocks" && (<>
       {/* ── Widget index ── */}
       <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-7 gap-2 mb-14">
         {WIDGETS.map(({ id, label, sub }) => (
@@ -322,6 +342,136 @@ export default function WidgetsPage({ onNavigate }: Props) {
           { name: "logo",     type: "url",              desc: "Custom logo URL for the Polymart branding footer." },
         ]} />
       </section>
+      </>)}
+
+      {/* ════════════════════ FOREX WIDGETS ════════════════════ */}
+      {widgetTab === "forex" && (<>
+
+      {/* Forex widget index */}
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 mb-14">
+        {[
+          { id: "forex-ticker",  label: "FX Ticker",  sub: "Pair price card"  },
+          { id: "forex-table",   label: "FX Table",   sub: "Pairs list"       },
+          { id: "forex-chart",   label: "FX Chart",   sub: "Rate history"     },
+          { id: "forex-heatmap", label: "FX Heatmap", sub: "Movement map"     },
+        ].map(({ id, label, sub }) => (
+          <a key={id} href={`#widget-${id}`}
+            className="flex flex-col bg-card border border-border rounded-xl p-3 hover:border-ring hover:bg-card/80 transition-colors no-underline group">
+            <span className="text-sm font-semibold text-foreground">{label}</span>
+            <span className="text-[11px] text-muted-foreground">{sub}</span>
+          </a>
+        ))}
+      </div>
+
+      <div className="h-px bg-border mb-14" />
+
+      {/* ── FX 1. Forex Ticker ── */}
+      <section id="widget-forex-ticker" className="mb-20 scroll-mt-20">
+        <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-[0.15em] mb-2">Forex Widget 1 of 4</p>
+        <h2 className="text-2xl font-bold text-foreground mb-2">Forex Ticker</h2>
+        <p className="text-sm text-muted-foreground mb-6 max-w-xl">
+          Compact card showing a single currency pair's live rate, daily change, bid/ask spread, and flag icons. Drop into any page or dashboard.
+        </p>
+        <PreviewFrame>
+          <polymart-forex-ticker pair="EURUSD" />
+        </PreviewFrame>
+        <CodeBlock code={`<polymart-forex-ticker pair="EURUSD"></polymart-forex-ticker>
+
+<!-- GBP/USD with chart hidden -->
+<polymart-forex-ticker pair="GBPUSD" chart="false"></polymart-forex-ticker>
+
+<!-- Light theme -->
+<polymart-forex-ticker pair="USDJPY" theme="light"></polymart-forex-ticker>`} />
+        <AttrsTable attrs={[
+          { name: "pair",     type: "string",          desc: 'Currency pair (e.g. "EURUSD"). Default: "EURUSD"' },
+          { name: "chart",    type: '"true" | "false"', desc: "Show sparkline chart. Default: true" },
+          { name: "theme",    type: '"dark" | "light"', desc: "Color theme. Default: dark" },
+          { name: "interval", type: "number",           desc: "Refresh interval ms. Default: 10000" },
+        ]} />
+      </section>
+
+      {/* ── FX 2. Forex Table ── */}
+      <section id="widget-forex-table" className="mb-20 scroll-mt-20">
+        <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-[0.15em] mb-2">Forex Widget 2 of 4</p>
+        <h2 className="text-2xl font-bold text-foreground mb-2">Forex Table</h2>
+        <p className="text-sm text-muted-foreground mb-6 max-w-xl">
+          A live rates table showing multiple currency pairs with flags, prices, change percentage, and bid/ask spread. Filter by category.
+        </p>
+        <PreviewFrame wide>
+          <polymart-forex-table category="major" />
+        </PreviewFrame>
+        <CodeBlock code={`<!-- All major pairs -->
+<polymart-forex-table category="major"></polymart-forex-table>
+
+<!-- Minor pairs -->
+<polymart-forex-table category="minor"></polymart-forex-table>
+
+<!-- All pairs -->
+<polymart-forex-table></polymart-forex-table>`} />
+        <AttrsTable attrs={[
+          { name: "category", type: '"major" | "minor" | "exotic"', desc: "Filter by pair category. Default: all pairs" },
+          { name: "limit",    type: "number",                        desc: "Maximum rows to show. Default: 10" },
+          { name: "theme",    type: '"dark" | "light"',              desc: "Color theme. Default: dark" },
+          { name: "interval", type: "number",                        desc: "Refresh interval ms. Default: 10000" },
+        ]} />
+      </section>
+
+      {/* ── FX 3. Forex Chart ── */}
+      <section id="widget-forex-chart" className="mb-20 scroll-mt-20">
+        <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-[0.15em] mb-2">Forex Widget 3 of 4</p>
+        <h2 className="text-2xl font-bold text-foreground mb-2">Forex Rate Chart</h2>
+        <p className="text-sm text-muted-foreground mb-6 max-w-xl">
+          Canvas-rendered price history chart for any currency pair, with SMA lines and Bollinger Bands. Ideal for embedding in analysis tools or educational pages.
+        </p>
+        <PreviewFrame wide>
+          <polymart-forex-chart pair="EURUSD" />
+        </PreviewFrame>
+        <CodeBlock code={`<polymart-forex-chart pair="EURUSD"></polymart-forex-chart>
+
+<!-- USD/JPY without indicators -->
+<polymart-forex-chart pair="USDJPY" indicators="false"></polymart-forex-chart>`} />
+        <AttrsTable attrs={[
+          { name: "pair",       type: "string",          desc: 'Currency pair (e.g. "EURUSD"). Default: "EURUSD"' },
+          { name: "indicators", type: '"true" | "false"', desc: "Show SMA + Bollinger Band lines. Default: true" },
+          { name: "theme",      type: '"dark" | "light"', desc: "Color theme. Default: dark" },
+          { name: "interval",   type: "number",           desc: "Refresh interval ms. Default: 10000" },
+        ]} />
+      </section>
+
+      {/* ── FX 4. Forex Heatmap ── */}
+      <section id="widget-forex-heatmap" className="mb-20 scroll-mt-20">
+        <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-[0.15em] mb-2">Forex Widget 4 of 4</p>
+        <h2 className="text-2xl font-bold text-foreground mb-2">Forex Heatmap</h2>
+        <p className="text-sm text-muted-foreground mb-6 max-w-xl">
+          Color-coded grid of currency pair movements. Green cells indicate appreciation, red cells depreciation. Each cell shows the pair symbol and percentage change.
+        </p>
+        <PreviewFrame wide>
+          <polymart-forex-heatmap />
+        </PreviewFrame>
+        <CodeBlock code={`<!-- All pairs heatmap -->
+<polymart-forex-heatmap></polymart-forex-heatmap>
+
+<!-- Majors only -->
+<polymart-forex-heatmap category="major"></polymart-forex-heatmap>`} />
+        <AttrsTable attrs={[
+          { name: "category", type: '"major" | "minor" | "exotic"', desc: "Filter pairs by category. Default: all" },
+          { name: "theme",    type: '"dark" | "light"',              desc: "Color theme. Default: dark" },
+          { name: "interval", type: "number",                        desc: "Refresh interval ms. Default: 10000" },
+        ]} />
+      </section>
+
+      <div className="h-px bg-border mb-14" />
+
+      {/* Forex setup */}
+      <section className="mb-14">
+        <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-[0.15em] mb-2">Setup</p>
+        <h2 className="text-2xl font-bold text-foreground mb-2">Installing Forex Widgets</h2>
+        <p className="text-sm text-muted-foreground mb-6 max-w-xl">Same single script tag — forex widgets are bundled with the stock widgets.</p>
+        <CodeBlock lang="HTML" code={`<script src="https://polymart.co/widgets/polymart-widgets.js" defer></script>`} />
+        <p className="text-sm text-muted-foreground mt-4">All forex widgets use the <code className="text-xs bg-muted px-1.5 py-0.5 rounded font-mono">/api/v1/forex/*</code> endpoints and refresh every 10 seconds by default.</p>
+      </section>
+
+      </>)}
 
       {/* ── Bottom CTA ── */}
       <div className="rounded-2xl border border-border bg-card p-8 flex flex-col sm:flex-row items-start sm:items-center gap-6">

@@ -1,43 +1,26 @@
+import type { LucideIcon } from "lucide-react"
 import { Heart, Coffee, Zap, Shield, ArrowUpRight } from "lucide-react"
+import type { Route } from "@/lib/routes"
 
-type Route =
-  | "home"
-  | "market"
-  | "api"
-  | "terms"
-  | "privacy"
-  | "changelog"
-  | "education"
-  | "products"
-  | "help"
-  | "widgets"
-  | "edu-tools"
-  | "community"
-  | "bot-terms"
-  | "bot-privacy"
-  | "community-blog"
-  | "sponsor"
-  | "kofi-terms"
-  | "kofi-privacy"
 interface Props {
   onNavigate: (r: Route) => void
 }
 
 const KOFI_URL = "https://ko-fi.com/polymartco"
 
-const PERKS = [
+const PERKS: { Icon: LucideIcon; title: string; desc: string }[] = [
   {
-    icon: <Zap className="w-4 h-4" />,
+    Icon: Zap,
     title: "Keep the simulation running",
     desc: "Server and database costs are ongoing. Every coffee helps cover infrastructure so the market stays live 24/7.",
   },
   {
-    icon: <Shield className="w-4 h-4" />,
+    Icon: Shield,
     title: "Fund new features",
     desc: "Widgets, API endpoints, charting tools, education content - sponsorships directly fund what gets built next.",
   },
   {
-    icon: <Heart className="w-4 h-4" />,
+    Icon: Heart,
     title: "Support open data",
     desc: "Polymart is free for everyone - students, developers, teachers. Sponsors make that possible.",
   },
@@ -87,7 +70,7 @@ export default function SponsorPage({
             className="rounded-xl border border-border bg-card p-5"
           >
             <div className="w-8 h-8 rounded-lg bg-rose-500/10 text-rose-400 flex items-center justify-center mb-4">
-              {p.icon}
+              <p.Icon className="w-4 h-4" />
             </div>
 
             <p className="text-sm font-semibold text-foreground mb-1.5">

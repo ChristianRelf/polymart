@@ -8,6 +8,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
   <script src="https://polymart.co/widgets/polymart-widgets.js" defer></script>
+  <script src="https://polymart.co/widgets/polymart-forex-widgets.js" defer></script>
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
@@ -784,15 +785,20 @@
           <div class="callout-code-header">
             <span class="callout-code-lang">HTML</span>
           </div>
-          <div class="callout-code-body"><span class="code-comment">&lt;!-- Add once to &lt;head&gt; --&gt;</span>
+          <div class="callout-code-body"><span class="code-comment">&lt;!-- Stock widgets --&gt;</span>
 <span class="code-tag">&lt;script</span> <span class="code-attr">src</span>=<span class="code-val">"https://polymart.co/widgets/polymart-widgets.js"</span>
         <span class="code-attr">defer</span><span class="code-tag">&gt;&lt;/script&gt;</span>
-
-<span class="code-comment">&lt;!-- Then use anywhere --&gt;</span>
 <span class="code-tag">&lt;polymart-ticker</span> <span class="code-attr">ticker</span>=<span class="code-val">"APEX"</span><span class="code-tag">&gt;&lt;/polymart-ticker&gt;</span>
 <span class="code-tag">&lt;polymart-market</span><span class="code-tag">&gt;&lt;/polymart-market&gt;</span>
 <span class="code-tag">&lt;polymart-leaderboard</span> <span class="code-attr">by</span>=<span class="code-val">"change"</span><span class="code-tag">&gt;&lt;/polymart-leaderboard&gt;</span>
-<span class="code-tag">&lt;polymart-tape</span><span class="code-tag">&gt;&lt;/polymart-tape&gt;</span></div>
+<span class="code-tag">&lt;polymart-tape</span><span class="code-tag">&gt;&lt;/polymart-tape&gt;</span>
+
+<span class="code-comment">&lt;!-- Forex widgets --&gt;</span>
+<span class="code-tag">&lt;script</span> <span class="code-attr">src</span>=<span class="code-val">"https://polymart.co/widgets/polymart-forex-widgets.js"</span>
+        <span class="code-attr">defer</span><span class="code-tag">&gt;&lt;/script&gt;</span>
+<span class="code-tag">&lt;polymart-forex-ticker</span> <span class="code-attr">pair</span>=<span class="code-val">"EURUSD"</span><span class="code-tag">&gt;&lt;/polymart-forex-ticker&gt;</span>
+<span class="code-tag">&lt;polymart-forex-table</span><span class="code-tag">&gt;&lt;/polymart-forex-table&gt;</span>
+<span class="code-tag">&lt;polymart-forex-heatmap</span><span class="code-tag">&gt;&lt;/polymart-forex-heatmap&gt;</span></div>
         </div>
         <div class="callout-chips">
           <span class="chip">&lt;polymart-ticker&gt;</span>
@@ -802,6 +808,10 @@
           <span class="chip">&lt;polymart-sparkline&gt;</span>
           <span class="chip">&lt;polymart-sector&gt;</span>
           <span class="chip">&lt;polymart-events&gt;</span>
+          <span class="chip">&lt;polymart-forex-ticker&gt;</span>
+          <span class="chip">&lt;polymart-forex-table&gt;</span>
+          <span class="chip">&lt;polymart-forex-chart&gt;</span>
+          <span class="chip">&lt;polymart-forex-heatmap&gt;</span>
         </div>
       </div>
     </div>

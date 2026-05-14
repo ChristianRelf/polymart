@@ -1030,22 +1030,28 @@ function StockDetailView({ detail, stocks, onBack, openDetail, onNavigateToInfo 
 }
 
 // ── Sim type picker ───────────────────────────────────────────────────────────
-function SimPicker({ simType, onSelect }: { simType: SimType; onSelect: (s: SimType) => void }) {
+function SimPicker({ simType, onSelect, onNavigate }: { simType: SimType; onSelect: (s: SimType) => void; onNavigate?: (r: import("@/lib/routes").Route) => void }) {
   return (
-    <div className="flex items-center gap-2 mb-6">
+    <div className="flex items-center gap-2 mb-8">
+      <span className="text-xs font-bold uppercase tracking-widest text-muted-foreground mr-1">Market</span>
       {SIM_CONFIGS.map(sim => {
-        const active = sim.id === simType
+        const active = sim.id === simType && sim.id === "stocks"
         const live   = sim.status === "live"
+        const navTarget: import("@/lib/routes").Route | null = sim.id === "forex" ? "forex" : null
         return (
           <button
             key={sim.id}
-            onClick={() => live && onSelect(sim.id)}
+            onClick={() => {
+              if (!live) return
+              if (navTarget && onNavigate) { onNavigate(navTarget); return }
+              onSelect(sim.id)
+            }}
             className={cn(
-              "flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium border transition-all",
+              "flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold border transition-all",
               active
                 ? "bg-foreground text-background border-foreground"
                 : live
-                  ? "border-border text-foreground/70 hover:border-foreground/50 hover:text-foreground cursor-pointer"
+                  ? "border-border text-foreground/70 hover:border-foreground/40 hover:bg-accent cursor-pointer"
                   : "border-border/30 text-muted-foreground/40 cursor-not-allowed"
             )}
           >
@@ -1082,7 +1088,7 @@ function SimComingSoon({ sim }: { sim: (typeof SIM_CONFIGS)[number] }) {
 }
 
 // ── Market list view ──────────────────────────────────────────────────────────
-export default function MarketPage({ onNavigateToInfo }: { onNavigateToInfo?: (ticker: string) => void } = {}) {
+export default function MarketPage({ onNavigateToInfo, onNavigate }: { onNavigateToInfo?: (ticker: string) => void; onNavigate?: (r: import("@/lib/routes").Route) => void } = {}) {
   const { market, stocks, sectors, events, loading, getDetail } = useSimulation()
 
   const [simType, setSimType]       = useState<SimType>("stocks")
@@ -1174,7 +1180,7 @@ export default function MarketPage({ onNavigateToInfo }: { onNavigateToInfo?: (t
 
   return (
     <div className="max-w-[1600px] mx-auto px-4 sm:px-8 py-6 sm:py-10">
-      <SimPicker simType={simType} onSelect={setSimType} />
+      <SimPicker simType={simType} onSelect={setSimType} onNavigate={onNavigate} />
 
       {simType !== "stocks" ? (
         <SimComingSoon sim={SIM_CONFIGS.find(s => s.id === simType)!} />

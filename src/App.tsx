@@ -21,14 +21,16 @@ import KofiLegalPage from "@/pages/KofiLegalPage"
 import CommunityBlogPage from "@/pages/CommunityBlogPage"
 import SponsorPage from "@/pages/SponsorPage"
 import StockInfoPage from "@/pages/StockInfoPage"
+import ForexPage from "@/pages/ForexPage"
 
 // ── Routing ───────────────────────────────────────────────────────────────────
-export type Route = "home" | "market" | "api" | "terms" | "privacy" | "changelog" | "education" | "products" | "help" | "widgets" | "edu-tools" | "community" | "bot-terms" | "bot-privacy" | "community-blog" | "sponsor" | "stock-info" | "kofi-terms" | "kofi-privacy"
+export type Route = "home" | "market" | "forex" | "api" | "terms" | "privacy" | "changelog" | "education" | "products" | "help" | "widgets" | "edu-tools" | "community" | "bot-terms" | "bot-privacy" | "community-blog" | "sponsor" | "stock-info" | "kofi-terms" | "kofi-privacy"
 
 const HASH_MAP: Record<string, Route> = {
   "": "home",
   "/": "home",
   "/market": "market",
+  "/forex": "forex",
   "/docs/api": "api",
   "/api": "api",        // legacy redirect
   "/docs/terms": "terms",
@@ -51,6 +53,7 @@ const HASH_MAP: Record<string, Route> = {
 const ROUTE_HASH: Record<Route, string> = {
   home: "/",
   market: "/market",
+  forex: "/forex",
   api: "/docs/api",
   terms: "/docs/terms",
   privacy: "/docs/privacy",
@@ -535,7 +538,8 @@ export default function App() {
 
         <main className="flex-1">
           {route === "home"       && <HomePage    onNavigate={go} />}
-          {route === "market"     && <MarketPage  onNavigateToInfo={goToInfo} />}
+          {route === "market"     && <MarketPage  onNavigateToInfo={goToInfo} onNavigate={go} />}
+          {route === "forex"      && <ForexPage   onNavigate={go} />}
           {route === "stock-info" && <StockInfoPage ticker={routeParams.ticker ?? ""} onNavigate={go} onNavigateToInfo={goToInfo} />}
           {route === "api"     && <ApiDocsPage />}
           {route === "terms"     && <LegalPage      type="terms"   onNavigate={go} />}

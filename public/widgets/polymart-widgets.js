@@ -15,7 +15,7 @@
  *   <polymart-sector sector="crypto"></polymart-sector>
  *   <polymart-events></polymart-events>
  *
- * All widgets auto-refresh every 5 seconds to match the simulation tick.
+ * All widgets auto-refresh every 10 seconds to match the simulation tick.
  * No API key required. No dependencies.
  */
 
@@ -24,7 +24,7 @@
 
   // ── Config ──────────────────────────────────────────────────────────────────
   const API = "https://polymart.co/api/v1";
-  const TICK = 5000; // refresh interval ms
+  const TICK = 10000; // refresh interval ms
   const FONT_URL =
     "https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&family=Inter:wght@400;500;600;700&display=swap";
 
@@ -319,7 +319,7 @@
       }
 
       try {
-        const data = await apiFetch("getStock", { ticker });
+        const data = await apiFetch("stocks/getStock", { ticker });
         const wrap = root.querySelector(".pm-ticker-wrap");
         const chg = data.change;
         const color = changeColor(chg);
@@ -455,7 +455,7 @@
       }
 
       try {
-        const data = await apiFetch("getMarket");
+        const data = await apiFetch("stocks/getMarket");
         const wrap = root.querySelector(".pm-market-wrap");
         const color = changeColor(data.indexChangePct);
         const fgColor =
@@ -597,7 +597,7 @@
       }
 
       try {
-        const data = await apiFetch("getLeaderboard", { by, dir, limit });
+        const data = await apiFetch("stocks/getLeaderboard", { by, dir, limit });
         const wrap = root.querySelector(".pm-lb-wrap");
 
         const rows = data.stocks
@@ -680,7 +680,7 @@
       }
 
       try {
-        const data = await apiFetch("getLeaderboard", {
+        const data = await apiFetch("stocks/getLeaderboard", {
           by: "volume",
           dir: "desc",
           limit,
@@ -725,7 +725,7 @@
       }
 
       try {
-        const data = await apiFetch("getHistory", { ticker, limit: 60 });
+        const data = await apiFetch("stocks/getHistory", { ticker, limit: 60 });
         const pts = data.history;
         const min = Math.min(...pts);
         const max = Math.max(...pts);
@@ -793,7 +793,7 @@
       }
 
       try {
-        const data = await apiFetch("getSector", { sector });
+        const data = await apiFetch("stocks/getSector", { sector });
         const wrap = root.querySelector(".pm-sec-wrap");
 
         const rows = data.stocks
@@ -878,7 +878,7 @@
       try {
         const params = { limit };
         if (sector) params.sector = sector;
-        const data = await apiFetch("getEvents", params);
+        const data = await apiFetch("stocks/getEvents", params);
         const wrap = root.querySelector(".pm-ev-wrap");
 
         const items = data
@@ -918,5 +918,5 @@
   customElements.define("polymart-events", PolymartEvents);
 
   // Expose version
-  window.PolymartWidgets = { version: "1.0.0" };
+  window.PolymartWidgets = { version: "2.0.0" };
 })();

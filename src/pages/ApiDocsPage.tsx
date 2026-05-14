@@ -46,11 +46,11 @@ type Product = {
 const PRODUCTS: Product[] = [
   {
     id: "polymart-api",
-    label: "Polymart API",
+    label: "Stocks API",
     icon: TrendingUp,
     status: "stable",
     version: "v1",
-    desc: "Open REST API for the Polymart simulated stock market. No authentication required. Prices update every ~5 seconds via the persistent simulation engine.",
+    desc: "Open REST API for the Polymart simulated stock market. No authentication required. Prices update every ~10 seconds via the persistent simulation engine. All endpoints are also available under /api/v1/stocks/ for namespace clarity.",
     baseUrl: BASE,
     endpoints: [
       {
@@ -112,7 +112,7 @@ const PRODUCTS: Product[] = [
         method: "GET",
         path: "/api/v1/getStock",
         summary: "Single stock - full detail",
-        desc: "Full data for one stock including price history (up to 400 data points) and sector peers.",
+        desc: "Full data for one stock including price history (up to 400 data points) and sector peers. Also available at /api/v1/stocks/getStock.",
         params: [
           { name: "ticker", type: "string", required: true, desc: "Ticker symbol (case-insensitive)", example: "APEX" },
         ],
@@ -258,7 +258,7 @@ const PRODUCTS: Product[] = [
         method: "GET",
         path: "/api/v1/getHistory",
         summary: "Price history for a stock",
-        desc: "Returns raw price history for a stock. Up to 400 data points, each representing one simulation tick (5 seconds).",
+        desc: "Returns raw price history for a stock. Up to 400 data points, each representing one simulation tick (10 seconds).",
         params: [
           { name: "ticker", type: "string", required: true, desc: "Ticker symbol", example: "VOID" },
           { name: "limit", type: "number", required: false, desc: "Data points to return (1–400, default 100)", example: "100" },
@@ -356,7 +356,224 @@ const PRODUCTS: Product[] = [
     ],
   },
 
-  // ── Future simulations - add new sim entries here ─────────────────────────
+  {
+    id: "forex-api",
+    label: "Forex API",
+    icon: ArrowUpRight,
+    status: "stable" as ProductStatus,
+    version: "v1",
+    desc: "Open REST API for the Polymart simulated forex market. 40 currency pairs (major, minor, exotic) with live rates, spreads, and technical indicators. Prices update every ~10 seconds.",
+    baseUrl: BASE,
+    endpoints: [
+      {
+        id: "forex-getPairs",
+        method: "GET",
+        path: "/api/v1/forex/getPairs",
+        summary: "All currency pairs",
+        desc: "Returns all 28 simulated currency pairs keyed by pair symbol (e.g. EURUSD). Includes price, change, bid/ask spread in pips, and all technical indicators.",
+        response: [
+          { name: "<PAIR>", type: "object", desc: "Keyed by pair symbol (e.g. EURUSD)" },
+          { name: "  pair", type: "string", desc: "Pair symbol" },
+          { name: "  base / quote", type: "string", desc: "Base and quote currency codes" },
+          { name: "  category", type: "string", desc: "major | minor | exotic" },
+          { name: "  baseName / quoteName", type: "string", desc: "Full currency names" },
+          { name: "  baseFlag / quoteFlag", type: "string", desc: "Country/region emoji flags" },
+          { name: "  price", type: "number", desc: "Current exchange rate" },
+          { name: "  prevPrice", type: "number", desc: "Rate at previous tick" },
+          { name: "  change", type: "number", desc: "Absolute change" },
+          { name: "  changePct", type: "number", desc: "Percentage change" },
+          { name: "  bid / ask", type: "number", desc: "Bid and ask rates" },
+          { name: "  spread", type: "number", desc: "Spread in rate units" },
+          { name: "  spreadPips", type: "string", desc: "Spread in pips (formatted)" },
+          { name: "  hi52w / lo52w", type: "number", desc: "52-week simulated high/low" },
+          { name: "  rsi", type: "number", desc: "RSI (0–100)" },
+          { name: "  macd / macdSignal / macdHist", type: "number", desc: "MACD components" },
+          { name: "  bbUpper / bbMiddle / bbLower / bbBw", type: "number", desc: "Bollinger Band values" },
+          { name: "  sma20 / sma50", type: "number", desc: "Simple moving averages" },
+          { name: "  atr", type: "number", desc: "Average True Range" },
+          { name: "  pipSize", type: "number", desc: "Size of one pip (0.0001 or 0.01 for JPY pairs)" },
+          { name: "  decimals", type: "number", desc: "Display decimal places (4 or 2)" },
+          { name: "  updatedAt", type: "ISO 8601", desc: "Timestamp of last tick" },
+        ],
+        example: `${BASE}/api/v1/forex/getPairs`,
+      },
+      {
+        id: "forex-getPair",
+        method: "GET",
+        path: "/api/v1/forex/getPair",
+        summary: "Single pair - full detail",
+        desc: "Full data for one currency pair including description, economic drivers, fact sheet, price history, and OHLCV candles.",
+        params: [
+          { name: "pair", type: "string", required: true, desc: "Pair symbol (case-insensitive)", example: "EURUSD" },
+        ],
+        response: [
+          { name: "...all getPairs fields", type: "object", desc: "All fields from getPairs plus:" },
+          { name: "description", type: "string", desc: "Educational description of the currency pair" },
+          { name: "economicDrivers", type: "string[]", desc: "Key drivers affecting this pair" },
+          { name: "factSheet", type: "object", desc: "{ dailyVolume, avgSpread, tradingHours, ... }" },
+          { name: "history", type: "number[]", desc: "Price history array (up to 400 entries, oldest first)" },
+          { name: "candles", type: "object[]", desc: "OHLCV candle array: { o, h, l, c, v, t }" },
+        ],
+        example: `${BASE}/api/v1/forex/getPair?pair=EURUSD`,
+      },
+      {
+        id: "forex-getTopMovers",
+        method: "GET",
+        path: "/api/v1/forex/getTopMovers",
+        summary: "Top gaining and losing pairs",
+        desc: "Returns the top N gainers and top N losers by tick-over-tick % change across all 28 pairs.",
+        params: [
+          { name: "limit", type: "number", required: false, desc: "Pairs per list (1–14, default 5)", example: "5" },
+        ],
+        response: [
+          { name: "gainers", type: "object[]", desc: "Top gaining pairs: { pair, price, changePct, category, baseFlag, quoteFlag }" },
+          { name: "losers", type: "object[]", desc: "Top losing pairs, same shape ordered worst-to-best" },
+        ],
+        example: `${BASE}/api/v1/forex/getTopMovers?limit=5`,
+      },
+      {
+        id: "forex-getHistory",
+        method: "GET",
+        path: "/api/v1/forex/getHistory",
+        summary: "Rate history for a pair",
+        desc: "Returns raw rate history for a currency pair. Up to 400 data points, each representing one simulation tick (10 seconds).",
+        params: [
+          { name: "pair", type: "string", required: true, desc: "Pair symbol", example: "GBPUSD" },
+          { name: "limit", type: "number", required: false, desc: "Data points to return (1–400, default 100)", example: "100" },
+        ],
+        response: [
+          { name: "pair", type: "string", desc: "Pair symbol" },
+          { name: "count", type: "number", desc: "Number of data points returned" },
+          { name: "history", type: "number[]", desc: "Ordered rate array, oldest first" },
+          { name: "updatedAt", type: "ISO 8601", desc: "Timestamp of last update" },
+        ],
+        example: `${BASE}/api/v1/forex/getHistory?pair=GBPUSD&limit=100`,
+      },
+      {
+        id: "forex-search",
+        method: "GET",
+        path: "/api/v1/forex/search",
+        summary: "Search currency pairs",
+        desc: "Search across pair symbols, currency names, and country names.",
+        params: [
+          { name: "q", type: "string", required: true, desc: "Search query (matches pair symbol, currency name, or country)", example: "euro" },
+        ],
+        response: [
+          { name: "query", type: "string", desc: "The search query" },
+          { name: "count", type: "number", desc: "Number of results" },
+          { name: "results", type: "object[]", desc: "Matching pairs: { pair, baseName, quoteName, price, changePct, category }" },
+        ],
+        example: `${BASE}/api/v1/forex/search?q=euro`,
+      },
+      {
+        id: "forex-getMarketOverview",
+        method: "GET",
+        path: "/api/v1/forex/getMarketOverview",
+        summary: "Forex market overview",
+        desc: "Returns a synthetic USD strength index, strongest/weakest currencies, active trading sessions, and bullish/bearish pair counts across the entire forex market.",
+        response: [
+          { name: "dollarIndex", type: "number", desc: "Synthetic USD strength (avg of USD pairs; positive = USD rising)" },
+          { name: "dollarIndexLabel", type: "string", desc: "USD Strengthening | USD Weakening | USD Neutral" },
+          { name: "totalPairs", type: "number", desc: "Total pairs in simulation" },
+          { name: "bullishPairs", type: "number", desc: "Pairs with positive tick change" },
+          { name: "bearishPairs", type: "number", desc: "Pairs with negative tick change" },
+          { name: "topGainer", type: "{ pair, changePct }", desc: "Biggest gaining pair this tick" },
+          { name: "topLoser", type: "{ pair, changePct }", desc: "Biggest losing pair this tick" },
+          { name: "avgVolatility", type: "number", desc: "Average ATR across all pairs" },
+          { name: "currencyStrength", type: "object[]", desc: "{ code, flag, strength } sorted strongest-to-weakest" },
+          { name: "sessions", type: "object", desc: "Sydney/Tokyo/London/NewYork session status with active pairs" },
+          { name: "updatedAt", type: "ISO 8601", desc: "Timestamp of last tick" },
+        ],
+        example: `${BASE}/api/v1/forex/getMarketOverview`,
+      },
+      {
+        id: "forex-getLeaderboard",
+        method: "GET",
+        path: "/api/v1/forex/getLeaderboard",
+        summary: "Ranked pairs leaderboard",
+        desc: "Returns all pairs ranked by a chosen metric — change, volume, RSI, ATR, or Bollinger Bandwidth. Optionally filter by category.",
+        params: [
+          { name: "by", type: "string", required: false, desc: "Sort field: changePct | volume | rsi | atr | spread | bbBw (default: changePct)", example: "atr" },
+          { name: "dir", type: "string", required: false, desc: "asc | desc (default: desc)", example: "desc" },
+          { name: "limit", type: "number", required: false, desc: "Max pairs to return (1–40, default 10)", example: "10" },
+          { name: "category", type: "string", required: false, desc: "Filter: major | minor | exotic", example: "major" },
+        ],
+        response: [
+          { name: "sortedBy", type: "string", desc: "Sort field used" },
+          { name: "direction", type: "string", desc: "asc or desc" },
+          { name: "category", type: "string", desc: "Category filter applied (or 'all')" },
+          { name: "count", type: "number", desc: "Total pairs before limit" },
+          { name: "pairs", type: "object[]", desc: "All getPairs fields for each ranked pair" },
+        ],
+        example: `${BASE}/api/v1/forex/getLeaderboard?by=changePct&limit=10`,
+      },
+      {
+        id: "forex-getCandles",
+        method: "GET",
+        path: "/api/v1/forex/getCandles",
+        summary: "OHLCV candles for a pair",
+        desc: "Returns pre-computed OHLCV candlestick data for a currency pair. Each candle spans 18 simulation ticks (~3 minutes). Up to 200 candles returned.",
+        params: [
+          { name: "pair", type: "string", required: true, desc: "Pair symbol", example: "EURUSD" },
+          { name: "limit", type: "number", required: false, desc: "Number of candles (1–200, default 48)", example: "48" },
+        ],
+        response: [
+          { name: "pair", type: "string", desc: "Pair symbol" },
+          { name: "decimals", type: "number", desc: "Display decimal places for this pair" },
+          { name: "pipSize", type: "number", desc: "Size of one pip" },
+          { name: "count", type: "number", desc: "Number of candles returned" },
+          { name: "candles", type: "object[]", desc: "{ o, h, l, c, v, t } — open/high/low/close/volume/timestamp" },
+        ],
+        example: `${BASE}/api/v1/forex/getCandles?pair=EURUSD&limit=48`,
+      },
+      {
+        id: "forex-getCorrelations",
+        method: "GET",
+        path: "/api/v1/forex/getCorrelations",
+        summary: "Pair correlation matrix",
+        desc: "Computes Pearson correlations between return series for up to 20 pairs. Defaults to all major pairs. Useful for building diversified portfolios or identifying hedges.",
+        params: [
+          { name: "pairs", type: "string", required: false, desc: "Comma-separated pair symbols (default: all majors, max 20)", example: "EURUSD,GBPUSD,USDJPY" },
+          { name: "window", type: "number", required: false, desc: "Number of ticks used for correlation (1–200, default 60)", example: "60" },
+        ],
+        response: [
+          { name: "pairs", type: "string[]", desc: "Ordered list of pair symbols in the matrix" },
+          { name: "window", type: "number", desc: "Tick window used for computation" },
+          { name: "matrix", type: "object", desc: "Nested object: matrix[A][B] = Pearson r (-1 to 1). matrix[A][A] = 1.0" },
+        ],
+        example: `${BASE}/api/v1/forex/getCorrelations?pairs=EURUSD,GBPUSD,USDJPY,AUDUSD`,
+      },
+      {
+        id: "forex-getSessions",
+        method: "GET",
+        path: "/api/v1/forex/getSessions",
+        summary: "Live forex session status",
+        desc: "Returns current status of all four major forex trading sessions (Sydney, Tokyo, London, New York) based on current UTC time, with the most active pairs for each session.",
+        response: [
+          { name: "utcTime", type: "string", desc: "Current server UTC time (HH:MM)" },
+          { name: "openSessions", type: "string[]", desc: "Names of currently open sessions" },
+          { name: "overlap", type: "boolean", desc: "True when two or more sessions are simultaneously open" },
+          { name: "mostActiveSession", type: "string", desc: "Session with highest activity right now" },
+          { name: "sessions", type: "object[]", desc: "{ id, label, timezone, utcOpen, utcClose, open: boolean, pairs: string[] }" },
+        ],
+        example: `${BASE}/api/v1/forex/getSessions`,
+      },
+      {
+        id: "forex-getCurrencies",
+        method: "GET",
+        path: "/api/v1/forex/getCurrencies",
+        summary: "Per-currency strength index",
+        desc: "Ranks individual currencies by net strength, computed as the average movement across all pairs involving that currency. Positive strength = currency is appreciating overall.",
+        response: [
+          { name: "count", type: "number", desc: "Number of unique currencies" },
+          { name: "currencies", type: "object[]", desc: "{ code, country, flag, strength, pairsCount } — sorted strongest-to-weakest" },
+        ],
+        example: `${BASE}/api/v1/forex/getCurrencies`,
+      },
+    ],
+  },
+
+  // ── Future simulations ─────────────────────────────────────────────────────
   {
     id: "crypto-sim",
     label: "Crypto Simulation",
@@ -364,14 +581,6 @@ const PRODUCTS: Product[] = [
     status: "coming-soon" as ProductStatus,
     desc: "Simulated cryptocurrency market with real-time prices, 24/7 trading, and volatile assets across DeFi, Layer 1s, and meme coins.",
     comingSoonNote: "The crypto simulation will share the same engine architecture as the stock market with crypto-specific mechanics: funding rates, liquidation cascades, whale accumulation patterns, and sentiment-driven pumps.",
-  },
-  {
-    id: "forex-sim",
-    label: "Forex Simulation",
-    icon: ArrowUpRight,
-    status: "coming-soon" as ProductStatus,
-    desc: "Foreign exchange simulation covering major, minor, and exotic currency pairs with realistic spread mechanics and central bank event simulations.",
-    comingSoonNote: "The forex simulation will include currency pair correlations, central bank intervention events, carry trade mechanics, and dedicated liquidity sessions for Tokyo, London, and New York.",
   },
 
   // ── Future integrations - add new entries here ────────────────────────────
@@ -403,9 +612,43 @@ const PRODUCTS: Product[] = [
     id: "widgets",
     label: "Embeddable Widgets",
     icon: Zap,
-    status: "coming-soon",
-    desc: "Drop-in HTML widgets for price tickers, market summaries, and leaderboards. Embed live Polymart data on any website with a single script tag.",
-    comingSoonNote: "Widgets are iframe-based and theme-aware. Configure via data attributes - no JavaScript required.",
+    status: "stable",
+    version: "v2",
+    desc: "Drop-in Shadow DOM web components for embedding live Polymart data on any website. One script tag, zero dependencies, no API key required. Includes both stock and forex widget sets.",
+    baseUrl: BASE,
+    endpoints: [
+      {
+        id: "widgets-stock-script",
+        method: "GET",
+        path: "/widgets/polymart-widgets.js",
+        summary: "Stock widgets bundle",
+        desc: "Loads all 7 stock market web components: polymart-ticker, polymart-market, polymart-leaderboard, polymart-tape, polymart-sparkline, polymart-sector, polymart-events. Calls /api/v1/stocks/* endpoints.",
+        response: [
+          { name: "polymart-ticker", type: "element", desc: "Single stock price card with mini chart. Attr: ticker (required), chart (true/false), theme" },
+          { name: "polymart-market", type: "element", desc: "Market overview: index, fear/greed, macro stats, top movers" },
+          { name: "polymart-leaderboard", type: "element", desc: "Ranked stock table. Attr: by (change|price|volume|rsi), dir (asc|desc), limit, title" },
+          { name: "polymart-tape", type: "element", desc: "Scrolling ticker tape. Attr: speed, limit" },
+          { name: "polymart-sparkline", type: "element", desc: "Inline mini chart. Attr: ticker, width, height" },
+          { name: "polymart-sector", type: "element", desc: "Sector overview with constituent stocks. Attr: sector" },
+          { name: "polymart-events", type: "element", desc: "Recent market event feed. Attr: limit, sector" },
+        ],
+        example: `${BASE}/widgets/polymart-widgets.js`,
+      },
+      {
+        id: "widgets-forex-script",
+        method: "GET",
+        path: "/widgets/polymart-forex-widgets.js",
+        summary: "Forex widgets bundle",
+        desc: "Loads all 4 forex web components: polymart-forex-ticker, polymart-forex-table, polymart-forex-chart, polymart-forex-heatmap. Calls /api/v1/forex/* endpoints.",
+        response: [
+          { name: "polymart-forex-ticker", type: "element", desc: "Single currency pair card with emoji flags, bid/ask, spread, RSI. Attr: pair (required), theme" },
+          { name: "polymart-forex-table", type: "element", desc: "Filterable table of all 28 pairs. Attr: category (all|major|minor|exotic), limit" },
+          { name: "polymart-forex-chart", type: "element", desc: "Rate history line chart with gradient fill. Attr: pair, height, theme" },
+          { name: "polymart-forex-heatmap", type: "element", desc: "Color-coded grid of all pairs by % change. Attr: labels (true/false)" },
+        ],
+        example: `${BASE}/widgets/polymart-forex-widgets.js`,
+      },
+    ],
   },
   {
     id: "integrations",
@@ -685,35 +928,55 @@ function ProductPanel({ product }: { product: Product }) {
 
       <Separator className="bg-border my-10" />
 
-      {/* Sector reference */}
-      <div className="mb-10">
-        <p className="text-[10px] text-muted-foreground uppercase tracking-widest mb-4">Valid Sector Keys</p>
-        <div className="flex flex-wrap gap-2">
-          {SECTOR_KEYS.map(k => <MonoTag key={k}>{k}</MonoTag>)}
+      {/* Sector reference — stocks API only */}
+      {product.id === "polymart-api" && (
+        <div className="mb-10">
+          <p className="text-[10px] text-muted-foreground uppercase tracking-widest mb-4">Valid Sector Keys</p>
+          <div className="flex flex-wrap gap-2">
+            {SECTOR_KEYS.map(k => <MonoTag key={k}>{k}</MonoTag>)}
+          </div>
         </div>
-      </div>
+      )}
 
-      {/* Quick start snippet */}
+      {/* Quick start snippet — stocks + forex APIs only */}
+      {(product.id === "polymart-api" || product.id === "forex-api") && (
       <div className="bg-card border border-border rounded-xl p-6">
-        <p className="text-[10px] text-muted-foreground uppercase tracking-widest mb-4">Discord Bot Quick Start</p>
-        <pre className="text-xs font-mono text-foreground bg-background border border-border rounded-lg p-4 overflow-x-auto whitespace-pre">{`// Get current price of a stock
-const res = await fetch('${BASE}/api/v1/getStock?ticker=APEX');
+        <p className="text-[10px] text-muted-foreground uppercase tracking-widest mb-4">Quick Start</p>
+        <pre className="text-xs font-mono text-foreground bg-background border border-border rounded-lg p-4 overflow-x-auto whitespace-pre">{`// Get current price of a stock (both paths work)
+const res = await fetch('${BASE}/api/v1/stocks/getStock?ticker=APEX');
 const { ticker, name, price, change } = await res.json();
-interaction.reply(\`\${ticker} (\${name}): $\${price} (\${change > 0 ? '+' : ''}\${change}%)\`);
+console.log(\`\${ticker} (\${name}): $\${price} (\${change > 0 ? '+' : ''}\${change}%)\`);
 
 // Get market overview
-const mkt = await fetch('${BASE}/api/v1/getMarket').then(r => r.json());
-interaction.reply(\`Index: \${mkt.index} | F&G: \${mkt.fearGreedLabel} (\${mkt.fearGreed})\`);
+const mkt = await fetch('${BASE}/api/v1/stocks/getMarket').then(r => r.json());
+console.log(\`Index: \${mkt.index} | F&G: \${mkt.fearGreedLabel} (\${mkt.fearGreed})\`);
 
 // Top gainers leaderboard
-const lb = await fetch('${BASE}/api/v1/getLeaderboard?by=change&limit=5').then(r => r.json());
-const lines = lb.stocks.map(s => \`\${s.ticker}: +\${s.change}%\`).join('\\n');
-interaction.reply(\`Top Gainers:\\n\${lines}\`);
+const lb = await fetch('${BASE}/api/v1/stocks/getLeaderboard?by=change&limit=5').then(r => r.json());
+lb.stocks.forEach(s => console.log(\`\${s.ticker}: +\${s.change}%\`));
 
-// Search for a stock
-const sr = await fetch('${BASE}/api/v1/search?q=moon').then(r => r.json());
-interaction.reply(sr.results.map(s => \`\${s.ticker}: \${s.name}\`).join('\\n'));`}</pre>
+// Get all forex pairs
+const fx = await fetch('${BASE}/api/v1/forex/getPairs').then(r => r.json());
+const eur = fx['EURUSD'];
+console.log(\`EUR/USD: \${eur.price} (\${eur.changePct > 0 ? '+' : ''}\${eur.changePct.toFixed(3)}%)\`);
+
+// Get forex top movers
+const movers = await fetch('${BASE}/api/v1/forex/getTopMovers?limit=3').then(r => r.json());
+movers.gainers.forEach(p => console.log(\`\${p.pair}: +\${p.changePct.toFixed(3)}%\`));
+
+// Currency strength index
+const cs = await fetch('${BASE}/api/v1/forex/getCurrencies').then(r => r.json());
+console.log(\`Strongest: \${cs.currencies[0].flag} \${cs.currencies[0].code} (+\${cs.currencies[0].strength}%)\`);
+
+// Correlation between EUR/USD and GBP/USD
+const corr = await fetch('${BASE}/api/v1/forex/getCorrelations?pairs=EURUSD,GBPUSD').then(r => r.json());
+console.log(\`EUR/USD ~ GBP/USD correlation: \${corr.matrix.EURUSD.GBPUSD}\`);
+
+// Active trading sessions
+const sess = await fetch('${BASE}/api/v1/forex/getSessions').then(r => r.json());
+console.log(\`Open sessions: \${sess.openSessions.join(', ')}\`);`}</pre>
       </div>
+      )}
     </div>
   )
 }

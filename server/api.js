@@ -2,6 +2,7 @@ import express from "express";
 import pool from "./db.js";
 import { STOCK_DEFS, SECTORS } from "./simulation.js";
 import { COMPANY_PROFILES, generateNews } from "./company-data.js";
+import { FOREX_PAIRS, COUNTRY_FLAGS } from "./forex-simulation.js";
 
 const router = express.Router();
 
@@ -21,7 +22,7 @@ function setCors(res) {
 const RATE_WINDOW_MS = 60_000;
 const RATE_LIMIT     = 400;
 const HEAVY_COST     = 3;
-const HEAVY_ROUTES   = new Set(["/getStocks", "/getHistory", "/getLeaderboard"]);
+const HEAVY_ROUTES   = new Set(["/getStocks", "/getHistory", "/getLeaderboard", "/forex/getCorrelations"]);
 
 // Map<ip, { tokens: number, windowStart: number }>
 const rateBuckets = new Map();
@@ -361,10 +362,20 @@ router.get("/sims", (req, res) => {
       label: "Stock Market",
       icon: "📈",
       status: "live",
-      description: "132 simulated equities across 20 sectors. Prices update every 5 seconds.",
+      description: "132 simulated equities across 20 sectors. Prices update every 10 seconds.",
       assets: Object.keys(STOCK_DEFS).length,
       sectors: Object.keys(SECTORS).length,
-      tickInterval: 5,
+      tickInterval: 10,
+    },
+    {
+      id: "forex",
+      label: "Forex",
+      icon: "💱",
+      status: "live",
+      description: "28 currency pairs (major, minor, exotic) with live technical indicators.",
+      assets: Object.keys(FOREX_PAIRS).length,
+      categories: ["major", "minor", "exotic"],
+      tickInterval: 10,
     },
     {
       id: "crypto",
@@ -373,15 +384,401 @@ router.get("/sims", (req, res) => {
       status: "coming_soon",
       description: "Simulated cryptocurrency market with volatile assets and 24/7 trading.",
     },
-    {
-      id: "forex",
-      label: "Forex",
-      icon: "💱",
-      status: "coming_soon",
-      description: "Foreign exchange simulation with major, minor, and exotic currency pairs.",
-    },
   ]);
 });
+
+// ════════════════════════════════════════════════════════════════════════════════
+// FOREX ENDPOINTS  — /api/v1/forex/*  (also aliased at /api/v1/forex/*)
+// ════════════════════════════════════════════════════════════════════════════════
+
+function formatPairRow(p, def) {
+  const pct = p.prev_price > 0 ? ((p.price - p.prev_price) / p.prev_price) * 100 : 0;
+  const pipSize = def?.pipSize ?? 0.0001;
+  const spreadPips = p.spread > 0 ? (p.spread * 2 / pipSize).toFixed(1) : "0.0";
+  return {
+    pair: p.pair,
+    base: p.base,
+    quote: p.quote,
+    category: p.category,
+    baseName: def?.baseName ?? p.base,
+    quoteName: def?.quoteName ?? p.quote,
+    baseCountry: def?.baseCountry ?? "",
+    quoteCountry: def?.quoteCountry ?? "",
+    baseFlag: COUNTRY_FLAGS[def?.baseCountry] ?? "",
+    quoteFlag: COUNTRY_FLAGS[def?.quoteCountry] ?? "",
+    price: +p.price,
+    prevPrice: +p.prev_price,
+    change: +pct.toFixed(4),
+    changePct: +pct.toFixed(4),
+    bid: +p.bid,
+    ask: +p.ask,
+    spread: +p.spread,
+    spreadPips,
+    hiSession: +p.hi_session,
+    loSession: +p.lo_session,
+    hi52w: +p.hi52w,
+    lo52w: +p.lo52w,
+    volume: p.volume,
+    rsi: +p.rsi,
+    momentum: +p.momentum,
+    atr: +p.atr,
+    macd: +p.macd,
+    macdSignal: +p.macd_signal,
+    macdHist: +p.macd_hist,
+    bbUpper: +p.bb_upper,
+    bbMiddle: +p.bb_middle,
+    bbLower: +p.bb_lower,
+    bbBw: +p.bb_bw,
+    sma20: +p.sma20,
+    sma50: +p.sma50,
+    pipSize,
+    decimals: def?.decimals ?? 4,
+    updatedAt: p.updated_at,
+  };
+}
+
+// GET /api/v1/forex/getPairs[?category=major|minor|exotic]
+router.get("/forex/getPairs", async (req, res) => {
+  setCors(res);
+  try {
+    const cat = req.query.category?.toLowerCase();
+    let sql = "SELECT * FROM forex_state";
+    const params = [];
+    if (cat) { sql += " WHERE category = ?"; params.push(cat); }
+    sql += " ORDER BY pair";
+    const [rows] = await pool.query(sql, params);
+    const result = {};
+    for (const p of rows) {
+      result[p.pair] = formatPairRow(p, FOREX_PAIRS[p.pair]);
+    }
+    res.json(result);
+  } catch (e) { res.status(500).json({ error: String(e) }); }
+});
+
+// GET /api/v1/forex/getPair?pair=EURUSD
+router.get("/forex/getPair", async (req, res) => {
+  setCors(res);
+  try {
+    const pair = (req.query.pair || "").toUpperCase();
+    if (!pair) return res.status(400).json({ error: "Missing ?pair= parameter" });
+    const [rows] = await pool.query("SELECT * FROM forex_state WHERE pair = ? LIMIT 1", [pair]);
+    const p = rows[0];
+    if (!p) return res.status(404).json({ error: `Pair not found: ${pair}` });
+    const def = FOREX_PAIRS[pair];
+    res.json({
+      ...formatPairRow(p, def),
+      description: def?.description ?? "",
+      economicDrivers: def?.economicDrivers ?? [],
+      factSheet: def?.factSheet ?? {},
+      history: Array.isArray(p.history) ? p.history : [],
+      candles: Array.isArray(p.candles) ? p.candles : [],
+    });
+  } catch (e) { res.status(500).json({ error: String(e) }); }
+});
+
+// GET /api/v1/forex/getTopMovers
+router.get("/forex/getTopMovers", async (req, res) => {
+  setCors(res);
+  try {
+    const limit = Math.min(parseInt(req.query.limit || "5"), 14);
+    const [rows] = await pool.query("SELECT * FROM forex_state");
+    const withChange = rows.map(p => {
+      const pct = p.prev_price > 0 ? ((p.price - p.prev_price) / p.prev_price) * 100 : 0;
+      const def = FOREX_PAIRS[p.pair];
+      return { pair: p.pair, base: p.base, quote: p.quote, category: p.category,
+        baseFlag: COUNTRY_FLAGS[def?.baseCountry] ?? "", quoteFlag: COUNTRY_FLAGS[def?.quoteCountry] ?? "",
+        price: +p.price, change: +pct.toFixed(4), rsi: +p.rsi };
+    }).sort((a, b) => b.change - a.change);
+    res.json({ gainers: withChange.slice(0, limit), losers: withChange.slice(-limit).reverse() });
+  } catch (e) { res.status(500).json({ error: String(e) }); }
+});
+
+// GET /api/v1/forex/getHistory?pair=EURUSD
+router.get("/forex/getHistory", async (req, res) => {
+  setCors(res);
+  try {
+    const pair = (req.query.pair || "").toUpperCase();
+    if (!pair) return res.status(400).json({ error: "Missing ?pair= parameter" });
+    const limit = Math.min(parseInt(req.query.limit || "60"), 400);
+    const [rows] = await pool.query("SELECT pair, base, quote, history, candles, updated_at FROM forex_state WHERE pair = ? LIMIT 1", [pair]);
+    const p = rows[0];
+    if (!p) return res.status(404).json({ error: `Pair not found: ${pair}` });
+    const history = Array.isArray(p.history) ? p.history.slice(-limit) : [];
+    const candles = Array.isArray(p.candles) ? p.candles : [];
+    res.json({ pair: p.pair, base: p.base, quote: p.quote, count: history.length, history, candles, updatedAt: p.updated_at });
+  } catch (e) { res.status(500).json({ error: String(e) }); }
+});
+
+// GET /api/v1/forex/search?q=
+router.get("/forex/search", async (req, res) => {
+  setCors(res);
+  try {
+    const q = (req.query.q || "").toLowerCase().trim();
+    if (!q) return res.status(400).json({ error: "Missing ?q= parameter" });
+    const [rows] = await pool.query("SELECT pair, base, quote, category, price, prev_price, rsi FROM forex_state ORDER BY pair");
+    const results = rows.filter(p => {
+      const def = FOREX_PAIRS[p.pair];
+      return p.pair.toLowerCase().includes(q) ||
+        p.base.toLowerCase().includes(q) || p.quote.toLowerCase().includes(q) ||
+        def?.baseName?.toLowerCase().includes(q) || def?.quoteName?.toLowerCase().includes(q);
+    }).map(p => {
+      const def = FOREX_PAIRS[p.pair];
+      const pct = p.prev_price > 0 ? ((p.price - p.prev_price) / p.prev_price) * 100 : 0;
+      return { pair: p.pair, base: p.base, quote: p.quote, category: p.category,
+        baseName: def?.baseName ?? p.base, quoteName: def?.quoteName ?? p.quote,
+        baseFlag: COUNTRY_FLAGS[def?.baseCountry] ?? "", quoteFlag: COUNTRY_FLAGS[def?.quoteCountry] ?? "",
+        price: +p.price, change: +pct.toFixed(4), rsi: +p.rsi };
+    });
+    res.json({ query: q, count: results.length, results });
+  } catch (e) { res.status(500).json({ error: String(e) }); }
+});
+
+// GET /api/v1/forex/getMarketOverview
+// Synthetic USD strength index, session info, bullish/bearish counts
+router.get("/forex/getMarketOverview", async (req, res) => {
+  setCors(res);
+  try {
+    const [rows] = await pool.query("SELECT pair, base, quote, category, price, prev_price, rsi, atr, volume FROM forex_state");
+
+    // Compute per-pair change
+    const withChange = rows.map(p => {
+      const def = FOREX_PAIRS[p.pair];
+      const pct = p.prev_price > 0 ? ((p.price - p.prev_price) / p.prev_price) * 100 : 0;
+      return { ...p, changePct: pct, def };
+    });
+
+    // USD strength index: average of USD pair movements where positive = USD up
+    const usdPairs = withChange.filter(p => p.base === "USD" || p.quote === "USD");
+    let usdSum = 0;
+    for (const p of usdPairs) {
+      usdSum += p.base === "USD" ? p.changePct : -p.changePct;
+    }
+    const dollarIndex = usdPairs.length > 0 ? +(usdSum / usdPairs.length).toFixed(4) : 0;
+
+    // Per-currency strength: net change when appearing as base/quote
+    const currencyMap = {};
+    for (const p of withChange) {
+      if (!currencyMap[p.base]) currencyMap[p.base] = { sum: 0, count: 0 };
+      if (!currencyMap[p.quote]) currencyMap[p.quote] = { sum: 0, count: 0 };
+      currencyMap[p.base].sum  += p.changePct;  currencyMap[p.base].count++;
+      currencyMap[p.quote].sum -= p.changePct;  currencyMap[p.quote].count++;
+    }
+    const currencyStrength = Object.entries(currencyMap)
+      .map(([code, d]) => ({ code, strength: +(d.sum / d.count).toFixed(4), flag: COUNTRY_FLAGS[Object.keys(FOREX_PAIRS).find(k => FOREX_PAIRS[k].base === code || FOREX_PAIRS[k].quote === code) ? (FOREX_PAIRS[Object.keys(FOREX_PAIRS).find(k => FOREX_PAIRS[k].base === code)] ? FOREX_PAIRS[Object.keys(FOREX_PAIRS).find(k => FOREX_PAIRS[k].base === code)].baseCountry : FOREX_PAIRS[Object.keys(FOREX_PAIRS).find(k => FOREX_PAIRS[k].quote === code)].quoteCountry) : ""] ?? "" }))
+      .sort((a, b) => b.strength - a.strength);
+
+    // Active forex sessions (UTC)
+    const utcH = new Date().getUTCHours();
+    function sessionOpen(open, close) {
+      return open < close ? utcH >= open && utcH < close : utcH >= open || utcH < close;
+    }
+    const sessions = {
+      sydney:  { label: "Sydney",   open: sessionOpen(21, 6),  timezone: "AEST/AEDT", majorPairs: ["AUDUSD","NZDUSD","AUDJPY","AUDNZD"] },
+      tokyo:   { label: "Tokyo",    open: sessionOpen(23, 8),  timezone: "JST",       majorPairs: ["USDJPY","EURJPY","AUDJPY","NZDJPY","CADJPY"] },
+      london:  { label: "London",   open: sessionOpen(7,  16), timezone: "GMT/BST",   majorPairs: ["EURUSD","GBPUSD","EURGBP","GBPJPY","EURCHF"] },
+      newYork: { label: "New York", open: sessionOpen(12, 21), timezone: "EST/EDT",   majorPairs: ["EURUSD","GBPUSD","USDCAD","USDMXN","USDJPY"] },
+    };
+
+    const sorted = [...withChange].sort((a, b) => b.changePct - a.changePct);
+    res.json({
+      dollarIndex,
+      dollarIndexLabel: dollarIndex > 0.05 ? "USD Strengthening" : dollarIndex < -0.05 ? "USD Weakening" : "USD Neutral",
+      totalPairs: withChange.length,
+      bullishPairs: withChange.filter(p => p.changePct > 0).length,
+      bearishPairs: withChange.filter(p => p.changePct < 0).length,
+      topGainer:  sorted[0]  ? { pair: sorted[0].pair,  changePct: +sorted[0].changePct.toFixed(4) }  : null,
+      topLoser:   sorted.at(-1) ? { pair: sorted.at(-1).pair, changePct: +sorted.at(-1).changePct.toFixed(4) } : null,
+      avgVolatility: +(withChange.reduce((s,p) => s + +p.atr, 0) / withChange.length).toFixed(6),
+      currencyStrength,
+      sessions,
+      updatedAt: rows[0]?.updated_at ?? null,
+    });
+  } catch (e) { res.status(500).json({ error: String(e) }); }
+});
+
+// GET /api/v1/forex/getLeaderboard?by=changePct|volume|rsi|atr|spread&dir=asc|desc&limit=10&category=major|minor|exotic
+router.get("/forex/getLeaderboard", async (req, res) => {
+  setCors(res);
+  try {
+    const by       = ["changePct","volume","rsi","atr","spread","bbBw"].includes(req.query.by) ? req.query.by : "changePct";
+    const dir      = req.query.dir === "asc" ? "asc" : "desc";
+    const limit    = Math.min(parseInt(req.query.limit || "10"), 40);
+    const category = req.query.category?.toLowerCase();
+
+    let sql = "SELECT * FROM forex_state";
+    const params = [];
+    if (category && ["major","minor","exotic"].includes(category)) { sql += " WHERE category = ?"; params.push(category); }
+    const [rows] = await pool.query(sql, params);
+
+    const withChange = rows.map(p => {
+      const def = FOREX_PAIRS[p.pair];
+      const pct = p.prev_price > 0 ? ((p.price - p.prev_price) / p.prev_price) * 100 : 0;
+      return { ...formatPairRow(p, def), changePct: +pct.toFixed(4) };
+    });
+
+    const sortKey = { changePct: "changePct", volume: "volume", rsi: "rsi", atr: "atr", spread: "spread", bbBw: "bbBw" }[by];
+    withChange.sort((a, b) => dir === "desc" ? b[sortKey] - a[sortKey] : a[sortKey] - b[sortKey]);
+
+    res.json({ sortedBy: by, direction: dir, category: category ?? "all", count: withChange.length, pairs: withChange.slice(0, limit) });
+  } catch (e) { res.status(500).json({ error: String(e) }); }
+});
+
+// GET /api/v1/forex/getCandles?pair=EURUSD&limit=48
+router.get("/forex/getCandles", async (req, res) => {
+  setCors(res);
+  try {
+    const pair  = (req.query.pair || "").toUpperCase();
+    if (!pair) return res.status(400).json({ error: "Missing ?pair= parameter" });
+    const limit = Math.min(parseInt(req.query.limit || "48"), 200);
+    const [rows] = await pool.query("SELECT pair, base, quote, candles, updated_at FROM forex_state WHERE pair = ? LIMIT 1", [pair]);
+    const p = rows[0];
+    if (!p) return res.status(404).json({ error: `Pair not found: ${pair}` });
+    const def = FOREX_PAIRS[pair];
+    const candles = Array.isArray(p.candles) ? p.candles.slice(-limit) : [];
+    res.json({ pair: p.pair, base: p.base, quote: p.quote, decimals: def?.decimals ?? 4, pipSize: def?.pipSize ?? 0.0001, count: candles.length, candles, updatedAt: p.updated_at });
+  } catch (e) { res.status(500).json({ error: String(e) }); }
+});
+
+// GET /api/v1/forex/getCorrelations?pairs=EURUSD,GBPUSD,USDJPY&window=60
+router.get("/forex/getCorrelations", async (req, res) => {
+  setCors(res);
+  try {
+    const window = Math.min(parseInt(req.query.window || "60"), 200);
+    let requestedPairs = req.query.pairs ? req.query.pairs.toUpperCase().split(",").map(s => s.trim()).filter(Boolean) : null;
+
+    // Default to all major pairs if none specified
+    if (!requestedPairs || requestedPairs.length === 0) {
+      requestedPairs = Object.keys(FOREX_PAIRS).filter(k => FOREX_PAIRS[k].category === "major");
+    }
+    requestedPairs = requestedPairs.slice(0, 20); // cap at 20 pairs
+
+    const [rows] = await pool.query("SELECT pair, history FROM forex_state WHERE pair IN (?)", [requestedPairs]);
+    const historyMap = {};
+    for (const r of rows) historyMap[r.pair] = Array.isArray(r.history) ? r.history : [];
+
+    function toReturns(prices) {
+      const r = [];
+      for (let i = 1; i < prices.length; i++) {
+        r.push(prices[i - 1] !== 0 ? (prices[i] - prices[i - 1]) / prices[i - 1] : 0);
+      }
+      return r;
+    }
+
+    function pearson(a, b) {
+      const n = Math.min(a.length, b.length, window);
+      if (n < 3) return null;
+      const xa = a.slice(-n), xb = b.slice(-n);
+      const ma = xa.reduce((s, v) => s + v, 0) / n;
+      const mb = xb.reduce((s, v) => s + v, 0) / n;
+      let cov = 0, va = 0, vb = 0;
+      for (let i = 0; i < n; i++) {
+        const da = xa[i] - ma, db = xb[i] - mb;
+        cov += da * db; va += da * da; vb += db * db;
+      }
+      const denom = Math.sqrt(va * vb);
+      return denom === 0 ? 0 : +(cov / denom).toFixed(4);
+    }
+
+    const returnsMap = {};
+    for (const pair of requestedPairs) {
+      returnsMap[pair] = historyMap[pair] ? toReturns(historyMap[pair]) : [];
+    }
+
+    const matrix = {};
+    for (const a of requestedPairs) {
+      matrix[a] = {};
+      for (const b of requestedPairs) {
+        matrix[a][b] = a === b ? 1.0 : pearson(returnsMap[a], returnsMap[b]);
+      }
+    }
+
+    res.json({ pairs: requestedPairs, window, matrix });
+  } catch (e) { res.status(500).json({ error: String(e) }); }
+});
+
+// GET /api/v1/forex/getSessions
+router.get("/forex/getSessions", async (req, res) => {
+  setCors(res);
+  try {
+    const now  = new Date();
+    const utcH = now.getUTCHours();
+    const utcM = now.getUTCMinutes();
+    const utcTime = `${String(utcH).padStart(2,"0")}:${String(utcM).padStart(2,"0")} UTC`;
+
+    function sessionOpen(open, close) {
+      return open < close ? utcH >= open && utcH < close : utcH >= open || utcH < close;
+    }
+
+    const SESSION_PAIRS = {
+      sydney:  ["AUDUSD","NZDUSD","AUDJPY","AUDNZD","AUDCAD","NZDJPY"],
+      tokyo:   ["USDJPY","EURJPY","GBPJPY","AUDJPY","CADJPY","NZDJPY","CHFJPY","USDHKD","USDSGD","USDCNY"],
+      london:  ["EURUSD","GBPUSD","EURGBP","EURCHF","GBPCHF","EURJPY","GBPJPY","USDSEK","USDNOK","USDDKK","USDHUF","USDPLN","USDCZK"],
+      newYork: ["EURUSD","GBPUSD","USDCAD","USDMXN","USDBRL","USDJPY","AUDUSD","NZDUSD","CADJPY"],
+    };
+
+    const sessions = [
+      { id: "sydney",  label: "Sydney",   timezone: "AEST/AEDT", utcOpen: "21:00", utcClose: "06:00", open: sessionOpen(21, 6),  pairs: SESSION_PAIRS.sydney  },
+      { id: "tokyo",   label: "Tokyo",    timezone: "JST",       utcOpen: "23:00", utcClose: "08:00", open: sessionOpen(23, 8),  pairs: SESSION_PAIRS.tokyo   },
+      { id: "london",  label: "London",   timezone: "GMT/BST",   utcOpen: "07:00", utcClose: "16:00", open: sessionOpen(7,  16), pairs: SESSION_PAIRS.london  },
+      { id: "newYork", label: "New York", timezone: "EST/EDT",   utcOpen: "12:00", utcClose: "21:00", open: sessionOpen(12, 21), pairs: SESSION_PAIRS.newYork },
+    ];
+
+    const openSessions = sessions.filter(s => s.open).map(s => s.label);
+    const overlap = openSessions.length > 1;
+    const mostActiveSession = sessions.filter(s => s.open).sort((a,b) => b.pairs.length - a.pairs.length)[0]?.label ?? "Interbank";
+
+    res.json({ utcTime, openSessions, overlap, mostActiveSession, sessions });
+  } catch (e) { res.status(500).json({ error: String(e) }); }
+});
+
+// GET /api/v1/forex/getCurrencies
+// Per-currency strength index derived from all pairs
+router.get("/forex/getCurrencies", async (req, res) => {
+  setCors(res);
+  try {
+    const [rows] = await pool.query("SELECT pair, base, quote, price, prev_price FROM forex_state");
+
+    const currMap = {};
+    for (const p of rows) {
+      const def = FOREX_PAIRS[p.pair];
+      if (!def) continue;
+      const pct = p.prev_price > 0 ? ((p.price - p.prev_price) / p.prev_price) * 100 : 0;
+
+      function add(code, country, val) {
+        if (!currMap[code]) currMap[code] = { code, country, flag: COUNTRY_FLAGS[country] ?? "", sum: 0, count: 0 };
+        currMap[code].sum += val;
+        currMap[code].count++;
+      }
+      add(def.base,  def.baseCountry,   pct);
+      add(def.quote, def.quoteCountry, -pct);
+    }
+
+    const currencies = Object.values(currMap).map(c => ({
+      code:     c.code,
+      country:  c.country,
+      flag:     c.flag,
+      strength: +(c.sum / c.count).toFixed(4),
+      pairsCount: c.count,
+    })).sort((a, b) => b.strength - a.strength);
+
+    res.json({ count: currencies.length, currencies });
+  } catch (e) { res.status(500).json({ error: String(e) }); }
+});
+
+// ── Namespaced stock aliases: /api/v1/stocks/* → mirrors existing /api/v1/* ──
+router.get("/stocks/getMarket",     (req, res, next) => { req.url = "/getMarket";     next("router"); });
+router.get("/stocks/getStocks",     (req, res, next) => { req.url = "/getStocks";     next("router"); });
+router.get("/stocks/getStock",      (req, res, next) => { req.url = "/getStock";      next("router"); });
+router.get("/stocks/getSectors",    (req, res, next) => { req.url = "/getSectors";    next("router"); });
+router.get("/stocks/getSector",     (req, res, next) => { req.url = "/getSector";     next("router"); });
+router.get("/stocks/getEvents",     (req, res, next) => { req.url = "/getEvents";     next("router"); });
+router.get("/stocks/getTopMovers",  (req, res, next) => { req.url = "/getTopMovers";  next("router"); });
+router.get("/stocks/getLeaderboard",(req, res, next) => { req.url = "/getLeaderboard";next("router"); });
+router.get("/stocks/getMacro",      (req, res, next) => { req.url = "/getMacro";      next("router"); });
+router.get("/stocks/getHistory",    (req, res, next) => { req.url = "/getHistory";    next("router"); });
+router.get("/stocks/getHealth",     (req, res, next) => { req.url = "/getHealth";     next("router"); });
+router.get("/stocks/info",          (req, res, next) => { req.url = "/info";          next("router"); });
+router.get("/stocks/search",        (req, res, next) => { req.url = "/search";        next("router"); });
 
 // ── GET /api/v1/info?ticker= ──────────────────────────────────────────────────
 router.get("/info", async (req, res) => {
