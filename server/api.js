@@ -391,6 +391,16 @@ router.get("/sims", (req, res) => {
 // FOREX ENDPOINTS  - /api/v1/forex/*  (also aliased at /api/v1/forex/*)
 // ════════════════════════════════════════════════════════════════════════════════
 
+function getActiveSession() {
+  const h = new Date().getUTCHours();
+  const sessions = [];
+  if (h >= 21 || h < 6)  sessions.push("Sydney");
+  if (h >= 0  && h < 9)  sessions.push("Tokyo");
+  if (h >= 7  && h < 16) sessions.push("London");
+  if (h >= 12 && h < 21) sessions.push("New York");
+  return sessions.length > 0 ? sessions.join(" / ") : "Off-hours";
+}
+
 function formatPairRow(p, def) {
   const pct = p.prev_price > 0 ? ((p.price - p.prev_price) / p.prev_price) * 100 : 0;
   const pipSize = def?.pipSize ?? 0.0001;
@@ -425,6 +435,9 @@ function formatPairRow(p, def) {
     macd: +p.macd,
     macdSignal: +p.macd_signal,
     macdHist: +p.macd_hist,
+    stochK: +(p.stoch_k ?? 50),
+    stochD: +(p.stoch_d ?? 50),
+    cci: +(p.cci ?? 0),
     bbUpper: +p.bb_upper,
     bbMiddle: +p.bb_middle,
     bbLower: +p.bb_lower,
@@ -434,6 +447,15 @@ function formatPairRow(p, def) {
     pipSize,
     decimals: def?.decimals ?? 4,
     updatedAt: p.updated_at,
+    // Computed from existing fields — no extra DB columns needed
+    pivotP:  +((+p.hi_session + +p.lo_session + +p.price) / 3).toFixed(6),
+    pivotR1: +(2 * (+p.hi_session + +p.lo_session + +p.price) / 3 - +p.lo_session).toFixed(6),
+    pivotR2: +((+p.hi_session + +p.lo_session + +p.price) / 3 + (+p.hi_session - +p.lo_session)).toFixed(6),
+    pivotS1: +(2 * (+p.hi_session + +p.lo_session + +p.price) / 3 - +p.hi_session).toFixed(6),
+    pivotS2: +((+p.hi_session + +p.lo_session + +p.price) / 3 - (+p.hi_session - +p.lo_session)).toFixed(6),
+    pctFrom52wHigh: p.hi52w > 0 ? +((+p.price / +p.hi52w - 1) * 100).toFixed(2) : 0,
+    pctFrom52wLow:  p.lo52w > 0 ? +((+p.price / +p.lo52w - 1) * 100).toFixed(2) : 0,
+    activeSession: getActiveSession(),
   };
 }
 

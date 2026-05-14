@@ -134,6 +134,9 @@ CREATE TABLE IF NOT EXISTS forex_state (
   macd          DOUBLE       NOT NULL DEFAULT 0,
   macd_signal   DOUBLE       NOT NULL DEFAULT 0,
   macd_hist     DOUBLE       NOT NULL DEFAULT 0,
+  stoch_k       DOUBLE       NOT NULL DEFAULT 50,
+  stoch_d       DOUBLE       NOT NULL DEFAULT 50,
+  cci           DOUBLE       NOT NULL DEFAULT 0,
   bb_upper      DOUBLE       NOT NULL DEFAULT 0,
   bb_middle     DOUBLE       NOT NULL DEFAULT 0,
   bb_lower      DOUBLE       NOT NULL DEFAULT 0,
@@ -167,6 +170,12 @@ CREATE EVENT purge_old_events
 --   ALTER TABLE market_state
 --     ADD COLUMN macro_regime VARCHAR(16) NOT NULL DEFAULT 'expansion' AFTER new_lows,
 --     ADD COLUMN regime_ticks_remaining INT NOT NULL DEFAULT 1200 AFTER macro_regime;
+
+-- ── Migration for forex stoch/cci columns (existing installs) ───────────────
+-- ALTER TABLE forex_state
+--   ADD COLUMN stoch_k DOUBLE NOT NULL DEFAULT 50 AFTER macd_hist,
+--   ADD COLUMN stoch_d DOUBLE NOT NULL DEFAULT 50 AFTER stoch_k,
+--   ADD COLUMN cci     DOUBLE NOT NULL DEFAULT 0  AFTER stoch_d;
 
 -- ── Migration for existing installs ──────────────────────────────────────────
 -- Run manually if upgrading a live DB to shrink oversized JSON blobs:

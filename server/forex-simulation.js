@@ -426,6 +426,26 @@ function calcSMA(history, n) {
   return sl.reduce((a, b) => a + b, 0) / sl.length;
 }
 
+function calcStochastic(history, period = 14) {
+  const n = Math.min(period, history.length);
+  if (n < 2) return 50;
+  const slice = history.slice(-n);
+  const lowest  = Math.min(...slice);
+  const highest = Math.max(...slice);
+  if (highest === lowest) return 50;
+  return ((slice[slice.length - 1] - lowest) / (highest - lowest)) * 100;
+}
+
+function calcCCI(history, period = 20) {
+  const n = Math.min(period, history.length);
+  if (n < 3) return 0;
+  const slice = history.slice(-n);
+  const sma = slice.reduce((a, b) => a + b, 0) / slice.length;
+  const meanDev = slice.reduce((s, v) => s + Math.abs(v - sma), 0) / slice.length;
+  if (meanDev < 1e-10) return 0;
+  return (slice[slice.length - 1] - sma) / (0.015 * meanDev);
+}
+
 // ── Forex tick ────────────────────────────────────────────────────────────────
 export function runForexTick(pairs) {
   const updated = pairs.map(p => {
@@ -483,6 +503,13 @@ export function runForexTick(pairs) {
     const tr = Math.abs(np - np_prev);
     const newAtr = p.atr * 0.94 + tr * 0.06;
 
+    // Stochastic %K and %D (3-period EMA of %K)
+    const newStochK = calcStochastic(h, 14);
+    const newStochD = (p.stoch_d ?? 50) * 0.67 + newStochK * 0.33;
+
+    // CCI (20-period)
+    const newCCI = calcCCI(h, 20);
+
     // Session high/low
     const newHiSession = Math.max(p.hi_session, np);
     const newLoSession = Math.min(p.lo_session, np);
@@ -533,6 +560,9 @@ export function runForexTick(pairs) {
       macd: newMacd,
       macd_signal: newMacdSignal,
       macd_hist: newMacd - newMacdSignal,
+      stoch_k: newStochK,
+      stoch_d: newStochD,
+      cci: newCCI,
       bb_upper: newBB.upper,
       bb_middle: newBB.middle,
       bb_lower: newBB.lower,

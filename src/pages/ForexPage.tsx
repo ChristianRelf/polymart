@@ -210,12 +210,22 @@ function CatBadge({ cat }: { cat: string }) {
   )
 }
 
-// ── Pair flags (emoji, no clipping) ──────────────────────────────────────────
-function PairFlags({ baseFlag, quoteFlag, size = "sm" }: { baseFlag: string; quoteFlag: string; size?: "sm" | "lg" }) {
-  const cls = size === "lg" ? "text-2xl" : "text-base"
+// ── Pair flags (CDN images — emoji fonts are unreliable on Windows) ───────────
+function PairFlags({ baseCountry, quoteCountry, size = "sm" }: { baseCountry: string; quoteCountry: string; size?: "sm" | "lg" }) {
+  const w = size === "lg" ? 28 : 20
+  const h = size === "lg" ? 21 : 15
   return (
-    <span className={cn("leading-none select-none tracking-tight shrink-0", cls)}>
-      {baseFlag || "🏳"}{quoteFlag || "🏳"}
+    <span className="inline-flex items-center gap-px shrink-0 select-none">
+      {[baseCountry, quoteCountry].map(cc => (
+        <img
+          key={cc}
+          src={`https://flagcdn.com/w40/${cc.toLowerCase()}.png`}
+          width={w} height={h}
+          alt={cc}
+          className="rounded-[2px] object-cover"
+          onError={({ currentTarget }: { currentTarget: HTMLImageElement }) => { currentTarget.style.opacity = "0" }}
+        />
+      ))}
     </span>
   )
 }
@@ -234,7 +244,7 @@ function PairRow({ pair, onClick, active }: { pair: ForexPairSummary; onClick: (
     >
       <td className="px-3 py-3">
         <div className="flex items-center gap-2.5">
-          <PairFlags baseFlag={pair.baseFlag} quoteFlag={pair.quoteFlag} />
+          <PairFlags baseCountry={pair.baseCountry} quoteCountry={pair.quoteCountry} />
           <div className="min-w-0">
             <div className="font-bold font-mono text-sm text-foreground">{pair.base}/{pair.quote}</div>
             <div className="text-xs text-muted-foreground truncate max-w-[120px]">{pair.baseName}</div>
@@ -303,7 +313,7 @@ function PairDetail({ pair: summary, onClose }: { pair: ForexPairSummary; onClos
       <div className="px-5 py-4 border-b border-border">
         <div className="flex items-start justify-between gap-4">
           <div className="flex items-center gap-3 min-w-0">
-            <PairFlags baseFlag={summary.baseFlag} quoteFlag={summary.quoteFlag} size="lg" />
+            <PairFlags baseCountry={summary.baseCountry} quoteCountry={summary.quoteCountry} size="lg" />
             <div className="min-w-0">
               <div className="flex items-center gap-2 flex-wrap mb-0.5">
                 <span className="text-2xl font-extrabold font-mono text-foreground">{summary.base}/{summary.quote}</span>
@@ -354,11 +364,14 @@ function PairDetail({ pair: summary, onClose }: { pair: ForexPairSummary; onClos
           <TabsContent value="overview" className="space-y-4">
             <div className="rounded-xl bg-background border border-border p-4">
               <p className="text-[10px] text-muted-foreground uppercase tracking-widest mb-3">Price Range</p>
-              <StatRow label="Session High" value={summary.hiSession.toFixed(decimals)} color={GAIN} />
-              <StatRow label="Session Low"  value={summary.loSession.toFixed(decimals)} color={LOSS} />
-              <StatRow label="52-Week High"  value={summary.hi52w.toFixed(decimals)} />
-              <StatRow label="52-Week Low"   value={summary.lo52w.toFixed(decimals)} />
-              <StatRow label="ATR"           value={summary.atr.toFixed(decimals)} />
+              <StatRow label="Active Session" value={summary.activeSession} color={BLUE} />
+              <StatRow label="Session High"   value={summary.hiSession.toFixed(decimals)} color={GAIN} />
+              <StatRow label="Session Low"    value={summary.loSession.toFixed(decimals)} color={LOSS} />
+              <StatRow label="52-Week High"   value={summary.hi52w.toFixed(decimals)} />
+              <StatRow label="% from 52w High" value={(summary.pctFrom52wHigh >= 0 ? "+" : "") + summary.pctFrom52wHigh.toFixed(2) + "%"} color={summary.pctFrom52wHigh >= 0 ? GAIN : LOSS} />
+              <StatRow label="52-Week Low"    value={summary.lo52w.toFixed(decimals)} />
+              <StatRow label="% from 52w Low" value={"+" + summary.pctFrom52wLow.toFixed(2) + "%"} color={GAIN} />
+              <StatRow label="ATR"            value={summary.atr.toFixed(decimals)} />
             </div>
 
             <div className="rounded-xl bg-background border border-border p-4">
@@ -433,12 +446,55 @@ function PairDetail({ pair: summary, onClose }: { pair: ForexPairSummary; onClos
 
             <div className="rounded-xl bg-background border border-border p-4">
               <div className="flex justify-between items-center mb-3">
+                <p className="text-[10px] text-muted-foreground uppercase tracking-widest">Stochastic (14, 3)</p>
+                <Signal bull={summary.stochK < 50} />
+              </div>
+              <div className="flex justify-between text-xs text-muted-foreground mb-1.5">
+                <span>Oversold (20)</span>
+                <span className="font-mono font-bold" style={{ color: summary.stochK > 80 ? LOSS : summary.stochK < 20 ? GAIN : NEUT }}>%K {summary.stochK.toFixed(1)}</span>
+                <span>Overbought (80)</span>
+              </div>
+              <div className="h-2 rounded-full bg-muted overflow-hidden mb-3">
+                <div className="h-full rounded-full transition-all" style={{ width: `${Math.max(2, Math.min(98, summary.stochK))}%`, background: summary.stochK > 80 ? LOSS : summary.stochK < 20 ? GAIN : BLUE }} />
+              </div>
+              <div className="flex justify-between text-xs text-muted-foreground mb-1.5">
+                <span>Signal (%D)</span>
+                <span className="font-mono font-bold" style={{ color: summary.stochD > 80 ? LOSS : summary.stochD < 20 ? GAIN : NEUT }}>%D {summary.stochD.toFixed(1)}</span>
+                <span />
+              </div>
+              <div className="h-2 rounded-full bg-muted overflow-hidden">
+                <div className="h-full rounded-full transition-all" style={{ width: `${Math.max(2, Math.min(98, summary.stochD))}%`, background: "rgba(255,255,255,0.2)" }} />
+              </div>
+            </div>
+
+            <div className="rounded-xl bg-background border border-border p-4">
+              <div className="flex justify-between items-center mb-3">
                 <p className="text-[10px] text-muted-foreground uppercase tracking-widest">MACD (12,26,9)</p>
                 <Signal bull={summary.macdHist >= 0} />
               </div>
               <StatRow label="MACD Line"   value={(summary.macd >= 0 ? "+" : "") + summary.macd.toFixed(5)}           color={BLUE} />
               <StatRow label="Signal Line" value={(summary.macdSignal >= 0 ? "+" : "") + summary.macdSignal.toFixed(5)} color={NEUT} />
               <StatRow label="Histogram"   value={(summary.macdHist >= 0 ? "+" : "") + summary.macdHist.toFixed(5)}    color={summary.macdHist >= 0 ? GAIN : LOSS} />
+            </div>
+
+            <div className="rounded-xl bg-background border border-border p-4">
+              <div className="flex justify-between items-center mb-3">
+                <p className="text-[10px] text-muted-foreground uppercase tracking-widest">CCI (20)</p>
+                <Signal bull={summary.cci > 0} />
+              </div>
+              <div className="flex justify-between text-xs text-muted-foreground mb-1.5">
+                <span>Oversold (-100)</span>
+                <span className="font-mono font-bold" style={{ color: summary.cci > 100 ? LOSS : summary.cci < -100 ? GAIN : NEUT }}>
+                  {summary.cci >= 0 ? "+" : ""}{summary.cci.toFixed(1)}
+                </span>
+                <span>Overbought (+100)</span>
+              </div>
+              <div className="h-2 rounded-full bg-muted overflow-hidden">
+                <div className="h-full rounded-full transition-all" style={{
+                  width: `${Math.max(2, Math.min(98, (summary.cci + 200) / 4))}%`,
+                  background: summary.cci > 100 ? LOSS : summary.cci < -100 ? GAIN : BLUE,
+                }} />
+              </div>
             </div>
 
             <div className="rounded-xl bg-background border border-border p-4">
@@ -474,6 +530,38 @@ function PairDetail({ pair: summary, onClose }: { pair: ForexPairSummary; onClos
                 )
               })}
             </div>
+
+            <div className="rounded-xl bg-background border border-border p-4">
+              <p className="text-[10px] text-muted-foreground uppercase tracking-widest mb-3">Pivot Points (Classic)</p>
+              <div className="space-y-1">
+                {([
+                  { label: "R2", value: summary.pivotR2, color: LOSS },
+                  { label: "R1", value: summary.pivotR1, color: "#e89999" },
+                  { label: "P",  value: summary.pivotP,  color: BLUE },
+                  { label: "S1", value: summary.pivotS1, color: "#99ceaa" },
+                  { label: "S2", value: summary.pivotS2, color: GAIN },
+                ] as { label: string; value: number; color: string }[]).map(({ label, value, color }) => {
+                  const isPivot = label === "P"
+                  const dist = summary.price > 0 ? ((summary.price - value) / value * 100) : 0
+                  return (
+                    <div key={label} className={cn(
+                      "flex items-center gap-3 py-1.5 px-2 rounded-lg",
+                      isPivot && "bg-blue-500/10 border border-blue-500/20"
+                    )}>
+                      <span className="text-xs font-bold font-mono w-5 shrink-0" style={{ color }}>{label}</span>
+                      <span className="text-xs font-mono tabular-nums flex-1 text-right" style={{ color: isPivot ? BLUE : "var(--foreground)" }}>
+                        {value.toFixed(decimals)}
+                      </span>
+                      {!isPivot && (
+                        <span className="text-[10px] font-mono tabular-nums w-20 text-right shrink-0" style={{ color: dist >= 0 ? GAIN : LOSS }}>
+                          {dist >= 0 ? "+" : ""}{dist.toFixed(3)}%
+                        </span>
+                      )}
+                    </div>
+                  )
+                })}
+              </div>
+            </div>
           </TabsContent>
 
           {/* Education */}
@@ -482,7 +570,7 @@ function PairDetail({ pair: summary, onClose }: { pair: ForexPairSummary; onClos
               <>
                 <div className="rounded-xl bg-background border border-border p-4">
                   <div className="flex items-center gap-2.5 mb-3">
-                    <PairFlags baseFlag={summary.baseFlag} quoteFlag={summary.quoteFlag} size="lg" />
+                    <PairFlags baseCountry={summary.baseCountry} quoteCountry={summary.quoteCountry} size="lg" />
                     <p className="text-[10px] text-muted-foreground uppercase tracking-widest">About {summary.base}/{summary.quote}</p>
                   </div>
                   <p className="text-sm text-muted-foreground leading-relaxed">{detail.description}</p>

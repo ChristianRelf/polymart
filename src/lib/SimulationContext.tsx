@@ -194,6 +194,9 @@ export type ForexPairSummary = {
   macd: number
   macdSignal: number
   macdHist: number
+  stochK: number
+  stochD: number
+  cci: number
   bbUpper: number
   bbMiddle: number
   bbLower: number
@@ -203,6 +206,14 @@ export type ForexPairSummary = {
   pipSize: number
   decimals: number
   updatedAt: string
+  pivotP: number
+  pivotR1: number
+  pivotR2: number
+  pivotS1: number
+  pivotS2: number
+  pctFrom52wHigh: number
+  pctFrom52wLow: number
+  activeSession: string
 }
 
 export type ForexPairDetail = ForexPairSummary & {

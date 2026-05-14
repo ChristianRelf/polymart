@@ -98,16 +98,17 @@ async function writeForexBatch(pairs) {
         p.spread, p.bid, p.ask, p.volume,
         p.rsi, p.momentum, p.atr,
         p.ema12, p.ema26, p.macd, p.macd_signal, p.macd_hist,
+        p.stoch_k ?? 50, p.stoch_d ?? 50, p.cci ?? 0,
         p.bb_upper, p.bb_middle, p.bb_lower, p.bb_bw,
         p.sma20, p.sma50,
         p.candle_open, p.candle_high, p.candle_low, p.candle_ticks,
         JSON.stringify(p.history),
         JSON.stringify(p.candles),
       ]);
-      const cols = "pair,base,quote,category,price,prev_price,open_price,hi_session,lo_session,hi52w,lo52w,spread,bid,ask,volume,rsi,momentum,atr,ema12,ema26,macd,macd_signal,macd_hist,bb_upper,bb_middle,bb_lower,bb_bw,sma20,sma50,candle_open,candle_high,candle_low,candle_ticks,history,candles";
-      const placeholders = values.map(() => `(${Array(35).fill("?").join(",")})`).join(",");
+      const cols = "pair,base,quote,category,price,prev_price,open_price,hi_session,lo_session,hi52w,lo52w,spread,bid,ask,volume,rsi,momentum,atr,ema12,ema26,macd,macd_signal,macd_hist,stoch_k,stoch_d,cci,bb_upper,bb_middle,bb_lower,bb_bw,sma20,sma50,candle_open,candle_high,candle_low,candle_ticks,history,candles";
+      const placeholders = values.map(() => `(${Array(38).fill("?").join(",")})`).join(",");
       const flat = values.flat();
-      const updateCols = "base=VALUES(base),quote=VALUES(quote),category=VALUES(category),price=VALUES(price),prev_price=VALUES(prev_price),open_price=VALUES(open_price),hi_session=VALUES(hi_session),lo_session=VALUES(lo_session),hi52w=VALUES(hi52w),lo52w=VALUES(lo52w),spread=VALUES(spread),bid=VALUES(bid),ask=VALUES(ask),volume=VALUES(volume),rsi=VALUES(rsi),momentum=VALUES(momentum),atr=VALUES(atr),ema12=VALUES(ema12),ema26=VALUES(ema26),macd=VALUES(macd),macd_signal=VALUES(macd_signal),macd_hist=VALUES(macd_hist),bb_upper=VALUES(bb_upper),bb_middle=VALUES(bb_middle),bb_lower=VALUES(bb_lower),bb_bw=VALUES(bb_bw),sma20=VALUES(sma20),sma50=VALUES(sma50),candle_open=VALUES(candle_open),candle_high=VALUES(candle_high),candle_low=VALUES(candle_low),candle_ticks=VALUES(candle_ticks),history=VALUES(history),candles=VALUES(candles),updated_at=NOW(3)";
+      const updateCols = "base=VALUES(base),quote=VALUES(quote),category=VALUES(category),price=VALUES(price),prev_price=VALUES(prev_price),open_price=VALUES(open_price),hi_session=VALUES(hi_session),lo_session=VALUES(lo_session),hi52w=VALUES(hi52w),lo52w=VALUES(lo52w),spread=VALUES(spread),bid=VALUES(bid),ask=VALUES(ask),volume=VALUES(volume),rsi=VALUES(rsi),momentum=VALUES(momentum),atr=VALUES(atr),ema12=VALUES(ema12),ema26=VALUES(ema26),macd=VALUES(macd),macd_signal=VALUES(macd_signal),macd_hist=VALUES(macd_hist),stoch_k=VALUES(stoch_k),stoch_d=VALUES(stoch_d),cci=VALUES(cci),bb_upper=VALUES(bb_upper),bb_middle=VALUES(bb_middle),bb_lower=VALUES(bb_lower),bb_bw=VALUES(bb_bw),sma20=VALUES(sma20),sma50=VALUES(sma50),candle_open=VALUES(candle_open),candle_high=VALUES(candle_high),candle_low=VALUES(candle_low),candle_ticks=VALUES(candle_ticks),history=VALUES(history),candles=VALUES(candles),updated_at=NOW(3)";
       await conn.query(`INSERT INTO forex_state (${cols}) VALUES ${placeholders} ON DUPLICATE KEY UPDATE ${updateCols}`, flat);
     }
   } finally {
