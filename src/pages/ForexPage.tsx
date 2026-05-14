@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef, useMemo } from "react"
+import { Badge } from "@/components/ui/badge"
 import { Input } from "@/components/ui/input"
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs"
 import { ArrowLeft, Search, TrendingUp, TrendingDown, ChevronUp, ChevronDown, Loader as Loader2 } from "lucide-react"
@@ -11,7 +12,7 @@ interface Props {
   onNavigate: (route: Route) => void
 }
 
-// ── Colour palette ────────────────────────────────────────────────────────────
+// ── Colour palette (matches MarketPage exactly) ───────────────────────────────
 const GAIN = "#5bce8a"
 const LOSS = "#e8696a"
 const NEUT = "#eab34d"
@@ -20,28 +21,23 @@ const DIM  = "rgba(255,255,255,0.18)"
 const BG   = "oklch(0.138 0.004 264)"
 const CARD = "oklch(0.165 0.004 264)"
 
-// ── Currency flag component ───────────────────────────────────────────────────
-function CurrencyFlag({ flag, size = "sm" }: { flag: string; size?: "sm" | "md" | "lg" }) {
-  const dim = size === "lg" ? "w-8 h-8 text-xl" : size === "md" ? "w-6 h-6 text-base" : "w-5 h-5 text-sm"
+// ── Stat card (matches MarketPage StatCard) ───────────────────────────────────
+function StatCard({ label, value, sub, color }: { label: string; value: string; sub?: string; color?: string }) {
   return (
-    <span className={cn(
-      "inline-flex items-center justify-center rounded-full bg-white/5 border border-white/10 select-none leading-none overflow-hidden flex-shrink-0",
-      dim
-    )}>
-      {flag || "🏳"}
-    </span>
+    <div className="bg-card border border-border rounded-xl p-4 flex flex-col gap-1">
+      <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-widest">{label}</p>
+      <p className="text-lg font-bold font-mono tabular-nums leading-none" style={{ color: color ?? "var(--foreground)" }}>
+        {value}
+      </p>
+      {sub && <p className="text-xs text-muted-foreground font-mono tabular-nums">{sub}</p>}
+    </div>
   )
 }
 
-function PairFlags({ baseFlag, quoteFlag, size = "sm" }: { baseFlag: string; quoteFlag: string; size?: "sm" | "md" | "lg" }) {
-  return (
-    <span className="relative inline-flex items-center flex-shrink-0" style={{ width: size === "lg" ? 44 : size === "md" ? 36 : 30 }}>
-      <CurrencyFlag flag={baseFlag} size={size} />
-      <span className={cn("absolute", size === "lg" ? "-right-1 -bottom-1" : "-right-1 -bottom-0.5")}>
-        <CurrencyFlag flag={quoteFlag} size={size === "lg" ? "md" : "sm"} />
-      </span>
-    </span>
-  )
+// ── Sort icon helper ──────────────────────────────────────────────────────────
+function SortIcon({ active, dir }: { active: boolean; dir: "asc" | "desc" }) {
+  if (!active) return <ChevronUp className="w-3 h-3 opacity-20" />
+  return dir === "asc" ? <ChevronUp className="w-3 h-3 opacity-70" /> : <ChevronDown className="w-3 h-3 opacity-70" />
 }
 
 // ── Mini sparkline ────────────────────────────────────────────────────────────
@@ -101,7 +97,6 @@ function ForexChart({ history, price, sma20, sma50, bbUpper, bbMiddle, bbLower }
     ctx.fillStyle = BG
     ctx.fillRect(0, 0, W, H)
 
-    // Grid
     ctx.strokeStyle = "rgba(255,255,255,0.04)"
     ctx.lineWidth = 1
     for (let i = 0; i <= 4; i++) {
@@ -113,7 +108,6 @@ function ForexChart({ history, price, sma20, sma50, bbUpper, bbMiddle, bbLower }
       ctx.fillText((mx - (i / 4) * rng).toFixed(4), W - pad.r + 6, y + fontSize * 0.4)
     }
 
-    // BB fill
     ctx.beginPath()
     history.forEach((_, i) => {
       const x = pad.l + (i / (history.length - 1)) * cW
@@ -127,7 +121,6 @@ function ForexChart({ history, price, sma20, sma50, bbUpper, bbMiddle, bbLower }
     ctx.fillStyle = "rgba(124,138,244,0.06)"
     ctx.fill()
 
-    // BB lines
     const drawLine = (vals: number[], color: string, dash: number[] = []) => {
       ctx.beginPath(); ctx.setLineDash(dash)
       ctx.strokeStyle = color; ctx.lineWidth = 1
@@ -137,19 +130,12 @@ function ForexChart({ history, price, sma20, sma50, bbUpper, bbMiddle, bbLower }
       })
       ctx.stroke(); ctx.setLineDash([])
     }
-    const bbULine = history.map(() => bbUpper)
-    const bbMLine = history.map(() => bbMiddle)
-    const bbLLine = history.map(() => bbLower)
-    const sma20Line = history.map(() => sma20)
-    const sma50Line = history.map(() => sma50)
+    drawLine(history.map(() => bbUpper), "rgba(124,138,244,0.5)", [3, 3])
+    drawLine(history.map(() => bbMiddle), "rgba(124,138,244,0.3)", [2, 4])
+    drawLine(history.map(() => bbLower), "rgba(124,138,244,0.5)", [3, 3])
+    drawLine(history.map(() => sma20), "rgba(91,206,138,0.5)")
+    drawLine(history.map(() => sma50), "rgba(232,105,106,0.5)")
 
-    drawLine(bbULine, "rgba(124,138,244,0.5)", [3, 3])
-    drawLine(bbMLine, "rgba(124,138,244,0.3)", [2, 4])
-    drawLine(bbLLine, "rgba(124,138,244,0.5)", [3, 3])
-    drawLine(sma20Line, "rgba(91,206,138,0.5)")
-    drawLine(sma50Line, "rgba(232,105,106,0.5)")
-
-    // Price line
     const isUp = history.length > 1 && history[history.length - 1] >= history[0]
     ctx.beginPath()
     history.forEach((v, i) => {
@@ -160,7 +146,6 @@ function ForexChart({ history, price, sma20, sma50, bbUpper, bbMiddle, bbLower }
     ctx.lineWidth = 2
     ctx.stroke()
 
-    // Current price tag
     const py = toY(price)
     ctx.setLineDash([4, 3])
     ctx.strokeStyle = "rgba(255,255,255,0.3)"; ctx.lineWidth = 1
@@ -173,7 +158,6 @@ function ForexChart({ history, price, sma20, sma50, bbUpper, bbMiddle, bbLower }
     ctx.textAlign = "left"
     ctx.fillText(price.toFixed(4), W - pad.r + 5, py + fontSize * 0.38)
 
-    // Legend
     const legend = [
       { label: "BB", color: "rgba(124,138,244,0.7)" },
       { label: "SMA20", color: GAIN },
@@ -191,7 +175,7 @@ function ForexChart({ history, price, sma20, sma50, bbUpper, bbMiddle, bbLower }
   return <canvas ref={ref} className="w-full rounded-t-lg block" style={{ background: BG, height: 260 }} />
 }
 
-// ── Stat row helper ───────────────────────────────────────────────────────────
+// ── Helpers ───────────────────────────────────────────────────────────────────
 function StatRow({ label, value, color }: { label: string; value: string; color?: string }) {
   return (
     <div className="flex justify-between items-center py-2 border-b border-border/30 last:border-0">
@@ -202,10 +186,16 @@ function StatRow({ label, value, color }: { label: string; value: string; color?
 }
 
 function Signal({ bull }: { bull: boolean }) {
-  return <span className={cn("text-[10px] font-bold px-2 py-0.5 rounded-full", bull ? "bg-green-500/15 text-green-400" : "bg-red-500/15 text-red-400")}>{bull ? "▲ BULL" : "▼ BEAR"}</span>
+  return (
+    <span
+      className="inline-flex items-center gap-1 text-[10px] font-bold uppercase tracking-widest px-2 py-0.5 rounded"
+      style={{ color: bull ? GAIN : LOSS, background: bull ? "rgba(91,206,138,.1)" : "rgba(232,105,106,.1)" }}
+    >
+      {bull ? "▲ BULL" : "▼ BEAR"}
+    </span>
+  )
 }
 
-// ── Category badge ────────────────────────────────────────────────────────────
 const CAT_COLORS = {
   major:  "bg-blue-500/15 text-blue-400 border-blue-500/30",
   minor:  "bg-violet-500/15 text-violet-400 border-violet-500/30",
@@ -214,49 +204,66 @@ const CAT_COLORS = {
 
 function CatBadge({ cat }: { cat: string }) {
   return (
-    <span className={cn("text-[9px] font-bold px-1.5 py-0.5 rounded-full uppercase tracking-wider border", CAT_COLORS[cat as keyof typeof CAT_COLORS] ?? "bg-muted text-muted-foreground border-transparent")}>
+    <Badge variant="outline" className={cn("text-[9px] px-1.5 py-0 h-4 border font-bold uppercase tracking-wider rounded-full", CAT_COLORS[cat as keyof typeof CAT_COLORS])}>
       {cat}
+    </Badge>
+  )
+}
+
+// ── Pair flags (emoji, no clipping) ──────────────────────────────────────────
+function PairFlags({ baseFlag, quoteFlag, size = "sm" }: { baseFlag: string; quoteFlag: string; size?: "sm" | "lg" }) {
+  const cls = size === "lg" ? "text-2xl" : "text-base"
+  return (
+    <span className={cn("leading-none select-none tracking-tight shrink-0", cls)}>
+      {baseFlag || "🏳"}{quoteFlag || "🏳"}
     </span>
   )
 }
 
-// ── Pair row ──────────────────────────────────────────────────────────────────
+// ── Pair row (table row, matches MarketPage style) ────────────────────────────
 function PairRow({ pair, onClick, active }: { pair: ForexPairSummary; onClick: () => void; active: boolean }) {
   const up = pair.change >= 0
   const decimals = pair.decimals ?? 4
   return (
-    <button
+    <tr
       onClick={onClick}
       className={cn(
-        "w-full flex items-center gap-3 px-3 py-2.5 rounded-xl transition-colors text-left cursor-pointer",
-        active ? "bg-accent border border-border" : "hover:bg-accent/50 border border-transparent"
+        "border-b border-border/50 cursor-pointer hover:bg-card/60 transition-colors",
+        active && "bg-card/80"
       )}
     >
-      {/* Flags */}
-      <PairFlags baseFlag={pair.baseFlag} quoteFlag={pair.quoteFlag} />
-
-      {/* Symbol + category */}
-      <div className="flex-1 min-w-0">
-        <div className="flex items-center gap-1.5 mb-0.5">
-          <span className="text-sm font-bold text-foreground font-mono">{pair.base}/{pair.quote}</span>
+      <td className="px-3 py-3">
+        <div className="flex items-center gap-2.5">
+          <PairFlags baseFlag={pair.baseFlag} quoteFlag={pair.quoteFlag} />
+          <div className="min-w-0">
+            <div className="font-bold font-mono text-sm text-foreground">{pair.base}/{pair.quote}</div>
+            <div className="text-xs text-muted-foreground truncate max-w-[120px]">{pair.baseName}</div>
+          </div>
           <CatBadge cat={pair.category} />
         </div>
-        <span className="text-[11px] text-muted-foreground truncate block">{pair.baseName}</span>
-      </div>
-
-      {/* Price + change */}
-      <div className="text-right flex-shrink-0">
-        <div className="text-sm font-bold font-mono tabular-nums text-foreground">{pair.price.toFixed(decimals)}</div>
-        <div className={cn("text-xs font-mono tabular-nums font-semibold", up ? "text-green-400" : "text-red-400")}>
-          {up ? "+" : ""}{pair.change.toFixed(decimals === 2 ? 2 : 4)}%
-        </div>
-      </div>
-
-      {/* Sparkline */}
-      <div className="hidden sm:block flex-shrink-0">
+      </td>
+      <td className="px-3 py-3 text-right">
+        <div className="font-semibold font-mono text-sm tabular-nums text-foreground">{pair.price.toFixed(decimals)}</div>
+        <div className="text-xs font-mono text-muted-foreground tabular-nums">{pair.bid.toFixed(decimals)}/{pair.ask.toFixed(decimals)}</div>
+      </td>
+      <td className="px-3 py-3 text-right">
+        <span className="inline-flex items-center gap-1 font-semibold font-mono text-sm tabular-nums" style={{ color: up ? GAIN : LOSS }}>
+          {up ? <TrendingUp className="w-3.5 h-3.5" /> : <TrendingDown className="w-3.5 h-3.5" />}
+          {up ? "+" : ""}{pair.change.toFixed(4)}%
+        </span>
+      </td>
+      <td className="px-3 py-3 text-right hidden md:table-cell">
+        <span className="text-sm font-mono tabular-nums" style={{ color: pair.rsi > 70 ? LOSS : pair.rsi < 30 ? GAIN : NEUT }}>
+          {pair.rsi.toFixed(1)}
+        </span>
+      </td>
+      <td className="px-3 py-3 hidden lg:table-cell">
         <Sparkline history={[]} up={up} />
-      </div>
-    </button>
+      </td>
+      <td className="px-2 py-3 text-right">
+        <span className="text-muted-foreground text-sm">›</span>
+      </td>
+    </tr>
   )
 }
 
@@ -280,62 +287,73 @@ function PairDetail({ pair: summary, onClose }: { pair: ForexPairSummary; onClos
     : 50
 
   return (
-    <div className="flex flex-col h-full">
-      {/* Header */}
-      <div className="flex items-center gap-3 p-4 border-b border-border flex-shrink-0">
-        <button onClick={onClose} className="p-1.5 rounded-lg hover:bg-accent transition-colors cursor-pointer">
+    <div className="bg-card border border-border rounded-xl overflow-hidden flex flex-col">
+      {/* Back button */}
+      <div className="px-5 pt-4 pb-2 border-b border-border flex items-center justify-between">
+        <button
+          onClick={onClose}
+          className="flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground transition-colors cursor-pointer bg-transparent border-0 p-0"
+        >
           <ArrowLeft className="w-4 h-4" />
+          Back to pairs
         </button>
-        <PairFlags baseFlag={summary.baseFlag} quoteFlag={summary.quoteFlag} size="md" />
-        <div className="flex-1 min-w-0">
-          <div className="flex items-center gap-2 flex-wrap">
-            <span className="text-lg font-bold font-mono text-foreground">{summary.base}/{summary.quote}</span>
-            <CatBadge cat={summary.category} />
+      </div>
+
+      {/* Pair header */}
+      <div className="px-5 py-4 border-b border-border">
+        <div className="flex items-start justify-between gap-4">
+          <div className="flex items-center gap-3 min-w-0">
+            <PairFlags baseFlag={summary.baseFlag} quoteFlag={summary.quoteFlag} size="lg" />
+            <div className="min-w-0">
+              <div className="flex items-center gap-2 flex-wrap mb-0.5">
+                <span className="text-2xl font-extrabold font-mono text-foreground">{summary.base}/{summary.quote}</span>
+                <CatBadge cat={summary.category} />
+              </div>
+              <p className="text-sm text-muted-foreground">{summary.baseName} / {summary.quoteName}</p>
+            </div>
           </div>
-          <div className="text-xs text-muted-foreground">{summary.baseName} / {summary.quoteName}</div>
-        </div>
-        <div className="text-right">
-          <div className="text-xl font-extrabold font-mono tabular-nums text-foreground">
-            {summary.price.toFixed(decimals)}
-          </div>
-          <div className={cn("text-sm font-mono font-semibold", up ? "text-green-400" : "text-red-400")}>
-            {up ? "+" : ""}{summary.change.toFixed(decimals === 2 ? 2 : 4)}%
+          <div className="text-right shrink-0">
+            <div className="text-3xl font-extrabold font-mono tabular-nums text-foreground">
+              {summary.price.toFixed(decimals)}
+            </div>
+            <div className={cn("text-sm font-mono font-semibold", up ? "text-green-400" : "text-red-400")}>
+              {up ? "+" : ""}{summary.change.toFixed(4)}%
+            </div>
           </div>
         </div>
       </div>
 
-      {/* Scrollable content */}
-      <div className="flex-1 overflow-y-auto p-4 space-y-4">
+      {/* Quick stats grid */}
+      <div className="grid grid-cols-3 sm:grid-cols-6 gap-px bg-border border-b border-border">
+        {[
+          { label: "Bid",        value: summary.bid.toFixed(decimals),        color: GAIN },
+          { label: "Ask",        value: summary.ask.toFixed(decimals),        color: LOSS },
+          { label: "Spread",     value: `${summary.spreadPips} pips`,          color: NEUT },
+          { label: "Hi Session", value: summary.hiSession.toFixed(decimals)  },
+          { label: "Lo Session", value: summary.loSession.toFixed(decimals)  },
+          { label: "RSI",        value: summary.rsi.toFixed(1),               color: summary.rsi > 70 ? LOSS : summary.rsi < 30 ? GAIN : undefined },
+        ].map(s => (
+          <div key={s.label} className="bg-card/60 px-3 py-2.5 text-center">
+            <div className="text-[9px] text-muted-foreground uppercase tracking-widest mb-1">{s.label}</div>
+            <div className="text-xs font-bold font-mono tabular-nums" style={{ color: s.color ?? "var(--foreground)" }}>{s.value}</div>
+          </div>
+        ))}
+      </div>
 
-        {/* Quick stats */}
-        <div className="grid grid-cols-3 gap-2">
-          {[
-            { label: "Bid",    value: summary.bid.toFixed(decimals), color: GAIN },
-            { label: "Ask",    value: summary.ask.toFixed(decimals), color: LOSS },
-            { label: "Spread", value: `${summary.spreadPips} pips`, color: NEUT },
-            { label: "Hi Session", value: summary.hiSession.toFixed(decimals) },
-            { label: "Lo Session", value: summary.loSession.toFixed(decimals) },
-            { label: "RSI",    value: summary.rsi.toFixed(1), color: summary.rsi > 70 ? LOSS : summary.rsi < 30 ? GAIN : undefined },
-          ].map(s => (
-            <div key={s.label} className="rounded-xl bg-card border border-border p-2.5 text-center">
-              <div className="text-[9px] text-muted-foreground uppercase tracking-widest mb-1">{s.label}</div>
-              <div className="text-xs font-bold font-mono tabular-nums" style={{ color: s.color ?? "var(--foreground)" }}>{s.value}</div>
-            </div>
-          ))}
-        </div>
-
+      {/* Tabs */}
+      <div className="flex-1 overflow-y-auto p-4 sm:p-5">
         <Tabs value={tab} onValueChange={setTab}>
-          <TabsList className="w-full mb-3">
-            <TabsTrigger value="overview" className="flex-1 text-xs">Overview</TabsTrigger>
-            <TabsTrigger value="chart"    className="flex-1 text-xs">Chart</TabsTrigger>
+          <TabsList className="w-full mb-4">
+            <TabsTrigger value="overview"  className="flex-1 text-xs">Overview</TabsTrigger>
+            <TabsTrigger value="chart"     className="flex-1 text-xs">Chart</TabsTrigger>
             <TabsTrigger value="technical" className="flex-1 text-xs">Technical</TabsTrigger>
             <TabsTrigger value="education" className="flex-1 text-xs">Learn</TabsTrigger>
           </TabsList>
 
           {/* Overview */}
           <TabsContent value="overview" className="space-y-4">
-            <div className="rounded-xl bg-card border border-border p-4">
-              <p className="text-xs text-muted-foreground uppercase tracking-widest mb-3">Price Range</p>
+            <div className="rounded-xl bg-background border border-border p-4">
+              <p className="text-[10px] text-muted-foreground uppercase tracking-widest mb-3">Price Range</p>
               <StatRow label="Session High" value={summary.hiSession.toFixed(decimals)} color={GAIN} />
               <StatRow label="Session Low"  value={summary.loSession.toFixed(decimals)} color={LOSS} />
               <StatRow label="52-Week High"  value={summary.hi52w.toFixed(decimals)} />
@@ -343,25 +361,25 @@ function PairDetail({ pair: summary, onClose }: { pair: ForexPairSummary; onClos
               <StatRow label="ATR"           value={summary.atr.toFixed(decimals)} />
             </div>
 
-            <div className="rounded-xl bg-card border border-border p-4">
-              <p className="text-xs text-muted-foreground uppercase tracking-widest mb-3">Market Depth</p>
+            <div className="rounded-xl bg-background border border-border p-4">
+              <p className="text-[10px] text-muted-foreground uppercase tracking-widest mb-3">Market Depth</p>
               <div className="grid grid-cols-2 gap-3 mb-3">
                 <div className="rounded-xl p-3 text-center" style={{ background: "rgba(91,206,138,.07)", border: `1px solid ${GAIN}30` }}>
                   <p className="text-[10px] font-bold uppercase mb-1" style={{ color: GAIN }}>BID</p>
-                  <p className="text-lg font-extrabold font-mono" style={{ color: GAIN }}>{summary.bid.toFixed(decimals)}</p>
+                  <p className="text-lg font-extrabold font-mono tabular-nums" style={{ color: GAIN }}>{summary.bid.toFixed(decimals)}</p>
                 </div>
                 <div className="rounded-xl p-3 text-center" style={{ background: "rgba(232,105,106,.07)", border: `1px solid ${LOSS}30` }}>
                   <p className="text-[10px] font-bold uppercase mb-1" style={{ color: LOSS }}>ASK</p>
-                  <p className="text-lg font-extrabold font-mono" style={{ color: LOSS }}>{summary.ask.toFixed(decimals)}</p>
+                  <p className="text-lg font-extrabold font-mono tabular-nums" style={{ color: LOSS }}>{summary.ask.toFixed(decimals)}</p>
                 </div>
               </div>
               <StatRow label="Spread (pips)" value={summary.spreadPips} color={NEUT} />
               <StatRow label="Pip Size" value={String(summary.pipSize)} />
             </div>
 
-            {detail && detail.factSheet && (
-              <div className="rounded-xl bg-card border border-border p-4">
-                <p className="text-xs text-muted-foreground uppercase tracking-widest mb-3">Fact Sheet</p>
+            {detail?.factSheet && (
+              <div className="rounded-xl bg-background border border-border p-4">
+                <p className="text-[10px] text-muted-foreground uppercase tracking-widest mb-3">Fact Sheet</p>
                 {Object.entries(detail.factSheet).map(([k, v]) => (
                   <StatRow key={k} label={k.replace(/([A-Z])/g, ' $1').trim()} value={String(v)} />
                 ))}
@@ -383,8 +401,8 @@ function PairDetail({ pair: summary, onClose }: { pair: ForexPairSummary; onClos
                   bbLower={summary.bbLower}
                 />
                 <div className="p-4 border-t border-border bg-card/40 space-y-1">
-                  <StatRow label="SMA 20" value={summary.sma20.toFixed(decimals)} />
-                  <StatRow label="SMA 50" value={summary.sma50.toFixed(decimals)} />
+                  <StatRow label="SMA 20"   value={summary.sma20.toFixed(decimals)} />
+                  <StatRow label="SMA 50"   value={summary.sma50.toFixed(decimals)} />
                   <StatRow label="BB Upper" value={summary.bbUpper.toFixed(decimals)} color={BLUE} />
                   <StatRow label="BB Lower" value={summary.bbLower.toFixed(decimals)} color={BLUE} />
                 </div>
@@ -398,39 +416,39 @@ function PairDetail({ pair: summary, onClose }: { pair: ForexPairSummary; onClos
 
           {/* Technical */}
           <TabsContent value="technical" className="space-y-4">
-            <div className="rounded-xl bg-card border border-border p-4">
+            <div className="rounded-xl bg-background border border-border p-4">
               <div className="flex justify-between items-center mb-3">
-                <p className="text-xs text-muted-foreground uppercase tracking-widest">RSI (14)</p>
+                <p className="text-[10px] text-muted-foreground uppercase tracking-widest">RSI (14)</p>
                 <Signal bull={summary.rsi < 50} />
               </div>
-              <div className="mb-3">
-                <div className="flex justify-between text-xs text-muted-foreground mb-1">
-                  <span>Oversold (30)</span><span className="font-mono font-bold" style={{ color: summary.rsi > 70 ? LOSS : summary.rsi < 30 ? GAIN : NEUT }}>{summary.rsi.toFixed(1)}</span><span>Overbought (70)</span>
-                </div>
-                <div className="h-2 rounded-full bg-muted overflow-hidden">
-                  <div className="h-full rounded-full transition-all" style={{ width: `${summary.rsi}%`, background: summary.rsi > 70 ? LOSS : summary.rsi < 30 ? GAIN : BLUE }} />
-                </div>
+              <div className="flex justify-between text-xs text-muted-foreground mb-1.5">
+                <span>Oversold (30)</span>
+                <span className="font-mono font-bold" style={{ color: summary.rsi > 70 ? LOSS : summary.rsi < 30 ? GAIN : NEUT }}>{summary.rsi.toFixed(1)}</span>
+                <span>Overbought (70)</span>
+              </div>
+              <div className="h-2 rounded-full bg-muted overflow-hidden">
+                <div className="h-full rounded-full transition-all" style={{ width: `${summary.rsi}%`, background: summary.rsi > 70 ? LOSS : summary.rsi < 30 ? GAIN : BLUE }} />
               </div>
             </div>
 
-            <div className="rounded-xl bg-card border border-border p-4">
+            <div className="rounded-xl bg-background border border-border p-4">
               <div className="flex justify-between items-center mb-3">
-                <p className="text-xs text-muted-foreground uppercase tracking-widest">MACD (12,26,9)</p>
+                <p className="text-[10px] text-muted-foreground uppercase tracking-widest">MACD (12,26,9)</p>
                 <Signal bull={summary.macdHist >= 0} />
               </div>
-              <StatRow label="MACD Line"   value={(summary.macd >= 0 ? "+" : "") + summary.macd.toFixed(5)}     color={BLUE} />
+              <StatRow label="MACD Line"   value={(summary.macd >= 0 ? "+" : "") + summary.macd.toFixed(5)}           color={BLUE} />
               <StatRow label="Signal Line" value={(summary.macdSignal >= 0 ? "+" : "") + summary.macdSignal.toFixed(5)} color={NEUT} />
-              <StatRow label="Histogram"   value={(summary.macdHist >= 0 ? "+" : "") + summary.macdHist.toFixed(5)}  color={summary.macdHist >= 0 ? GAIN : LOSS} />
+              <StatRow label="Histogram"   value={(summary.macdHist >= 0 ? "+" : "") + summary.macdHist.toFixed(5)}    color={summary.macdHist >= 0 ? GAIN : LOSS} />
             </div>
 
-            <div className="rounded-xl bg-card border border-border p-4">
+            <div className="rounded-xl bg-background border border-border p-4">
               <div className="flex justify-between items-center mb-3">
-                <p className="text-xs text-muted-foreground uppercase tracking-widest">Bollinger Bands (20, 2σ)</p>
+                <p className="text-[10px] text-muted-foreground uppercase tracking-widest">Bollinger Bands (20, 2σ)</p>
                 <span className="text-xs font-mono text-muted-foreground">BW {(summary.bbBw * 100).toFixed(2)}%</span>
               </div>
-              <StatRow label="Upper Band"    value={summary.bbUpper.toFixed(decimals)}  color={BLUE} />
+              <StatRow label="Upper Band"     value={summary.bbUpper.toFixed(decimals)}  color={BLUE} />
               <StatRow label="Middle (SMA20)" value={summary.bbMiddle.toFixed(decimals)} color="var(--muted-foreground)" />
-              <StatRow label="Lower Band"    value={summary.bbLower.toFixed(decimals)}  color={BLUE} />
+              <StatRow label="Lower Band"     value={summary.bbLower.toFixed(decimals)}  color={BLUE} />
               <div className="mt-3">
                 <div className="flex justify-between text-xs text-muted-foreground mb-1">
                   <span>Price within bands</span><span className="font-mono">{bbPos}%</span>
@@ -441,8 +459,8 @@ function PairDetail({ pair: summary, onClose }: { pair: ForexPairSummary; onClos
               </div>
             </div>
 
-            <div className="rounded-xl bg-card border border-border p-4">
-              <p className="text-xs text-muted-foreground uppercase tracking-widest mb-3">Moving Averages</p>
+            <div className="rounded-xl bg-background border border-border p-4">
+              <p className="text-[10px] text-muted-foreground uppercase tracking-widest mb-3">Moving Averages</p>
               {([["SMA 20", summary.sma20], ["SMA 50", summary.sma50]] as [string, number][]).map(([label, val]) => {
                 const abv = summary.price > val
                 return (
@@ -462,55 +480,50 @@ function PairDetail({ pair: summary, onClose }: { pair: ForexPairSummary; onClos
           <TabsContent value="education" className="space-y-4">
             {detail ? (
               <>
-                <div className="rounded-xl bg-card border border-border p-4">
-                  <div className="flex items-center gap-2 mb-3">
-                    <PairFlags baseFlag={summary.baseFlag} quoteFlag={summary.quoteFlag} size="md" />
-                    <p className="text-xs text-muted-foreground uppercase tracking-widest">About {summary.base}/{summary.quote}</p>
+                <div className="rounded-xl bg-background border border-border p-4">
+                  <div className="flex items-center gap-2.5 mb-3">
+                    <PairFlags baseFlag={summary.baseFlag} quoteFlag={summary.quoteFlag} size="lg" />
+                    <p className="text-[10px] text-muted-foreground uppercase tracking-widest">About {summary.base}/{summary.quote}</p>
                   </div>
                   <p className="text-sm text-muted-foreground leading-relaxed">{detail.description}</p>
                 </div>
 
-                <div className="rounded-xl bg-card border border-border p-4">
-                  <p className="text-xs text-muted-foreground uppercase tracking-widest mb-3">Key Economic Drivers</p>
+                <div className="rounded-xl bg-background border border-border p-4">
+                  <p className="text-[10px] text-muted-foreground uppercase tracking-widest mb-3">Key Economic Drivers</p>
                   <ul className="space-y-2">
                     {detail.economicDrivers.map((d, i) => (
                       <li key={i} className="flex items-start gap-2 text-sm text-muted-foreground">
-                        <span className="text-blue-400 mt-0.5 flex-shrink-0">•</span>
+                        <span className="text-blue-400 mt-0.5 shrink-0">•</span>
                         {d}
                       </li>
                     ))}
                   </ul>
                 </div>
 
-                <div className="rounded-xl bg-card border border-border p-4">
-                  <p className="text-xs text-muted-foreground uppercase tracking-widest mb-3">Currencies</p>
+                <div className="rounded-xl bg-background border border-border p-4">
+                  <p className="text-[10px] text-muted-foreground uppercase tracking-widest mb-3">Currencies</p>
                   <div className="grid grid-cols-2 gap-3">
-                    <div className="rounded-xl bg-background/40 border border-border/50 p-3">
-                      <div className="flex items-center gap-2 mb-2">
-                        <CurrencyFlag flag={summary.baseFlag} size="md" />
-                        <div>
-                          <div className="text-sm font-bold">{summary.base}</div>
-                          <div className="text-[10px] text-muted-foreground">{summary.baseName}</div>
+                    {[
+                      { flag: summary.baseFlag, code: summary.base, name: summary.baseName, role: "Base currency" },
+                      { flag: summary.quoteFlag, code: summary.quote, name: summary.quoteName, role: "Quote currency" },
+                    ].map(c => (
+                      <div key={c.code} className="rounded-xl bg-card border border-border/50 p-3">
+                        <div className="flex items-center gap-2 mb-2">
+                          <span className="text-2xl leading-none select-none">{c.flag || "🏳"}</span>
+                          <div>
+                            <div className="text-sm font-bold font-mono">{c.code}</div>
+                            <div className="text-[10px] text-muted-foreground">{c.name}</div>
+                          </div>
                         </div>
+                        <div className="text-[10px] text-muted-foreground">{c.role}</div>
                       </div>
-                      <div className="text-[10px] text-muted-foreground">Base currency</div>
-                    </div>
-                    <div className="rounded-xl bg-background/40 border border-border/50 p-3">
-                      <div className="flex items-center gap-2 mb-2">
-                        <CurrencyFlag flag={summary.quoteFlag} size="md" />
-                        <div>
-                          <div className="text-sm font-bold">{summary.quote}</div>
-                          <div className="text-[10px] text-muted-foreground">{summary.quoteName}</div>
-                        </div>
-                      </div>
-                      <div className="text-[10px] text-muted-foreground">Quote currency</div>
-                    </div>
+                    ))}
                   </div>
                 </div>
 
                 {detail.factSheet && Object.keys(detail.factSheet).length > 0 && (
-                  <div className="rounded-xl bg-card border border-border p-4">
-                    <p className="text-xs text-muted-foreground uppercase tracking-widest mb-3">Market Facts</p>
+                  <div className="rounded-xl bg-background border border-border p-4">
+                    <p className="text-[10px] text-muted-foreground uppercase tracking-widest mb-3">Market Facts</p>
                     {Object.entries(detail.factSheet).map(([k, v]) => (
                       <StatRow key={k} label={k} value={String(v)} />
                     ))}
@@ -532,11 +545,11 @@ function PairDetail({ pair: summary, onClose }: { pair: ForexPairSummary; onClos
 // ── Main Forex Page ───────────────────────────────────────────────────────────
 export default function ForexPage({ onNavigate }: Props) {
   const { forexPairs, loading, lastRefresh } = useSimulation()
-  const [search, setSearch] = useState("")
-  const [category, setCategory] = useState<"all" | "major" | "minor" | "exotic">("all")
+  const [search, setSearch]       = useState("")
+  const [category, setCategory]   = useState<"all" | "major" | "minor" | "exotic">("all")
   const [selectedPair, setSelectedPair] = useState<string | null>(null)
-  const [sortKey, setSortKey] = useState<"pair" | "price" | "change" | "rsi">("pair")
-  const [sortDir, setSortDir] = useState<"asc" | "desc">("asc")
+  const [sortKey, setSortKey]     = useState<"pair" | "price" | "change" | "rsi">("pair")
+  const [sortDir, setSortDir]     = useState<"asc" | "desc">("asc")
 
   const pairs = Object.values(forexPairs)
 
@@ -547,7 +560,7 @@ export default function ForexPage({ onNavigate }: Props) {
       const q = search.trim().toLowerCase()
       list = list.filter(p =>
         p.pair.toLowerCase().includes(q) ||
-        p.base.toLowerCase().includes(q) ||
+        p.base.toLowerCase().includes(q)  ||
         p.quote.toLowerCase().includes(q) ||
         p.baseName.toLowerCase().includes(q) ||
         p.quoteName.toLowerCase().includes(q)
@@ -568,103 +581,145 @@ export default function ForexPage({ onNavigate }: Props) {
   }
 
   const selected = selectedPair ? forexPairs[selectedPair] : null
-
   const gainers = pairs.filter(p => p.change > 0).length
   const losers  = pairs.filter(p => p.change < 0).length
 
-  return (
-    <div className="flex flex-col h-[calc(100vh-64px)] max-h-screen overflow-hidden">
+  if (loading && pairs.length === 0) {
+    return (
+      <div className="flex items-center justify-center py-40">
+        <div className="flex flex-col items-center gap-3">
+          <div className="w-6 h-6 border-2 border-foreground/20 border-t-foreground rounded-full animate-spin" />
+          <p className="text-sm text-muted-foreground">Connecting to forex simulation...</p>
+        </div>
+      </div>
+    )
+  }
 
-      {/* Top bar */}
-      <div className="border-b border-border bg-background/95 backdrop-blur px-4 py-3 flex-shrink-0">
-        <div className="flex items-center gap-3 flex-wrap">
-          <button onClick={() => onNavigate("market")} className="p-1.5 rounded-lg hover:bg-accent transition-colors cursor-pointer flex-shrink-0">
+  return (
+    <div className="max-w-[1600px] mx-auto px-4 sm:px-8 py-6 sm:py-10">
+
+      {/* Header */}
+      <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4 mb-6 sm:mb-8">
+        <div className="flex items-center gap-3">
+          <button
+            onClick={() => onNavigate("market")}
+            className="p-1.5 rounded-lg hover:bg-accent transition-colors cursor-pointer"
+          >
             <ArrowLeft className="w-4 h-4" />
           </button>
-          <div className="flex items-center gap-2">
-            <span className="text-xl">💱</span>
-            <div>
-              <h1 className="text-sm font-bold text-foreground leading-none">Forex Market</h1>
-              <p className="text-[10px] text-muted-foreground">40 currency pairs • live simulation</p>
-            </div>
+          <div>
+            <h1 className="text-3xl font-bold text-foreground tracking-tight mb-1">Forex Market</h1>
+            <p className="text-base text-muted-foreground">40 currency pairs · live simulation</p>
           </div>
-
-          <div className="flex items-center gap-3 ml-auto flex-wrap">
-            {/* Summary chips */}
-            <div className="hidden sm:flex items-center gap-2 text-xs">
-              <span className="flex items-center gap-1 text-green-400 font-mono"><TrendingUp className="w-3 h-3" />{gainers}</span>
-              <span className="flex items-center gap-1 text-red-400 font-mono"><TrendingDown className="w-3 h-3" />{losers}</span>
-            </div>
-
-            {/* Category filter */}
-            <div className="flex gap-1">
-              {(["all", "major", "minor", "exotic"] as const).map(c => (
-                <button
-                  key={c}
-                  onClick={() => setCategory(c)}
-                  className={cn("text-[10px] font-bold px-2.5 py-1 rounded-full uppercase tracking-wide transition-colors cursor-pointer",
-                    category === c ? "bg-foreground text-background" : "text-muted-foreground hover:text-foreground"
-                  )}
-                >
-                  {c}
-                </button>
-              ))}
-            </div>
-
-            {/* Search */}
-            <div className="relative">
-              <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground" />
-              <Input
-                value={search}
-                onChange={e => setSearch(e.target.value)}
-                placeholder="Search pairs..."
-                className="pl-8 h-7 text-xs w-32 bg-card"
-              />
-            </div>
-          </div>
+        </div>
+        <div className="flex items-center gap-3">
+          <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
+          <span className="text-sm text-muted-foreground">
+            {lastRefresh > 0 ? `Updated ${new Date(lastRefresh).toLocaleTimeString()}` : "Connecting..."}
+          </span>
         </div>
       </div>
 
-      {/* Body: list + detail */}
-      <div className="flex flex-1 min-h-0">
+      {/* Stat tiles */}
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 sm:gap-3 mb-6">
+        <StatCard label="Total Pairs"  value={pairs.length.toString()}    sub="7 major · 14 minor · 19 exotic" />
+        <StatCard label="Gainers"      value={gainers.toString()}          sub={`${pairs.length > 0 ? ((gainers / pairs.length) * 100).toFixed(0) : 0}% bullish`} color={GAIN} />
+        <StatCard label="Losers"       value={losers.toString()}           sub={`${pairs.length > 0 ? ((losers  / pairs.length) * 100).toFixed(0) : 0}% bearish`} color={LOSS} />
+        <StatCard label="Showing"      value={filtered.length.toString()}  sub={category !== "all" ? category : "all categories"} />
+      </div>
 
-        {/* Pairs list */}
-        <div className={cn("flex flex-col border-r border-border bg-background", selected ? "hidden lg:flex lg:w-80 xl:w-96 flex-shrink-0" : "flex-1")}>
+      {/* Filters + search */}
+      <div className="flex items-center gap-2 mb-4 flex-wrap">
+        <div className="flex gap-1">
+          {(["all", "major", "minor", "exotic"] as const).map(c => (
+            <button
+              key={c}
+              onClick={() => setCategory(c)}
+              className={cn(
+                "text-[10px] font-bold px-3 py-1.5 rounded-full uppercase tracking-wide transition-colors cursor-pointer border",
+                category === c
+                  ? "bg-foreground text-background border-foreground"
+                  : "text-muted-foreground hover:text-foreground bg-card border-border"
+              )}
+            >
+              {c}
+            </button>
+          ))}
+        </div>
+        <div className="relative ml-auto">
+          <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground" />
+          <Input
+            value={search}
+            onChange={e => setSearch(e.target.value)}
+            placeholder="Search pairs..."
+            className="pl-8 h-8 text-xs w-52 bg-card"
+          />
+        </div>
+      </div>
 
+      {/* Main content: list + detail */}
+      <div className="flex gap-6 items-start">
+
+        {/* Pair list */}
+        <div className={cn(
+          "bg-card border border-border rounded-xl overflow-hidden flex flex-col shrink-0",
+          selected ? "hidden xl:flex" : "flex-1",
+          selected && "xl:w-[480px]"
+        )}>
           {/* Column headers */}
-          <div className="flex items-center gap-3 px-3 py-2 border-b border-border/50 bg-card/30 flex-shrink-0">
-            <span className="w-[30px] flex-shrink-0" />
-            <button onClick={() => toggleSort("pair")} className="flex-1 flex items-center gap-1 text-[10px] font-bold uppercase tracking-widest text-muted-foreground hover:text-foreground cursor-pointer">
-              Pair {sortKey === "pair" && (sortDir === "asc" ? <ChevronUp className="w-3 h-3" /> : <ChevronDown className="w-3 h-3" />)}
-            </button>
-            <button onClick={() => toggleSort("price")} className="w-24 text-right text-[10px] font-bold uppercase tracking-widest text-muted-foreground hover:text-foreground cursor-pointer">
-              Price {sortKey === "price" && (sortDir === "asc" ? <ChevronUp className="w-3 h-3 inline" /> : <ChevronDown className="w-3 h-3 inline" />)}
-            </button>
-            <button onClick={() => toggleSort("change")} className="w-16 text-right text-[10px] font-bold uppercase tracking-widest text-muted-foreground hover:text-foreground cursor-pointer hidden sm:block">
-              Chg {sortKey === "change" && (sortDir === "asc" ? <ChevronUp className="w-3 h-3 inline" /> : <ChevronDown className="w-3 h-3 inline" />)}
-            </button>
+          <div className="border-b border-border bg-card/50">
+            <table className="w-full">
+              <thead>
+                <tr>
+                  <th className="px-3 py-2.5 text-left">
+                    <button onClick={() => toggleSort("pair")} className="flex items-center gap-1 text-[10px] font-bold uppercase tracking-widest text-muted-foreground hover:text-foreground cursor-pointer">
+                      Pair <SortIcon active={sortKey === "pair"} dir={sortDir} />
+                    </button>
+                  </th>
+                  <th className="px-3 py-2.5 text-right">
+                    <button onClick={() => toggleSort("price")} className="flex items-center gap-1 text-[10px] font-bold uppercase tracking-widest text-muted-foreground hover:text-foreground cursor-pointer ml-auto">
+                      Price <SortIcon active={sortKey === "price"} dir={sortDir} />
+                    </button>
+                  </th>
+                  <th className="px-3 py-2.5 text-right">
+                    <button onClick={() => toggleSort("change")} className="flex items-center gap-1 text-[10px] font-bold uppercase tracking-widest text-muted-foreground hover:text-foreground cursor-pointer ml-auto">
+                      Change <SortIcon active={sortKey === "change"} dir={sortDir} />
+                    </button>
+                  </th>
+                  <th className="px-3 py-2.5 text-right hidden md:table-cell">
+                    <button onClick={() => toggleSort("rsi")} className="flex items-center gap-1 text-[10px] font-bold uppercase tracking-widest text-muted-foreground hover:text-foreground cursor-pointer ml-auto">
+                      RSI <SortIcon active={sortKey === "rsi"} dir={sortDir} />
+                    </button>
+                  </th>
+                  <th className="px-3 py-2.5 hidden lg:table-cell" />
+                  <th className="px-2 py-2.5 w-4" />
+                </tr>
+              </thead>
+            </table>
           </div>
 
-          <div className="flex-1 overflow-y-auto p-2 space-y-0.5">
-            {loading && pairs.length === 0 ? (
-              <div className="flex items-center justify-center h-32 text-muted-foreground text-sm">
-                <Loader2 className="w-4 h-4 animate-spin mr-2" /> Loading...
-              </div>
-            ) : filtered.length === 0 ? (
-              <div className="flex items-center justify-center h-32 text-muted-foreground text-sm">No pairs found</div>
+          {/* Rows */}
+          <div className="overflow-y-auto" style={{ maxHeight: "calc(100vh - 420px)" }}>
+            {filtered.length === 0 ? (
+              <div className="flex items-center justify-center py-16 text-muted-foreground text-sm">No pairs found</div>
             ) : (
-              filtered.map(p => (
-                <PairRow
-                  key={p.pair}
-                  pair={p}
-                  onClick={() => setSelectedPair(p.pair === selectedPair ? null : p.pair)}
-                  active={p.pair === selectedPair}
-                />
-              ))
+              <table className="w-full">
+                <tbody>
+                  {filtered.map(p => (
+                    <PairRow
+                      key={p.pair}
+                      pair={p}
+                      onClick={() => setSelectedPair(p.pair === selectedPair ? null : p.pair)}
+                      active={p.pair === selectedPair}
+                    />
+                  ))}
+                </tbody>
+              </table>
             )}
           </div>
 
-          <div className="px-3 py-2 border-t border-border/50 bg-card/20 flex-shrink-0">
+          {/* Footer */}
+          <div className="px-3 py-2 border-t border-border/50 bg-card/20">
             <p className="text-[10px] text-muted-foreground">
               {filtered.length} of {pairs.length} pairs
               {lastRefresh > 0 && <> · updated {new Date(lastRefresh).toLocaleTimeString()}</>}
@@ -674,23 +729,26 @@ export default function ForexPage({ onNavigate }: Props) {
 
         {/* Detail panel */}
         {selected ? (
-          <div className="flex-1 min-w-0 overflow-hidden">
+          <div className="flex-1 min-w-0">
             <PairDetail pair={selected} onClose={() => setSelectedPair(null)} />
           </div>
         ) : (
-          <div className="hidden lg:flex flex-1 items-center justify-center flex-col gap-3 text-center p-8">
-            <div className="text-4xl mb-2">💱</div>
+          <div className="hidden xl:flex flex-1 items-center justify-center flex-col gap-3 text-center p-12 bg-card border border-border rounded-xl min-h-[300px]">
+            <div className="text-4xl mb-2 select-none">💱</div>
             <h3 className="text-lg font-bold text-foreground">Select a currency pair</h3>
-            <p className="text-sm text-muted-foreground max-w-xs">Click any pair to view live rates, technical analysis, and educational content.</p>
+            <p className="text-sm text-muted-foreground max-w-xs">
+              Click any pair to view live rates, technical analysis, charts, and educational content.
+            </p>
             <div className="flex flex-wrap justify-center gap-2 mt-2">
-              {["major", "minor", "exotic"].map(c => (
-                <span key={c} className={cn("text-[10px] font-bold px-2.5 py-1 rounded-full uppercase border", CAT_COLORS[c as keyof typeof CAT_COLORS])}>
+              {(["major", "minor", "exotic"] as const).map(c => (
+                <span key={c} className={cn("text-[10px] font-bold px-2.5 py-1 rounded-full uppercase border", CAT_COLORS[c])}>
                   {c}
                 </span>
               ))}
             </div>
           </div>
         )}
+
       </div>
     </div>
   )
