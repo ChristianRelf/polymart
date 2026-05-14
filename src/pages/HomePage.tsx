@@ -5,7 +5,7 @@ import { ArrowRight, GraduationCap, ChartBar as BarChart2, Globe, Bot, TrendingU
 import { cn } from "@/lib/utils"
 import type { LucideIcon } from "lucide-react"
 
-type Route = "home" | "market" | "api" | "terms" | "privacy"
+type Route = "home" | "market" | "forex" | "api" | "terms" | "privacy"
 
 interface Props {
   onNavigate: (r: Route) => void
@@ -15,7 +15,7 @@ const FEATURES = [
   {
     icon: Activity,
     title: "Live Simulation Engine",
-    desc: "Prices tick every 5 seconds driven by volatility, momentum, RSI, insider bias, earnings cycles, and macro sensitivity.",
+    desc: "Prices tick every 10 seconds driven by volatility, momentum, RSI, insider bias, earnings cycles, and macro sensitivity.",
   },
   {
     icon: GraduationCap,
@@ -69,8 +69,8 @@ const SECTORS: { icon: LucideIcon; label: string }[] = [
 
 const STATS = [
   { value: "132", label: "Simulated Stocks" },
-  { value: "20", label: "Market Sectors" },
-  { value: "5s", label: "Tick Interval" },
+  { value: "40", label: "Forex Pairs" },
+  { value: "10s", label: "Tick Interval" },
   { value: "240+", label: "Event Types" },
 ]
 
@@ -96,7 +96,7 @@ export default function HomePage({ onNavigate }: Props) {
           variant="outline"
           className="mb-6 px-4 py-1.5 text-xs tracking-[0.15em] uppercase font-medium border-border text-muted-foreground"
         >
-          Simulated Stock Market Training Data
+          Simulated Financial Market Data
         </Badge>
 
         <h1 className="text-4xl sm:text-6xl lg:text-8xl xl:text-9xl font-extrabold tracking-tight text-balance leading-[1.05] sm:leading-[1.02] mb-6 sm:mb-8 max-w-6xl">
@@ -106,8 +106,8 @@ export default function HomePage({ onNavigate }: Props) {
         </h1>
 
         <p className="text-base sm:text-xl text-muted-foreground leading-relaxed max-w-3xl mb-8 sm:mb-12">
-          POLYMART runs a persistent simulated stock exchange with 132 companies, 20 sectors, live macro variables,
-          and an open API. Built for Discord bots, browser games, and learning how markets behave.
+          POLYMART runs persistent simulated markets - a stock exchange with 132 companies across 20 sectors,
+          and a forex market with 40 currency pairs. Open API, no auth required. Built for bots, games, and learning.
         </p>
 
         <div className="flex flex-wrap gap-3 justify-center">
@@ -229,6 +229,56 @@ export default function HomePage({ onNavigate }: Props) {
               </button>
             )
           })}
+        </div>
+      </section>
+
+      <Separator className="bg-border" />
+
+      {/* ── Forex section ────────────────────────────────────────────────── */}
+      <section className="max-w-[1600px] mx-auto w-full px-4 sm:px-8 py-14 sm:py-20 lg:py-28">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 lg:gap-20 items-center">
+          <div>
+            <p className="text-xs text-muted-foreground uppercase tracking-widest mb-3">Forex Market</p>
+            <h2 className="text-2xl sm:text-4xl font-bold tracking-tight text-foreground mb-4 sm:mb-5">
+              40 currency pairs.<br />All the indicators.
+            </h2>
+            <p className="text-base text-muted-foreground leading-relaxed mb-6">
+              Major, minor, and exotic pairs with pip-accurate pricing. Every pair carries RSI, MACD,
+              Bollinger Bands, ATR, and session data. Same open REST API - no auth, no keys.
+            </p>
+            <div className="flex flex-wrap gap-2 mb-8">
+              {["7 Major", "14 Minor", "19 Exotic"].map(label => (
+                <span key={label} className="text-xs font-medium px-3 py-1.5 rounded-full border border-border text-muted-foreground bg-card">
+                  {label}
+                </span>
+              ))}
+            </div>
+            <Button onClick={() => onNavigate("forex")} className="font-semibold">
+              View Forex Market
+              <ArrowRight className="w-3.5 h-3.5 ml-1.5" />
+            </Button>
+          </div>
+
+          <div className="flex flex-col gap-3">
+            {[
+              { pair: "EUR/USD", flags: "🇪🇺🇺🇸", price: "1.0847", change: "+0.12%", pos: true,  cat: "Major"  },
+              { pair: "GBP/JPY", flags: "🇬🇧🇯🇵", price: "192.34", change: "-0.08%", pos: false, cat: "Minor"  },
+              { pair: "USD/ZAR", flags: "🇺🇸🇿🇦", price: "18.42",  change: "+0.31%", pos: true,  cat: "Exotic" },
+              { pair: "EUR/CHF", flags: "🇪🇺🇨🇭", price: "0.9612", change: "-0.04%", pos: false, cat: "Minor"  },
+            ].map(p => (
+              <div key={p.pair} className="flex items-center gap-4 bg-card border border-border rounded-xl px-5 py-4 hover:border-ring transition-colors">
+                <span className="text-2xl leading-none">{p.flags}</span>
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm font-bold text-foreground">{p.pair}</p>
+                  <p className="text-xs text-muted-foreground">{p.cat}</p>
+                </div>
+                <div className="text-right tabular-nums">
+                  <p className="text-sm font-mono font-semibold text-foreground">{p.price}</p>
+                  <p className={cn("text-xs font-medium", p.pos ? "text-emerald-400" : "text-rose-400")}>{p.change}</p>
+                </div>
+              </div>
+            ))}
+          </div>
         </div>
       </section>
 

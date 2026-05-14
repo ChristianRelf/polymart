@@ -3,7 +3,7 @@ import { Separator } from "@/components/ui/separator"
 import { TrendingUp, Bitcoin, ChartBar as BarChart2, DollarSign, LayoutGrid, Bot, Globe, ArrowRight, Clock, Layers, MonitorSmartphone, Code as Code2 } from "lucide-react"
 import { cn } from "@/lib/utils"
 
-type Route = "home" | "market" | "api" | "terms" | "privacy" | "education" | "changelog" | "products" | "help" | "widgets"
+type Route = "home" | "market" | "forex" | "api" | "terms" | "privacy" | "education" | "changelog" | "products" | "help" | "widgets"
 
 interface Props {
   onNavigate: (r: Route) => void
@@ -157,8 +157,8 @@ export default function ProductsPage({ onNavigate }: Props) {
           Products
         </h1>
         <p className="text-lg text-muted-foreground leading-relaxed max-w-2xl">
-          Polymart is growing into a full suite of financial market simulations.
-          The stock exchange is live today - more markets are on the way.
+          Polymart is a growing suite of financial market simulations.
+          The stock exchange and forex market are live today - more markets are on the way.
         </p>
       </div>
 
@@ -192,10 +192,13 @@ export default function ProductsPage({ onNavigate }: Props) {
             title="Indices Simulation"
             desc="Simulated broad market indices tracking weighted baskets of Polymart stocks. Useful for macro strategy testing, ETF modelling, and portfolio benchmarking."
           />
-          <ComingSoonProduct
+          <ActiveProduct
             icon={DollarSign}
-            title="Forex Simulation"
-            desc="Fictional currency pairs with configurable macro drivers - interest rate differentials, inflation spreads, and geopolitical event shocks. Pip-accurate pricing."
+            title="Forex Market Simulation"
+            desc="40 currency pairs across major, minor, and exotic categories. Pip-accurate pricing with RSI, MACD, Bollinger Bands, ATR, and live session indicators. Open REST API, no auth required."
+            badge="Live"
+            onNavigate={onNavigate}
+            route="forex"
           />
           <ComingSoonProduct
             icon={LayoutGrid}
