@@ -1,6 +1,6 @@
 import { Badge } from "@/components/ui/badge"
 import { Separator } from "@/components/ui/separator"
-import { TrendingUp, Bitcoin, ChartBar as BarChart2, DollarSign, LayoutGrid, Bot, Globe, ArrowRight, Clock, Layers, MonitorSmartphone, Code as Code2 } from "lucide-react"
+import { TrendingUp, Bitcoin, ChartBar as BarChart2, DollarSign, LayoutGrid, Bot, Globe, ArrowRight, Clock, Layers, MonitorSmartphone, Code as Code2, Rss } from "lucide-react"
 import { cn } from "@/lib/utils"
 
 type Route = "home" | "market" | "forex" | "api" | "terms" | "privacy" | "education" | "changelog" | "products" | "help" | "widgets"
@@ -290,6 +290,20 @@ export default function ProductsPage({ onNavigate }: Props) {
               "Live event feed with impact indicators",
               "Dark & light themes, Shadow DOM isolated",
               "Zero-auth, CORS-open endpoints",
+            ]}
+          />
+          <IntegrationCard
+            icon={Rss}
+            title="RSS Feed"
+            sub="Market events & alerts"
+            status="live"
+            items={[
+              "Standard RSS 2.0 — any feed reader or client",
+              "Flash crashes, sector booms, macro shocks",
+              "Optional sector filter (?sector=tech)",
+              "10-second TTL — synced to simulation tick",
+              "Works with Zapier, Make, n8n, IFTTT",
+              "Subscribe: /api/v1/rss or /api/v1/rss.xml",
             ]}
           />
         </div>

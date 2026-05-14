@@ -765,6 +765,68 @@ router.get("/forex/getCurrencies", async (req, res) => {
   } catch (e) { res.status(500).json({ error: String(e) }); }
 });
 
+// ── GET /api/v1/rss[?limit=40&sector=] ───────────────────────────────────────
+router.get("/rss", async (req, res) => {
+  setCors(res);
+  try {
+    const limit  = Math.min(parseInt(req.query.limit || "40"), 100);
+    const sector = req.query.sector?.toLowerCase();
+
+    let sql = "SELECT * FROM events_log WHERE 1=1";
+    const params = [];
+    if (sector) { sql += " AND sector = ?"; params.push(sector); }
+    sql += " ORDER BY fired_at DESC LIMIT ?";
+    params.push(limit);
+    const [events] = await pool.query(sql, params);
+
+    const [msRows] = await pool.query(
+      "SELECT fear_greed, index_value, market_session, updated_at FROM market_state WHERE id = 1 LIMIT 1"
+    );
+    const ms = msRows[0];
+
+    const esc = (s) => String(s ?? "")
+      .replace(/&/g, "&amp;").replace(/</g, "&lt;")
+      .replace(/>/g, "&gt;").replace(/"/g, "&quot;");
+
+    const rfc822 = (d) => { try { return new Date(d).toUTCString(); } catch { return new Date().toUTCString(); } };
+
+    const items = events.map(ev => {
+      const sentiment  = ev.effect >= 0 ? "Bullish" : "Bearish";
+      const effectStr  = (ev.effect >= 0 ? "+" : "") + (ev.effect * 100).toFixed(1) + "%";
+      const sectorLine = ev.sector ? `${ev.sector} sector` : "Market-wide";
+      return `    <item>
+      <title>${esc(ev.text)}</title>
+      <description>${esc(`${sentiment} · ${effectStr} impact · ${sectorLine} · Weight: ${ev.weight}`)}</description>
+      <pubDate>${rfc822(ev.fired_at)}</pubDate>
+      <guid isPermaLink="false">${esc(ev.id)}</guid>
+      <link>https://polymart.co/#/market</link>${ev.sector ? `\n      <category>${esc(ev.sector)}</category>` : ""}
+    </item>`;
+    }).join("\n");
+
+    const feedTitle   = sector ? `Polymart Market Events · ${sector}` : "Polymart Market Events";
+    const lastBuild   = ms ? rfc822(ms.updated_at) : new Date().toUTCString();
+    const selfHref    = `https://polymart.co/api/v1/rss${sector ? `?sector=${encodeURIComponent(sector)}` : ""}`;
+
+    const xml = `<?xml version="1.0" encoding="UTF-8"?>
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
+  <channel>
+    <title>${esc(feedTitle)}</title>
+    <link>https://polymart.co/#/market</link>
+    <description>Live simulated market events from the Polymart exchange. Subscribe to track flash crashes, sector booms, regulatory shocks, and macro events as they fire.</description>
+    <language>en-us</language>
+    <lastBuildDate>${lastBuild}</lastBuildDate>
+    <atom:link href="${selfHref}" rel="self" type="application/rss+xml"/>
+    <ttl>10</ttl>
+${items}
+  </channel>
+</rss>`;
+
+    res.setHeader("Content-Type", "application/rss+xml; charset=utf-8");
+    res.setHeader("Cache-Control", "public, max-age=10");
+    res.send(xml);
+  } catch (e) { res.status(500).json({ error: String(e) }); }
+});
+
 // ── Namespaced stock aliases: /api/v1/stocks/* → mirrors existing /api/v1/* ──
 router.get("/stocks/getMarket",     (req, res, next) => { req.url = "/getMarket";     next("router"); });
 router.get("/stocks/getStocks",     (req, res, next) => { req.url = "/getStocks";     next("router"); });
@@ -779,6 +841,8 @@ router.get("/stocks/getHistory",    (req, res, next) => { req.url = "/getHistory
 router.get("/stocks/getHealth",     (req, res, next) => { req.url = "/getHealth";     next("router"); });
 router.get("/stocks/info",          (req, res, next) => { req.url = "/info";          next("router"); });
 router.get("/stocks/search",        (req, res, next) => { req.url = "/search";        next("router"); });
+router.get("/stocks/rss",           (req, res, next) => { req.url = "/rss";            next("router"); });
+router.get("/rss.xml",              (req, res, next) => { req.url = "/rss";            next("router"); });
 
 // ── GET /api/v1/info?ticker= ──────────────────────────────────────────────────
 router.get("/info", async (req, res) => {

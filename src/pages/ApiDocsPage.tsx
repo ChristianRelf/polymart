@@ -4,7 +4,7 @@ import { Separator } from "@/components/ui/separator"
 import { cn } from "@/lib/utils"
 import {
   TrendingUp, Puzzle, Webhook, Bot, BookOpen, ChevronRight,
-  Circle, ArrowUpRight, Package, Zap, Brain,
+  Circle, ArrowUpRight, Package, Zap, Brain, Rss,
 } from "lucide-react"
 
 const BASE = "https://polymart.co"
@@ -647,6 +647,39 @@ const PRODUCTS: Product[] = [
           { name: "polymart-forex-heatmap", type: "element", desc: "Color-coded grid of all pairs by % change. Attr: labels (true/false)" },
         ],
         example: `${BASE}/widgets/polymart-forex-widgets.js`,
+      },
+    ],
+  },
+  {
+    id: "rss",
+    label: "RSS Feed",
+    icon: Rss,
+    status: "stable",
+    version: "v1",
+    desc: "Subscribe to live Polymart market events via standard RSS 2.0. Works with any feed reader, automation platform (Zapier, Make, n8n, IFTTT), or HTTP client. No authentication required — just subscribe to the URL.",
+    baseUrl: BASE,
+    endpoints: [
+      {
+        id: "rss-feed",
+        method: "GET",
+        path: "/api/v1/rss",
+        summary: "Market events RSS 2.0 feed",
+        desc: "Returns a valid RSS 2.0 XML document containing the most recent market events — flash crashes, sector booms, FDA approvals, meme frenzies, regulatory shocks, and more. Updates every 10 seconds. Also accessible at /api/v1/rss.xml and /api/v1/stocks/rss.",
+        params: [
+          { name: "limit",  type: "number", required: false, desc: "Max events to include (1–100, default 40)", example: "40" },
+          { name: "sector", type: "string", required: false, desc: "Filter to a specific sector key", example: "tech" },
+        ],
+        response: [
+          { name: "Content-Type", type: "header",  desc: "application/rss+xml; charset=utf-8" },
+          { name: "<title>",      type: "string",  desc: "Event description text" },
+          { name: "<description>",type: "string",  desc: "Sentiment, effect magnitude (%), sector label, and weight" },
+          { name: "<pubDate>",    type: "RFC 822", desc: "UTC timestamp of when the event fired" },
+          { name: "<guid>",       type: "uuid",    desc: "Unique event ID (isPermaLink=false)" },
+          { name: "<category>",   type: "string",  desc: "Sector key — omitted for market-wide events" },
+          { name: "<ttl>",        type: "number",  desc: "Suggested client refresh interval: 10 seconds" },
+          { name: "Cache-Control",type: "header",  desc: "public, max-age=10" },
+        ],
+        example: `${BASE}/api/v1/rss`,
       },
     ],
   },
