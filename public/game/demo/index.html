@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Polymart Trader — Demo</title>
+<title>Polymart Trader - Demo</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
@@ -726,7 +726,7 @@
       </div>
       <div class="hud-item">
         <span class="hud-label">Total P&amp;L</span>
-        <span class="hud-val" id="hud-pnl">—</span>
+        <span class="hud-val" id="hud-pnl">-</span>
       </div>
       <div class="hud-item">
         <span class="hud-label">Trades</span>
@@ -762,12 +762,12 @@
       <!-- Selected ticker header -->
       <div id="ticker-header" style="display:none">
         <div class="th-left">
-          <span class="th-ticker" id="th-ticker">—</span>
-          <span class="th-name" id="th-name">—</span>
+          <span class="th-ticker" id="th-ticker">-</span>
+          <span class="th-name" id="th-name">-</span>
         </div>
         <div class="th-right">
-          <span class="th-price" id="th-price">—</span>
-          <span class="th-chg" id="th-chg">—</span>
+          <span class="th-price" id="th-price">-</span>
+          <span class="th-chg" id="th-chg">-</span>
         </div>
       </div>
 
@@ -778,14 +778,14 @@
 
       <!-- Stats -->
       <div id="stats-grid" style="display:none">
-        <div class="stat-cell"><div class="stat-label">Open</div><div class="stat-val" id="st-open">—</div></div>
-        <div class="stat-cell"><div class="stat-label">High</div><div class="stat-val" id="st-high">—</div></div>
-        <div class="stat-cell"><div class="stat-label">Low</div><div class="stat-val" id="st-low">—</div></div>
-        <div class="stat-cell"><div class="stat-label">RSI</div><div class="stat-val" id="st-rsi">—</div></div>
-        <div class="stat-cell"><div class="stat-label">MACD</div><div class="stat-val" id="st-macd">—</div></div>
-        <div class="stat-cell"><div class="stat-label">Vol</div><div class="stat-val" id="st-vol">—</div></div>
-        <div class="stat-cell"><div class="stat-label">Sector</div><div class="stat-val" id="st-sector">—</div></div>
-        <div class="stat-cell"><div class="stat-label">Mkt Cap</div><div class="stat-val" id="st-mcap">—</div></div>
+        <div class="stat-cell"><div class="stat-label">Open</div><div class="stat-val" id="st-open">-</div></div>
+        <div class="stat-cell"><div class="stat-label">High</div><div class="stat-val" id="st-high">-</div></div>
+        <div class="stat-cell"><div class="stat-label">Low</div><div class="stat-val" id="st-low">-</div></div>
+        <div class="stat-cell"><div class="stat-label">RSI</div><div class="stat-val" id="st-rsi">-</div></div>
+        <div class="stat-cell"><div class="stat-label">MACD</div><div class="stat-val" id="st-macd">-</div></div>
+        <div class="stat-cell"><div class="stat-label">Vol</div><div class="stat-val" id="st-vol">-</div></div>
+        <div class="stat-cell"><div class="stat-label">Sector</div><div class="stat-val" id="st-sector">-</div></div>
+        <div class="stat-cell"><div class="stat-label">Mkt Cap</div><div class="stat-val" id="st-mcap">-</div></div>
       </div>
 
       <!-- Trade panel -->
@@ -802,7 +802,7 @@
             <span>Holding:</span>
             <span class="hl-val" id="hl-shares">0 shares</span>
             <span style="margin-left:4px">avg</span>
-            <span class="hl-val" id="hl-avg">—</span>
+            <span class="hl-val" id="hl-avg">-</span>
           </div>
         </div>
         <div class="trade-btns">
@@ -971,12 +971,12 @@ async function fetchStock(ticker) {
 
 // ── Formatting ─────────────────────────────────────────────────────────────────
 function fmtPrice(n) {
-  if (n == null) return '—';
+  if (n == null) return '-';
   return '$' + Number(n).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 }
 
 function fmtPct(n) {
-  if (n == null) return '—';
+  if (n == null) return '-';
   const s = Number(n).toFixed(2);
   return (n >= 0 ? '+' : '') + s + '%';
 }
@@ -1151,11 +1151,11 @@ async function selectStock(ticker) {
     document.getElementById('st-open').textContent = fmtPrice(s.open);
     document.getElementById('st-high').textContent = fmtPrice(s.high);
     document.getElementById('st-low').textContent = fmtPrice(s.low);
-    document.getElementById('st-rsi').textContent = s.rsi != null ? s.rsi.toFixed(1) : '—';
-    document.getElementById('st-macd').textContent = s.macd != null ? s.macd.toFixed(3) : '—';
-    document.getElementById('st-vol').textContent = s.volume != null ? fmtCompact(s.volume) : '—';
-    document.getElementById('st-sector').textContent = s.sector || '—';
-    document.getElementById('st-mcap').textContent = s.market_cap != null ? fmtCompact(s.market_cap) : '—';
+    document.getElementById('st-rsi').textContent = s.rsi != null ? s.rsi.toFixed(1) : '-';
+    document.getElementById('st-macd').textContent = s.macd != null ? s.macd.toFixed(3) : '-';
+    document.getElementById('st-vol').textContent = s.volume != null ? fmtCompact(s.volume) : '-';
+    document.getElementById('st-sector').textContent = s.sector || '-';
+    document.getElementById('st-mcap').textContent = s.market_cap != null ? fmtCompact(s.market_cap) : '-';
   } catch {}
 }
 
@@ -1179,7 +1179,7 @@ function renderTradePanel() {
   const shares = pos ? pos.shares : 0;
   const avg = pos ? pos.avgCost : null;
   document.getElementById('hl-shares').textContent = shares + ' share' + (shares !== 1 ? 's' : '');
-  document.getElementById('hl-avg').textContent = avg != null ? fmtPrice(avg) : '—';
+  document.getElementById('hl-avg').textContent = avg != null ? fmtPrice(avg) : '-';
   document.getElementById('btn-sell').disabled = shares <= 0;
   updateCostPreview();
 }
@@ -1501,7 +1501,7 @@ async function init() {
 
     setInterval(pollData, POLL_INTERVAL);
   } catch (err) {
-    document.querySelector('#loading .load-sub').textContent = 'Failed to connect — is the server running?';
+    document.querySelector('#loading .load-sub').textContent = 'Failed to connect - is the server running?';
     document.querySelector('.spinner').style.display = 'none';
   }
 }

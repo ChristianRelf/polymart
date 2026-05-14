@@ -466,7 +466,7 @@ export default function WidgetsPage({ onNavigate }: Props) {
       <section className="mb-14">
         <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-[0.15em] mb-2">Setup</p>
         <h2 className="text-2xl font-bold text-foreground mb-2">Installing Forex Widgets</h2>
-        <p className="text-sm text-muted-foreground mb-6 max-w-xl">Same single script tag — forex widgets are bundled with the stock widgets.</p>
+        <p className="text-sm text-muted-foreground mb-6 max-w-xl">Same single script tag - forex widgets are bundled with the stock widgets.</p>
         <CodeBlock lang="HTML" code={`<script src="https://polymart.co/widgets/polymart-widgets.js" defer></script>`} />
         <p className="text-sm text-muted-foreground mt-4">All forex widgets use the <code className="text-xs bg-muted px-1.5 py-0.5 rounded font-mono">/api/v1/forex/*</code> endpoints and refresh every 10 seconds by default.</p>
       </section>

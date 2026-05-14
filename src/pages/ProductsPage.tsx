@@ -298,10 +298,10 @@ export default function ProductsPage({ onNavigate }: Props) {
             sub="Market events & alerts"
             status="live"
             items={[
-              "Standard RSS 2.0 — any feed reader or client",
+              "Standard RSS 2.0 - any feed reader or client",
               "Flash crashes, sector booms, macro shocks",
               "Optional sector filter (?sector=tech)",
-              "10-second TTL — synced to simulation tick",
+              "10-second TTL - synced to simulation tick",
               "Works with Zapier, Make, n8n, IFTTT",
               "Subscribe: /api/v1/rss or /api/v1/rss.xml",
             ]}

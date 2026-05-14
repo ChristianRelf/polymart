@@ -388,7 +388,7 @@ router.get("/sims", (req, res) => {
 });
 
 // ════════════════════════════════════════════════════════════════════════════════
-// FOREX ENDPOINTS  — /api/v1/forex/*  (also aliased at /api/v1/forex/*)
+// FOREX ENDPOINTS  - /api/v1/forex/*  (also aliased at /api/v1/forex/*)
 // ════════════════════════════════════════════════════════════════════════════════
 
 function formatPairRow(p, def) {

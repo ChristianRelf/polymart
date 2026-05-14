@@ -491,7 +491,7 @@ const PRODUCTS: Product[] = [
         method: "GET",
         path: "/api/v1/forex/getLeaderboard",
         summary: "Ranked pairs leaderboard",
-        desc: "Returns all pairs ranked by a chosen metric — change, volume, RSI, ATR, or Bollinger Bandwidth. Optionally filter by category.",
+        desc: "Returns all pairs ranked by a chosen metric - change, volume, RSI, ATR, or Bollinger Bandwidth. Optionally filter by category.",
         params: [
           { name: "by", type: "string", required: false, desc: "Sort field: changePct | volume | rsi | atr | spread | bbBw (default: changePct)", example: "atr" },
           { name: "dir", type: "string", required: false, desc: "asc | desc (default: desc)", example: "desc" },
@@ -522,7 +522,7 @@ const PRODUCTS: Product[] = [
           { name: "decimals", type: "number", desc: "Display decimal places for this pair" },
           { name: "pipSize", type: "number", desc: "Size of one pip" },
           { name: "count", type: "number", desc: "Number of candles returned" },
-          { name: "candles", type: "object[]", desc: "{ o, h, l, c, v, t } — open/high/low/close/volume/timestamp" },
+          { name: "candles", type: "object[]", desc: "{ o, h, l, c, v, t } - open/high/low/close/volume/timestamp" },
         ],
         example: `${BASE}/api/v1/forex/getCandles?pair=EURUSD&limit=48`,
       },
@@ -566,7 +566,7 @@ const PRODUCTS: Product[] = [
         desc: "Ranks individual currencies by net strength, computed as the average movement across all pairs involving that currency. Positive strength = currency is appreciating overall.",
         response: [
           { name: "count", type: "number", desc: "Number of unique currencies" },
-          { name: "currencies", type: "object[]", desc: "{ code, country, flag, strength, pairsCount } — sorted strongest-to-weakest" },
+          { name: "currencies", type: "object[]", desc: "{ code, country, flag, strength, pairsCount } - sorted strongest-to-weakest" },
         ],
         example: `${BASE}/api/v1/forex/getCurrencies`,
       },
@@ -656,7 +656,7 @@ const PRODUCTS: Product[] = [
     icon: Rss,
     status: "stable",
     version: "v1",
-    desc: "Subscribe to live Polymart market events via standard RSS 2.0. Works with any feed reader, automation platform (Zapier, Make, n8n, IFTTT), or HTTP client. No authentication required — just subscribe to the URL.",
+    desc: "Subscribe to live Polymart market events via standard RSS 2.0. Works with any feed reader, automation platform (Zapier, Make, n8n, IFTTT), or HTTP client. No authentication required - just subscribe to the URL.",
     baseUrl: BASE,
     endpoints: [
       {
@@ -664,7 +664,7 @@ const PRODUCTS: Product[] = [
         method: "GET",
         path: "/api/v1/rss",
         summary: "Market events RSS 2.0 feed",
-        desc: "Returns a valid RSS 2.0 XML document containing the most recent market events — flash crashes, sector booms, FDA approvals, meme frenzies, regulatory shocks, and more. Updates every 10 seconds. Also accessible at /api/v1/rss.xml and /api/v1/stocks/rss.",
+        desc: "Returns a valid RSS 2.0 XML document containing the most recent market events - flash crashes, sector booms, FDA approvals, meme frenzies, regulatory shocks, and more. Updates every 10 seconds. Also accessible at /api/v1/rss.xml and /api/v1/stocks/rss.",
         params: [
           { name: "limit",  type: "number", required: false, desc: "Max events to include (1–100, default 40)", example: "40" },
           { name: "sector", type: "string", required: false, desc: "Filter to a specific sector key", example: "tech" },
@@ -675,7 +675,7 @@ const PRODUCTS: Product[] = [
           { name: "<description>",type: "string",  desc: "Sentiment, effect magnitude (%), sector label, and weight" },
           { name: "<pubDate>",    type: "RFC 822", desc: "UTC timestamp of when the event fired" },
           { name: "<guid>",       type: "uuid",    desc: "Unique event ID (isPermaLink=false)" },
-          { name: "<category>",   type: "string",  desc: "Sector key — omitted for market-wide events" },
+          { name: "<category>",   type: "string",  desc: "Sector key - omitted for market-wide events" },
           { name: "<ttl>",        type: "number",  desc: "Suggested client refresh interval: 10 seconds" },
           { name: "Cache-Control",type: "header",  desc: "public, max-age=10" },
         ],
@@ -961,7 +961,7 @@ function ProductPanel({ product }: { product: Product }) {
 
       <Separator className="bg-border my-10" />
 
-      {/* Sector reference — stocks API only */}
+      {/* Sector reference - stocks API only */}
       {product.id === "polymart-api" && (
         <div className="mb-10">
           <p className="text-[10px] text-muted-foreground uppercase tracking-widest mb-4">Valid Sector Keys</p>
@@ -971,7 +971,7 @@ function ProductPanel({ product }: { product: Product }) {
         </div>
       )}
 
-      {/* Quick start snippet — stocks + forex APIs only */}
+      {/* Quick start snippet - stocks + forex APIs only */}
       {(product.id === "polymart-api" || product.id === "forex-api") && (
       <div className="bg-card border border-border rounded-xl p-6">
         <p className="text-[10px] text-muted-foreground uppercase tracking-widest mb-4">Quick Start</p>
