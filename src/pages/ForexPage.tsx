@@ -1,8 +1,7 @@
 import { useState, useEffect, useRef, useMemo } from "react"
-import { Badge } from "@/components/ui/badge"
 import { Input } from "@/components/ui/input"
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs"
-import { ArrowLeft, Search, TrendingUp, TrendingDown, Info, ChevronUp, ChevronDown, Loader as Loader2 } from "lucide-react"
+import { ArrowLeft, Search, TrendingUp, TrendingDown, ChevronUp, ChevronDown, Loader as Loader2 } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { useSimulation } from "@/lib/SimulationContext"
 import type { ForexPairSummary, ForexPairDetail } from "@/lib/SimulationContext"
@@ -586,7 +585,7 @@ export default function ForexPage({ onNavigate }: Props) {
             <span className="text-xl">💱</span>
             <div>
               <h1 className="text-sm font-bold text-foreground leading-none">Forex Market</h1>
-              <p className="text-[10px] text-muted-foreground">28 currency pairs • live simulation</p>
+              <p className="text-[10px] text-muted-foreground">40 currency pairs • live simulation</p>
             </div>
           </div>
 
