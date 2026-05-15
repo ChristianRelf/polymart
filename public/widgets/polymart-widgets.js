@@ -23,7 +23,15 @@
   "use strict";
 
   // ── Config ──────────────────────────────────────────────────────────────────
-  const API = "https://polymart.co/api/v1";
+  // Derive API origin from where this script was served so that local-dev
+  // requests go through the Vite proxy instead of hitting the production host.
+  const _scriptOrigin = (() => {
+    const s = document.currentScript ||
+      document.querySelector('script[src*="polymart-widgets"]');
+    if (s && s.src) { try { return new URL(s.src).origin; } catch (_) {} }
+    return "https://polymart.co";
+  })();
+  const API = `${_scriptOrigin}/api/v1`;
   const TICK = 10000;
   const FONT_URL =
     "https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&family=Inter:wght@400;500;600;700&display=swap";
