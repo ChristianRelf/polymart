@@ -68,6 +68,14 @@ function rateLimit(req, res, next) {
 
 router.use(rateLimit);
 
+// Rewrite /stocks/* to /* so both namespaced and bare paths share the same handlers.
+router.use((req, _res, next) => {
+  if (req.path.startsWith("/stocks/")) {
+    req.url = req.url.replace("/stocks/", "/");
+  }
+  next();
+});
+
 function fgLabel(v) {
   if (v <= 12) return "Extreme Fear";
   if (v <= 25) return "Fear";
@@ -788,7 +796,7 @@ router.get("/forex/getCurrencies", async (req, res) => {
 });
 
 // ── GET /api/v1/rss[?limit=40&sector=] ───────────────────────────────────────
-router.get("/rss", async (req, res) => {
+router.get(["/rss", "/rss.xml"], async (req, res) => {
   setCors(res);
   try {
     const limit  = Math.min(parseInt(req.query.limit || "40"), 100);
@@ -849,22 +857,6 @@ ${items}
   } catch (e) { res.status(500).json({ error: String(e) }); }
 });
 
-// ── Namespaced stock aliases: /api/v1/stocks/* → mirrors existing /api/v1/* ──
-router.get("/stocks/getMarket",     (req, res, next) => { req.url = "/getMarket";     next("router"); });
-router.get("/stocks/getStocks",     (req, res, next) => { req.url = "/getStocks";     next("router"); });
-router.get("/stocks/getStock",      (req, res, next) => { req.url = "/getStock";      next("router"); });
-router.get("/stocks/getSectors",    (req, res, next) => { req.url = "/getSectors";    next("router"); });
-router.get("/stocks/getSector",     (req, res, next) => { req.url = "/getSector";     next("router"); });
-router.get("/stocks/getEvents",     (req, res, next) => { req.url = "/getEvents";     next("router"); });
-router.get("/stocks/getTopMovers",  (req, res, next) => { req.url = "/getTopMovers";  next("router"); });
-router.get("/stocks/getLeaderboard",(req, res, next) => { req.url = "/getLeaderboard";next("router"); });
-router.get("/stocks/getMacro",      (req, res, next) => { req.url = "/getMacro";      next("router"); });
-router.get("/stocks/getHistory",    (req, res, next) => { req.url = "/getHistory";    next("router"); });
-router.get("/stocks/getHealth",     (req, res, next) => { req.url = "/getHealth";     next("router"); });
-router.get("/stocks/info",          (req, res, next) => { req.url = "/info";          next("router"); });
-router.get("/stocks/search",        (req, res, next) => { req.url = "/search";        next("router"); });
-router.get("/stocks/rss",           (req, res, next) => { req.url = "/rss";            next("router"); });
-router.get("/rss.xml",              (req, res, next) => { req.url = "/rss";            next("router"); });
 
 // ── GET /api/v1/info?ticker= ──────────────────────────────────────────────────
 router.get("/info", async (req, res) => {
