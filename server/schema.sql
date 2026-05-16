@@ -184,3 +184,146 @@ CREATE EVENT purge_old_events
 --     candles = JSON_EXTRACT(candles, CONCAT('$[', JSON_LENGTH(candles)-48, ' to last]'))
 --   WHERE JSON_LENGTH(history) > 60 OR JSON_LENGTH(candles) > 48;
 -- Or simply: the next tick after deploying simulation.js will auto-truncate via slice(-60)/slice(-48).
+
+-- ═══════════════════════════════════════════════════════════════════════════════
+-- ACCOUNT / PAPER TRADING TABLES
+-- ═══════════════════════════════════════════════════════════════════════════════
+
+-- ── user_profiles ─────────────────────────────────────────────────────────────
+-- Synced from Clerk via webhook. clerk_id = Clerk's user_XXXX id.
+-- tier drives all feature limits; stripe_* fields track billing state.
+CREATE TABLE IF NOT EXISTS user_profiles (
+  clerk_id              VARCHAR(64)   NOT NULL,
+  display_name          VARCHAR(128)  DEFAULT NULL,
+  email                 VARCHAR(256)  DEFAULT NULL,
+  tier                  ENUM('basic','premium') NOT NULL DEFAULT 'basic',
+  avatar_url            TEXT          DEFAULT NULL,
+  bio                   TEXT          DEFAULT NULL,
+  stripe_customer_id    VARCHAR(64)   DEFAULT NULL,
+  stripe_subscription_id VARCHAR(64)  DEFAULT NULL,
+  tier_expires_at       DATETIME      DEFAULT NULL,
+  created_at            DATETIME      NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  updated_at            DATETIME      NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (clerk_id),
+  UNIQUE KEY uq_stripe_customer   (stripe_customer_id),
+  UNIQUE KEY uq_stripe_sub        (stripe_subscription_id)
+) ENGINE=InnoDB;
+
+-- ── portfolios ────────────────────────────────────────────────────────────────
+CREATE TABLE IF NOT EXISTS portfolios (
+  id            INT           NOT NULL AUTO_INCREMENT,
+  clerk_id      VARCHAR(64)   NOT NULL,
+  name          VARCHAR(128)  NOT NULL,
+  description   TEXT          DEFAULT NULL,
+  cash_balance  DECIMAL(18,4) NOT NULL,
+  created_at    DATETIME      NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (id),
+  KEY idx_portfolios_clerk (clerk_id),
+  CONSTRAINT fk_portfolios_user FOREIGN KEY (clerk_id) REFERENCES user_profiles(clerk_id) ON DELETE CASCADE
+) ENGINE=InnoDB;
+
+-- ── positions ─────────────────────────────────────────────────────────────────
+-- asset_type: 'stock' | 'forex' | any future product key
+-- symbol: ticker for stocks, pair string (e.g. 'EUR/USD') for forex
+CREATE TABLE IF NOT EXISTS positions (
+  id            INT           NOT NULL AUTO_INCREMENT,
+  portfolio_id  INT           NOT NULL,
+  asset_type    VARCHAR(32)   NOT NULL DEFAULT 'stock',
+  symbol        VARCHAR(32)   NOT NULL,
+  quantity      DECIMAL(18,4) NOT NULL,
+  avg_cost      DECIMAL(18,4) NOT NULL,
+  opened_at     DATETIME      NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (id),
+  UNIQUE KEY uq_position (portfolio_id, asset_type, symbol),
+  CONSTRAINT fk_positions_portfolio FOREIGN KEY (portfolio_id) REFERENCES portfolios(id) ON DELETE CASCADE
+) ENGINE=InnoDB;
+
+-- ── orders ────────────────────────────────────────────────────────────────────
+CREATE TABLE IF NOT EXISTS orders (
+  id            INT           NOT NULL AUTO_INCREMENT,
+  portfolio_id  INT           NOT NULL,
+  asset_type    VARCHAR(32)   NOT NULL DEFAULT 'stock',
+  symbol        VARCHAR(32)   NOT NULL,
+  side          ENUM('buy','sell') NOT NULL,
+  quantity      DECIMAL(18,4) NOT NULL,
+  price         DECIMAL(18,4) NOT NULL,
+  total         DECIMAL(18,4) NOT NULL,
+  notes         TEXT          DEFAULT NULL,
+  executed_at   DATETIME      NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (id),
+  KEY idx_orders_portfolio (portfolio_id),
+  KEY idx_orders_executed  (executed_at),
+  CONSTRAINT fk_orders_portfolio FOREIGN KEY (portfolio_id) REFERENCES portfolios(id) ON DELETE CASCADE
+) ENGINE=InnoDB;
+
+-- ── portfolio_snapshots ───────────────────────────────────────────────────────
+-- Daily total-value snapshots for sparkline charts on the dashboard
+CREATE TABLE IF NOT EXISTS portfolio_snapshots (
+  id            INT           NOT NULL AUTO_INCREMENT,
+  portfolio_id  INT           NOT NULL,
+  total_value   DECIMAL(18,4) NOT NULL,
+  snapped_at    DATE          NOT NULL,
+  PRIMARY KEY (id),
+  UNIQUE KEY uq_snapshot (portfolio_id, snapped_at),
+  CONSTRAINT fk_snapshots_portfolio FOREIGN KEY (portfolio_id) REFERENCES portfolios(id) ON DELETE CASCADE
+) ENGINE=InnoDB;
+
+-- ── watchlists ────────────────────────────────────────────────────────────────
+CREATE TABLE IF NOT EXISTS watchlists (
+  id          INT           NOT NULL AUTO_INCREMENT,
+  clerk_id    VARCHAR(64)   NOT NULL,
+  name        VARCHAR(128)  NOT NULL DEFAULT 'My Watchlist',
+  created_at  DATETIME      NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (id),
+  KEY idx_watchlists_clerk (clerk_id),
+  CONSTRAINT fk_watchlists_user FOREIGN KEY (clerk_id) REFERENCES user_profiles(clerk_id) ON DELETE CASCADE
+) ENGINE=InnoDB;
+
+CREATE TABLE IF NOT EXISTS watchlist_items (
+  id            INT           NOT NULL AUTO_INCREMENT,
+  watchlist_id  INT           NOT NULL,
+  asset_type    VARCHAR(32)   NOT NULL DEFAULT 'stock',
+  symbol        VARCHAR(32)   NOT NULL,
+  added_at      DATETIME      NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (id),
+  UNIQUE KEY uq_watchlist_item (watchlist_id, asset_type, symbol),
+  CONSTRAINT fk_wl_items_watchlist FOREIGN KEY (watchlist_id) REFERENCES watchlists(id) ON DELETE CASCADE
+) ENGINE=InnoDB;
+
+-- ── support_tickets ───────────────────────────────────────────────────────────
+CREATE TABLE IF NOT EXISTS support_tickets (
+  id          INT           NOT NULL AUTO_INCREMENT,
+  clerk_id    VARCHAR(64)   DEFAULT NULL,
+  email       VARCHAR(256)  NOT NULL,
+  subject     VARCHAR(256)  NOT NULL,
+  message     TEXT          NOT NULL,
+  status      ENUM('open','in_progress','resolved') NOT NULL DEFAULT 'open',
+  created_at  DATETIME      NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (id),
+  KEY idx_tickets_clerk  (clerk_id),
+  KEY idx_tickets_status (status)
+) ENGINE=InnoDB;
+
+CREATE TABLE IF NOT EXISTS ticket_notes (
+  id             INT           NOT NULL AUTO_INCREMENT,
+  ticket_id      INT           NOT NULL,
+  admin_clerk_id VARCHAR(64)   NOT NULL,
+  note           TEXT          NOT NULL,
+  created_at     DATETIME      NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (id),
+  CONSTRAINT fk_ticket_notes FOREIGN KEY (ticket_id) REFERENCES support_tickets(id) ON DELETE CASCADE
+) ENGINE=InnoDB;
+
+-- ── admin_audit_log ───────────────────────────────────────────────────────────
+-- Append-only. Records every admin action for accountability.
+CREATE TABLE IF NOT EXISTS admin_audit_log (
+  id              INT           NOT NULL AUTO_INCREMENT,
+  admin_clerk_id  VARCHAR(64)   NOT NULL,
+  action          VARCHAR(64)   NOT NULL,
+  target_clerk_id VARCHAR(64)   DEFAULT NULL,
+  details         JSON          DEFAULT NULL,
+  created_at      DATETIME      NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (id),
+  KEY idx_audit_admin  (admin_clerk_id),
+  KEY idx_audit_action (action)
+) ENGINE=InnoDB;

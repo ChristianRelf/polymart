@@ -1,15 +1,19 @@
-import { useState } from "react"
+import { useState, type FormEvent, type ReactNode, type ElementType } from "react"
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion"
 import { Input } from "@/components/ui/input"
+import { Button } from "@/components/ui/button"
 import { cn } from "@/lib/utils"
+import { useAuth } from "@clerk/clerk-react"
+import { useAccount } from "@/hooks/useAccount"
 import {
   Search, TrendingUp, Code as Code2, Bot,
   ChartBar as BarChart2, BookOpen,
   GraduationCap, Wrench, ArrowRight,
   TriangleAlert as AlertTriangle,
+  UserCircle, Loader2, CheckCircle2,
 } from "lucide-react"
 
-type Route = "home" | "market" | "api" | "terms" | "privacy" | "education" | "changelog" | "products" | "help"
+type Route = "home" | "market" | "api" | "terms" | "privacy" | "education" | "changelog" | "products" | "help" | "sign-in" | "sign-up" | "dashboard" | "account"
 
 interface Props {
   onNavigate: (r: Route) => void
@@ -17,7 +21,7 @@ interface Props {
 
 // ── Articles ───────────────────────────────────────────────────────────────────
 
-type Article = { category: string; q: string; a: React.ReactNode; search: string }
+type Article = { category: string; q: string; a: ReactNode; search: string }
 
 const ARTICLES: Article[] = [
 
@@ -559,6 +563,96 @@ const ARTICLES: Article[] = [
     search: "lesson plan course material classroom curriculum",
   },
 
+  // ── Accounts & Paper Trading ───────────────────────────────────────────────
+  {
+    category: "Accounts",
+    q: "How do I create an account?",
+    a: "Click 'Sign Up' in the top-right navigation. You can register with an email and password or sign in with a Google or GitHub account. Account creation is free.",
+    search: "create account register sign up email google github",
+  },
+  {
+    category: "Accounts",
+    q: "What is paper trading?",
+    a: "Paper trading lets you practice buying and selling assets using simulated money — no real funds involved. You create a portfolio, place buy and sell orders against the live Polymart prices, and track your performance over time. It is designed for learning market mechanics and testing strategies without any financial risk.",
+    search: "paper trading what is simulated money virtual portfolio",
+  },
+  {
+    category: "Accounts",
+    q: "How do portfolios work?",
+    a: "Each portfolio starts with a cash balance set by your plan (Basic: $10,000 · Premium: $100,000). You place buy orders to open positions and sell orders to close them. Your portfolio tracks cash, open positions, unrealized P&L at current prices, and a complete order history.",
+    search: "portfolio how work cash balance positions orders",
+  },
+  {
+    category: "Accounts",
+    q: "What is the difference between Basic and Premium?",
+    a: (
+      <ul className="space-y-1.5 mt-1">
+        {[
+          ["Starting Cash", "$10,000 Basic · $100,000 Premium"],
+          ["Portfolios", "1 Basic · 5 Premium"],
+          ["Max Positions", "10 per portfolio Basic · 100 Premium"],
+          ["Watchlists", "1 Basic · 10 Premium"],
+          ["Forex Access", "Premium only"],
+          ["Export History", "Premium only"],
+        ].map(([label, detail]) => (
+          <li key={label} className="flex items-start gap-2 flex-wrap text-xs">
+            <span className="font-semibold text-foreground shrink-0">{label}:</span>
+            <span className="text-muted-foreground">{detail}</span>
+          </li>
+        ))}
+      </ul>
+    ),
+    search: "basic premium difference limits cash portfolios forex watchlist export",
+  },
+  {
+    category: "Accounts",
+    q: "How do I upgrade to Premium?",
+    a: "Go to Account Settings and click 'Upgrade to Premium'. This opens a Stripe Checkout page where you can enter payment details. Once complete, your tier is updated instantly and all Premium features are unlocked.",
+    search: "upgrade premium stripe checkout payment billing",
+  },
+  {
+    category: "Accounts",
+    q: "How do I manage or cancel my subscription?",
+    a: "Open Account Settings and click 'Manage Subscription'. This takes you to the Stripe billing portal where you can update your payment method, view invoices, or cancel. Cancellation takes effect at the end of the current billing period.",
+    search: "cancel subscription manage billing portal payment method invoice",
+  },
+  {
+    category: "Accounts",
+    q: "How do prices work when I place an order?",
+    a: "When you place an order the server fetches the current simulated price at that moment. You submit the asset type, symbol, side (buy/sell), and quantity — the price is always resolved server-side, never from your browser. This prevents any manipulation of execution prices.",
+    search: "price order execution buy sell how price fetched server",
+  },
+  {
+    category: "Accounts",
+    q: "Can I trade forex with a Basic account?",
+    a: "No. Forex trading is a Premium-only feature. Basic accounts can trade stocks only. Attempting to place a forex order on a Basic account will return an error with a prompt to upgrade.",
+    search: "forex basic premium locked upgrade access",
+  },
+  {
+    category: "Accounts",
+    q: "How do I change my display name or bio?",
+    a: "Open Account Settings and edit the Display Name and Bio fields in the Profile section. Click 'Save Changes' when done.",
+    search: "display name bio profile edit change update",
+  },
+  {
+    category: "Accounts",
+    q: "How do I change my profile picture?",
+    a: "On the Account Settings page, click the camera icon on your avatar to upload a new photo. Polymart uses Clerk to store profile images — supported formats include JPEG, PNG, and WebP.",
+    search: "profile picture avatar photo upload change camera",
+  },
+  {
+    category: "Accounts",
+    q: "How do I reset my password?",
+    a: "On the sign-in page, click 'Forgot password'. Clerk will send a reset link to your registered email address. If you signed up with Google or GitHub, password reset is managed through that provider.",
+    search: "password reset forgot email link sign in",
+  },
+  {
+    category: "Accounts",
+    q: "Can I delete my account?",
+    a: "To request account deletion, contact support using the form at the bottom of this page. Include the email address associated with your account. All portfolios, positions, and order history will be permanently removed.",
+    search: "delete account remove data permanently",
+  },
+
   // ── Troubleshooting ────────────────────────────────────────────────────────
   {
     category: "Troubleshooting",
@@ -634,13 +728,14 @@ const ARTICLES: Article[] = [
 
 // ── Category config ────────────────────────────────────────────────────────────
 
-const CATS: { id: string; icon: React.ElementType; desc: string }[] = [
+const CATS: { id: string; icon: ElementType; desc: string }[] = [
   { id: "Getting Started", icon: BookOpen,     desc: "New to Polymart?" },
   { id: "The Market",      icon: TrendingUp,   desc: "Simulation mechanics" },
   { id: "API",             icon: Code2,        desc: "Endpoints & integration" },
   { id: "Discord",         icon: Bot,          desc: "Bot setup & commands" },
   { id: "Indicators",      icon: BarChart2,    desc: "RSI, MACD, Bands & more" },
   { id: "Education",       icon: GraduationCap, desc: "Research & coursework" },
+  { id: "Accounts",        icon: UserCircle,   desc: "Portfolios & billing" },
   { id: "Troubleshooting", icon: Wrench,       desc: "Fixes & common errors" },
 ]
 
@@ -648,6 +743,30 @@ const CATS: { id: string; icon: React.ElementType; desc: string }[] = [
 
 export default function HelpCenterPage({ onNavigate }: Props) {
   const [query, setQuery] = useState("")
+  const { isSignedIn } = useAuth()
+  const { submitSupportTicket } = useAccount()
+
+  const [supportSubject, setSupportSubject] = useState("")
+  const [supportMessage, setSupportMessage] = useState("")
+  const [supportSending, setSupportSending] = useState(false)
+  const [supportResult, setSupportResult] = useState<"sent" | "error" | null>(null)
+
+  async function handleSupportSubmit(e: FormEvent) {
+    e.preventDefault()
+    if (!supportSubject.trim() || !supportMessage.trim()) return
+    setSupportSending(true)
+    setSupportResult(null)
+    try {
+      await submitSupportTicket({ subject: supportSubject.trim(), message: supportMessage.trim() })
+      setSupportResult("sent")
+      setSupportSubject("")
+      setSupportMessage("")
+    } catch {
+      setSupportResult("error")
+    } finally {
+      setSupportSending(false)
+    }
+  }
 
   const q = query.trim().toLowerCase()
   const filtered = q
@@ -814,8 +933,79 @@ export default function HelpCenterPage({ onNavigate }: Props) {
         </div>
       )}
 
+      {/* ── Support contact form ── */}
+      <div className="mt-16 border border-border rounded-xl p-6">
+        <div className="flex items-center gap-2 mb-1">
+          <UserCircle className="w-4 h-4 text-muted-foreground" />
+          <p className="text-sm font-semibold text-foreground">Contact Support</p>
+        </div>
+        <p className="text-xs text-muted-foreground mb-5">
+          Can't find what you're looking for? Send us a message and we'll get back to you.
+        </p>
+
+        {isSignedIn ? (
+          supportResult === "sent" ? (
+            <div className="flex items-center gap-2 text-emerald-400 text-sm">
+              <CheckCircle2 className="w-4 h-4" />
+              <span>Message sent — we'll be in touch soon.</span>
+            </div>
+          ) : (
+            <form onSubmit={handleSupportSubmit} className="space-y-3">
+              <div>
+                <label className="text-xs text-muted-foreground mb-1 block">Subject</label>
+                <input
+                  className="w-full h-8 rounded-md border border-border bg-background px-3 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-ring"
+                  placeholder="Brief summary of your issue"
+                  value={supportSubject}
+                  onChange={e => setSupportSubject(e.target.value)}
+                  maxLength={256}
+                  required
+                />
+              </div>
+              <div>
+                <label className="text-xs text-muted-foreground mb-1 block">Message</label>
+                <textarea
+                  className="w-full rounded-md border border-border bg-background px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-ring resize-none"
+                  rows={4}
+                  placeholder="Describe your issue in detail..."
+                  value={supportMessage}
+                  onChange={e => setSupportMessage(e.target.value)}
+                  maxLength={2000}
+                  required
+                />
+              </div>
+              {supportResult === "error" && (
+                <p className="text-xs text-destructive">Failed to send — please try again.</p>
+              )}
+              <Button
+                type="submit"
+                size="sm"
+                disabled={supportSending || !supportSubject.trim() || !supportMessage.trim()}
+              >
+                {supportSending ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : "Send Message"}
+              </Button>
+            </form>
+          )
+        ) : (
+          <div className="flex flex-col sm:flex-row sm:items-center gap-3">
+            <p className="text-xs text-muted-foreground">Sign in to send a support message, or email us directly.</p>
+            <div className="flex items-center gap-2 shrink-0">
+              <Button size="sm" variant="outline" onClick={() => onNavigate("sign-in")}>
+                Sign In
+              </Button>
+              <a
+                href="mailto:support@polymart.co"
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-muted-foreground hover:text-foreground transition-colors"
+              >
+                Email us <ArrowRight className="w-3 h-3" />
+              </a>
+            </div>
+          </div>
+        )}
+      </div>
+
       {/* ── Footer CTA ── */}
-      <div className="mt-16 border border-border rounded-xl px-6 py-5 flex flex-col sm:flex-row sm:items-center gap-4 justify-between">
+      <div className="mt-6 border border-border rounded-xl px-6 py-5 flex flex-col sm:flex-row sm:items-center gap-4 justify-between">
         <div>
           <p className="text-sm font-semibold text-foreground mb-0.5">Still have questions?</p>
           <p className="text-xs text-muted-foreground">The API docs cover every endpoint in full detail.</p>

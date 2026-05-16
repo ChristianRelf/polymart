@@ -3,8 +3,13 @@ import path from "path";
 import fs from "fs";
 import { fileURLToPath } from "url";
 import dotenv from "dotenv";
+import { clerkMiddleware } from "@clerk/express";
 import pool from "./db.js";
 import apiRouter from "./api.js";
+import accountRouter, { clerkWebhookHandler } from "./account-api.js";
+import billingRouter, { stripeWebhookHandler } from "./billing-api.js";
+import supportRouter from "./support-api.js";
+import adminRouter from "./admin-api.js";
 import { startTickLoop } from "./tick.js";
 
 dotenv.config();
@@ -12,22 +17,61 @@ dotenv.config();
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const app = express();
 
-app.use(express.json());
+// ── CORS ───────────────────────────────────────────────────────────────────────
+// Public API: wide open (market data is intentionally public)
+// Account / billing / admin: restricted to allowed origins only
+const ALLOWED_ORIGINS = (process.env.ALLOWED_ORIGINS || "http://localhost:5173").split(",").map(s => s.trim());
+
+function restrictedCors(req, res, next) {
+  const origin = req.headers.origin;
+  if (origin && ALLOWED_ORIGINS.includes(origin)) {
+    res.setHeader("Access-Control-Allow-Origin", origin);
+    res.setHeader("Vary", "Origin");
+  }
+  res.setHeader("Access-Control-Allow-Credentials", "true");
+  res.setHeader("Access-Control-Allow-Headers", "Content-Type, Authorization, svix-id, svix-timestamp, svix-signature, stripe-signature");
+  res.setHeader("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS");
+  if (req.method === "OPTIONS") return res.sendStatus(204);
+  next();
+}
+
+// ── Clerk middleware (processes JWT on every request) ─────────────────────────
+app.use(clerkMiddleware());
+
+// ── Webhook routes (raw body — must come BEFORE express.json()) ───────────────
+app.post("/api/v1/account/webhook", express.raw({ type: "application/json" }), clerkWebhookHandler);
+app.post("/api/v1/webhooks/stripe", express.raw({ type: "application/json" }), stripeWebhookHandler);
+
+// ── JSON body parser (applied after webhook routes) ───────────────────────────
+app.use(express.json({ limit: "10kb" }));
+
+// ── Public market API ─────────────────────────────────────────────────────────
 app.use("/api/v1", apiRouter);
 
-// Serve built frontend
+// ── Account API (protected by Clerk auth inside the router) ───────────────────
+app.use("/api/v1/account", restrictedCors, accountRouter);
+
+// ── Billing API ───────────────────────────────────────────────────────────────
+app.use("/api/v1/billing", restrictedCors, billingRouter);
+
+// ── Support API ───────────────────────────────────────────────────────────────
+app.use("/api/v1/support", restrictedCors, supportRouter);
+
+// ── Admin API (admin-only guard inside the router) ────────────────────────────
+app.use("/api/v1/admin", restrictedCors, adminRouter);
+
+// ── Serve built frontend ──────────────────────────────────────────────────────
 const distPath = path.join(__dirname, "..", "dist");
 app.use(express.static(distPath));
 app.get("*", (_req, res) => {
   res.sendFile(path.join(distPath, "index.html"));
 });
 
-// Apply schema by stripping -- comments then splitting on ; to get real statements.
+// ── Schema migration ──────────────────────────────────────────────────────────
 async function applySchema() {
   const schemaPath = path.join(__dirname, "schema.sql");
   const raw = fs.readFileSync(schemaPath, "utf8");
 
-  // Remove single-line comments (-- ...) so they don't pollute statement detection
   const stripped = raw.replace(/--[^\n]*/g, "");
 
   const statements = stripped
@@ -59,7 +103,6 @@ async function applySchema() {
   }
 }
 
-// Wait for MySQL to accept connections before starting the server
 async function waitForDb(retries = 30, delayMs = 2000) {
   for (let i = 1; i <= retries; i++) {
     try {

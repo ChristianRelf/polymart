@@ -4,7 +4,9 @@ import { Separator } from "@/components/ui/separator"
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet"
 import { cn } from "@/lib/utils"
 import { ArrowUpRight, X, Menu, Coffee } from "lucide-react"
+import { useAuth, UserButton } from "@clerk/clerk-react"
 import { SimulationProvider, useSimulation } from "@/lib/SimulationContext"
+import ProtectedRoute from "@/components/ProtectedRoute"
 import HomePage from "@/pages/HomePage"
 import MarketPage from "@/pages/MarketPage"
 import ApiDocsPage from "@/pages/ApiDocsPage"
@@ -22,9 +24,20 @@ import CommunityBlogPage from "@/pages/CommunityBlogPage"
 import SponsorPage from "@/pages/SponsorPage"
 import StockInfoPage from "@/pages/StockInfoPage"
 import ForexPage from "@/pages/ForexPage"
+import SignInPage from "@/pages/SignInPage"
+import SignUpPage from "@/pages/SignUpPage"
+import DashboardPage from "@/pages/DashboardPage"
+import PortfolioPage from "@/pages/PortfolioPage"
+import AccountPage from "@/pages/AccountPage"
+import AdminPage from "@/pages/AdminPage"
 
 // ── Routing ───────────────────────────────────────────────────────────────────
-export type Route = "home" | "market" | "forex" | "api" | "terms" | "privacy" | "changelog" | "education" | "products" | "help" | "widgets" | "edu-tools" | "community" | "bot-terms" | "bot-privacy" | "community-blog" | "sponsor" | "stock-info" | "kofi-terms" | "kofi-privacy"
+export type Route =
+  | "home" | "market" | "forex" | "api" | "terms" | "privacy" | "changelog"
+  | "education" | "products" | "help" | "widgets" | "edu-tools" | "community"
+  | "bot-terms" | "bot-privacy" | "community-blog" | "sponsor" | "stock-info"
+  | "kofi-terms" | "kofi-privacy"
+  | "sign-in" | "sign-up" | "dashboard" | "portfolio" | "account" | "admin"
 
 const HASH_MAP: Record<string, Route> = {
   "": "home",
@@ -32,7 +45,7 @@ const HASH_MAP: Record<string, Route> = {
   "/market": "market",
   "/forex": "forex",
   "/docs/api": "api",
-  "/api": "api",        // legacy redirect
+  "/api": "api",
   "/docs/terms": "terms",
   "/docs/privacy": "privacy",
   "/changelog": "changelog",
@@ -44,10 +57,15 @@ const HASH_MAP: Record<string, Route> = {
   "/community": "community",
   "/docs/bots/terms": "bot-terms",
   "/docs/bots/privacy": "bot-privacy",
-  "/docs/kofi-terms" : "kofi-terms",
-  "/docs/kofi-privacy" : "kofi-privacy",
+  "/docs/kofi-terms": "kofi-terms",
+  "/docs/kofi-privacy": "kofi-privacy",
   "/community/blog": "community-blog",
   "/sponsor": "sponsor",
+  "/sign-in": "sign-in",
+  "/sign-up": "sign-up",
+  "/dashboard": "dashboard",
+  "/account": "account",
+  "/admin": "admin",
 }
 
 const ROUTE_HASH: Record<Route, string> = {
@@ -69,14 +87,22 @@ const ROUTE_HASH: Record<Route, string> = {
   "community-blog": "/community/blog",
   "kofi-privacy": "/docs/kofi-privacy",
   "kofi-terms": "/docs/kofi-terms",
-  "sponsor": "/sponsor",
+  sponsor: "/sponsor",
   "stock-info": "/market",
+  "sign-in": "/sign-in",
+  "sign-up": "/sign-up",
+  dashboard: "/dashboard",
+  portfolio: "/dashboard",
+  account: "/account",
+  admin: "/admin",
 }
 
 function parseHash(): { route: Route; params: Record<string, string> } {
   const hash = window.location.hash.replace("#", "")
-  const m = hash.match(/^\/market\/([^/]+)\/info$/i)
-  if (m) return { route: "stock-info", params: { ticker: m[1].toUpperCase() } }
+  const stockInfo = hash.match(/^\/market\/([^/]+)\/info$/i)
+  if (stockInfo) return { route: "stock-info", params: { ticker: stockInfo[1].toUpperCase() } }
+  const portfolio = hash.match(/^\/portfolio\/(\d+)$/)
+  if (portfolio) return { route: "portfolio", params: { portfolioId: portfolio[1] } }
   return { route: HASH_MAP[hash] ?? "home", params: {} }
 }
 
@@ -91,6 +117,11 @@ function navigate(r: Route) {
 
 function navigateToInfo(ticker: string) {
   window.location.hash = `/market/${ticker.toLowerCase()}/info`
+  window.scrollTo({ top: 0, behavior: "instant" })
+}
+
+function navigateToPortfolio(id: number) {
+  window.location.hash = `/portfolio/${id}`
   window.scrollTo({ top: 0, behavior: "instant" })
 }
 
@@ -172,8 +203,10 @@ const NAV_LINKS: [Route, string][] = [
 
 function Navbar({ route, setRoute }: { route: Route; setRoute: (r: Route) => void }) {
   const [mobileOpen, setMobileOpen] = useState(false)
+  const { isSignedIn, isLoaded } = useAuth()
   const go = (r: Route) => { navigate(r); setRoute(r); setMobileOpen(false) }
   const isMarket = route === "market"
+  const isDashboardRoute = route === "dashboard" || route === "portfolio" || route === "account" || route === "admin"
 
   return (
     <header className="sticky top-0 z-50 border-b border-border bg-background/80 backdrop-blur-md">
@@ -205,6 +238,19 @@ function Navbar({ route, setRoute }: { route: Route; setRoute: (r: Route) => voi
               {label}
             </button>
           ))}
+          {isLoaded && isSignedIn && (
+            <button
+              onClick={() => go("dashboard")}
+              className={cn(
+                "px-4 text-sm font-medium transition-colors cursor-pointer bg-transparent border-0 border-b-2 h-full",
+                isDashboardRoute
+                  ? "text-foreground border-foreground"
+                  : "text-muted-foreground border-transparent hover:text-foreground/80"
+              )}
+            >
+              Dashboard
+            </button>
+          )}
         </nav>
 
         {isMarket && (
@@ -213,8 +259,27 @@ function Navbar({ route, setRoute }: { route: Route; setRoute: (r: Route) => voi
           </div>
         )}
 
+        {/* Desktop: auth controls */}
+        <div className="ml-auto hidden md:flex items-center gap-3">
+          {isLoaded && (
+            isSignedIn ? (
+              <UserButton afterSignOutUrl="/#/" />
+            ) : (
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={() => go("sign-in")}
+                className="h-8 px-3 text-xs"
+              >
+                Sign In
+              </Button>
+            )
+          )}
+        </div>
+
         {/* Mobile: right-side controls */}
         <div className="ml-auto flex items-center gap-2 md:hidden">
+          {isLoaded && isSignedIn && <UserButton afterSignOutUrl="/#/" />}
           <Sheet open={mobileOpen} onOpenChange={setMobileOpen}>
             <SheetTrigger asChild>
               <Button variant="ghost" size="icon" className="h-9 w-9">
@@ -242,6 +307,27 @@ function Navbar({ route, setRoute }: { route: Route; setRoute: (r: Route) => voi
                       {label}
                     </button>
                   ))}
+                  {isLoaded && isSignedIn && (
+                    <button
+                      onClick={() => go("dashboard")}
+                      className={cn(
+                        "flex items-center px-4 py-3 rounded-lg text-sm font-medium transition-colors cursor-pointer bg-transparent border-0 text-left w-full",
+                        isDashboardRoute
+                          ? "bg-accent text-foreground"
+                          : "text-muted-foreground hover:bg-accent/60 hover:text-foreground"
+                      )}
+                    >
+                      Dashboard
+                    </button>
+                  )}
+                  {isLoaded && !isSignedIn && (
+                    <button
+                      onClick={() => go("sign-in")}
+                      className="flex items-center px-4 py-3 rounded-lg text-sm font-medium text-muted-foreground hover:bg-accent/60 hover:text-foreground transition-colors cursor-pointer bg-transparent border-0 text-left w-full"
+                    >
+                      Sign In
+                    </button>
+                  )}
                 </nav>
               </div>
             </SheetContent>
@@ -528,11 +614,18 @@ export default function App() {
     setRoute("stock-info")
     setRouteParams({ ticker: ticker.toUpperCase() })
   }
+  const goToPortfolio = (id: number) => {
+    navigateToPortfolio(id)
+    setRoute("portfolio")
+    setRouteParams({ portfolioId: String(id) })
+  }
+
+  const isAccountRoute = route === "dashboard" || route === "portfolio" || route === "account" || route === "admin"
 
   return (
     <SimulationProvider>
       <div className="min-h-screen flex flex-col bg-background text-foreground">
-        <SponsorBanner onNavigate={go} />
+        {!isAccountRoute && <SponsorBanner onNavigate={go} />}
         <MarketNudge onNavigate={go} currentRoute={route} />
         <Navbar route={route} setRoute={setRoute} />
 
@@ -541,22 +634,51 @@ export default function App() {
           {route === "market"     && <MarketPage  onNavigateToInfo={goToInfo} onNavigate={go} />}
           {route === "forex"      && <ForexPage   onNavigate={go} />}
           {route === "stock-info" && <StockInfoPage ticker={routeParams.ticker ?? ""} onNavigate={go} onNavigateToInfo={goToInfo} />}
-          {route === "api"     && <ApiDocsPage />}
-          {route === "terms"     && <LegalPage      type="terms"   onNavigate={go} />}
-          {route === "privacy"   && <LegalPage      type="privacy" onNavigate={go} />}
-          {route === "changelog" && <ChangelogPage  onNavigate={go} />}
-          {route === "education" && <EducationPage  onNavigate={go} />}
-          {route === "products"  && <ProductsPage   onNavigate={go} />}
-          {route === "help"      && <HelpCenterPage onNavigate={go} />}
-          {route === "widgets"   && <WidgetsPage    onNavigate={go} />}
-          {route === "edu-tools" && <EduToolsPage   onNavigate={go} />}
-          {route === "community"   && <CommunityPage  onNavigate={go} />}
-          {route === "bot-terms"      && <BotLegalPage      type="bot-terms"   onNavigate={go} />}
-          {route === "bot-privacy"    && <BotLegalPage      type="bot-privacy" onNavigate={go} />}
-          {route === "kofi-privacy"    && <KofiLegalPage     type="kofi-privacy" onNavigate={go} />}
-          {route === "kofi-terms"    && <KofiLegalPage      type="kofi-terms" onNavigate={go} />}
+          {route === "api"            && <ApiDocsPage />}
+          {route === "terms"          && <LegalPage        type="terms"       onNavigate={go} />}
+          {route === "privacy"        && <LegalPage        type="privacy"     onNavigate={go} />}
+          {route === "changelog"      && <ChangelogPage    onNavigate={go} />}
+          {route === "education"      && <EducationPage    onNavigate={go} />}
+          {route === "products"       && <ProductsPage     onNavigate={go} />}
+          {route === "help"           && <HelpCenterPage   onNavigate={go} />}
+          {route === "widgets"        && <WidgetsPage      onNavigate={go} />}
+          {route === "edu-tools"      && <EduToolsPage     onNavigate={go} />}
+          {route === "community"      && <CommunityPage    onNavigate={go} />}
+          {route === "bot-terms"      && <BotLegalPage     type="bot-terms"   onNavigate={go} />}
+          {route === "bot-privacy"    && <BotLegalPage     type="bot-privacy" onNavigate={go} />}
+          {route === "kofi-privacy"   && <KofiLegalPage    type="kofi-privacy" onNavigate={go} />}
+          {route === "kofi-terms"     && <KofiLegalPage    type="kofi-terms"  onNavigate={go} />}
           {route === "community-blog" && <CommunityBlogPage onNavigate={go} />}
-          {route === "sponsor"        && <SponsorPage       onNavigate={go} />}
+          {route === "sponsor"        && <SponsorPage      onNavigate={go} />}
+
+          {/* Auth pages */}
+          {route === "sign-in" && <SignInPage />}
+          {route === "sign-up" && <SignUpPage />}
+
+          {/* Protected account pages */}
+          {route === "dashboard" && (
+            <ProtectedRoute onRedirect={() => go("sign-in")}>
+              <DashboardPage onNavigate={go} onNavigateToPortfolio={goToPortfolio} />
+            </ProtectedRoute>
+          )}
+          {route === "portfolio" && (
+            <ProtectedRoute onRedirect={() => go("sign-in")}>
+              <PortfolioPage
+                portfolioId={parseInt(routeParams.portfolioId ?? "0")}
+                onNavigate={go}
+              />
+            </ProtectedRoute>
+          )}
+          {route === "account" && (
+            <ProtectedRoute onRedirect={() => go("sign-in")}>
+              <AccountPage onNavigate={go} />
+            </ProtectedRoute>
+          )}
+          {route === "admin" && (
+            <ProtectedRoute onRedirect={() => go("sign-in")}>
+              <AdminPage onNavigate={go} />
+            </ProtectedRoute>
+          )}
         </main>
 
         <Footer setRoute={setRoute} />
