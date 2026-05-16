@@ -1,5 +1,5 @@
 import { Router } from 'express';
-import { requireAuth, getAuth } from '@clerk/express';
+import { getAuth } from '@clerk/express';
 import { Webhook } from 'svix';
 import pool from './db.js';
 import TIER_CONFIG from './tier-config.js';
@@ -114,7 +114,13 @@ export async function clerkWebhookHandler(req, res) {
 }
 
 // ── All routes below require authentication ───────────────────────────────────
-router.use(requireAuth(), userRateLimit);
+// Use explicit check instead of requireAuth() to prevent unauthenticated
+// requests from falling through to the SPA catch-all with a 200 HTML response.
+router.use((req, res, next) => {
+  const { userId } = getAuth(req);
+  if (!userId) return res.status(401).json({ error: 'Authentication required' });
+  next();
+}, userRateLimit);
 
 // ── GET /me ───────────────────────────────────────────────────────────────────
 router.get('/me', async (req, res) => {

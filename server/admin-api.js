@@ -1,6 +1,6 @@
 import { Router } from 'express';
 import Stripe from 'stripe';
-import { requireAuth, getAuth } from '@clerk/express';
+import { getAuth } from '@clerk/express';
 import pool from './db.js';
 import TIER_CONFIG from './tier-config.js';
 
@@ -33,7 +33,11 @@ async function auditLog(adminClerkId, action, targetClerkId = null, details = nu
 }
 
 // All admin routes require valid Clerk JWT + admin role
-router.use(requireAuth(), requireAdmin);
+router.use((req, res, next) => {
+  const { userId } = getAuth(req);
+  if (!userId) return res.status(401).json({ error: 'Authentication required' });
+  next();
+}, requireAdmin);
 
 // ── GET /admin/users ──────────────────────────────────────────────────────────
 router.get('/users', async (req, res) => {

@@ -1,6 +1,6 @@
 import { Router } from 'express';
 import Stripe from 'stripe';
-import { requireAuth, getAuth } from '@clerk/express';
+import { getAuth } from '@clerk/express';
 import pool from './db.js';
 import TIER_CONFIG from './tier-config.js';
 
@@ -96,7 +96,11 @@ export async function stripeWebhookHandler(req, res) {
 }
 
 // ── All routes below require authentication ───────────────────────────────────
-router.use(requireAuth());
+router.use((req, res, next) => {
+  const { userId } = getAuth(req);
+  if (!userId) return res.status(401).json({ error: 'Authentication required' });
+  next();
+});
 
 // ── GET /billing ──────────────────────────────────────────────────────────────
 router.get('/', async (req, res) => {
