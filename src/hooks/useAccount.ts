@@ -12,6 +12,10 @@ async function apiFetch(path: string, token: string, options: RequestInit = {}) 
       ...(options.headers as Record<string, string>),
     },
   })
+  const contentType = res.headers.get("content-type") || ""
+  if (!contentType.includes("application/json")) {
+    throw new Error(`API error ${res.status}: server returned non-JSON response for ${path}`)
+  }
   const data = await res.json()
   if (!res.ok) throw new Error(data.error || `Request failed: ${res.status}`)
   return data

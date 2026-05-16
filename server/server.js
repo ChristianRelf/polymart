@@ -60,6 +60,15 @@ app.use("/api/v1/support", restrictedCors, supportRouter);
 // ── Admin API (admin-only guard inside the router) ────────────────────────────
 app.use("/api/v1/admin", restrictedCors, adminRouter);
 
+// ── Global JSON error handler (must be before static/catch-all) ──────────────
+// Catches next(err) from any middleware (e.g. requireAuth, clerkMiddleware)
+// and returns JSON instead of Express's default HTML error page.
+app.use((err, req, res, _next) => {
+  const status = err.status || err.statusCode || 500;
+  console.error(`[polymart] Unhandled error ${status} on ${req.method} ${req.path}:`, err.message);
+  res.status(status).json({ error: err.message || 'Internal server error' });
+});
+
 // ── Serve built frontend ──────────────────────────────────────────────────────
 const distPath = path.join(__dirname, "..", "dist");
 app.use(express.static(distPath));
