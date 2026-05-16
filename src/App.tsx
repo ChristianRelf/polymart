@@ -199,6 +199,7 @@ const NAV_LINKS: [Route, string][] = [
   ["education", "Education"],
   ["community", "Community"],
   ["help", "Help"],
+  ["dashboard", "Paper Trading"],
 ]
 
 function Navbar({ route, setRoute }: { route: Route; setRoute: (r: Route) => void }) {
@@ -224,33 +225,24 @@ function Navbar({ route, setRoute }: { route: Route; setRoute: (r: Route) => voi
 
         {/* Desktop nav links */}
         <nav className="hidden md:flex items-stretch h-16 gap-0">
-          {NAV_LINKS.map(([r, label]) => (
-            <button
-              key={r}
-              onClick={() => go(r)}
-              className={cn(
-                "px-4 text-sm font-medium transition-colors cursor-pointer bg-transparent border-0 border-b-2 h-full",
-                route === r
-                  ? "text-foreground border-foreground"
-                  : "text-muted-foreground border-transparent hover:text-foreground/80"
-              )}
-            >
-              {label}
-            </button>
-          ))}
-          {isLoaded && isSignedIn && (
-            <button
-              onClick={() => go("dashboard")}
-              className={cn(
-                "px-4 text-sm font-medium transition-colors cursor-pointer bg-transparent border-0 border-b-2 h-full",
-                isDashboardRoute
-                  ? "text-foreground border-foreground"
-                  : "text-muted-foreground border-transparent hover:text-foreground/80"
-              )}
-            >
-              Dashboard
-            </button>
-          )}
+          {NAV_LINKS.map(([r, label]) => {
+            const isPaperTrading = r === "dashboard"
+            const isActive = isPaperTrading ? isDashboardRoute : route === r
+            return (
+              <button
+                key={r}
+                onClick={() => isPaperTrading && !isSignedIn ? go("sign-up") : go(r)}
+                className={cn(
+                  "px-4 text-sm font-medium transition-colors cursor-pointer bg-transparent border-0 border-b-2 h-full",
+                  isActive
+                    ? "text-foreground border-foreground"
+                    : "text-muted-foreground border-transparent hover:text-foreground/80"
+                )}
+              >
+                {label}
+              </button>
+            )
+          })}
         </nav>
 
         {isMarket && (
@@ -260,19 +252,28 @@ function Navbar({ route, setRoute }: { route: Route; setRoute: (r: Route) => voi
         )}
 
         {/* Desktop: auth controls */}
-        <div className="ml-auto hidden md:flex items-center gap-3">
+        <div className="ml-auto hidden md:flex items-center gap-2">
           {isLoaded && (
             isSignedIn ? (
               <UserButton afterSignOutUrl="/#/" />
             ) : (
-              <Button
-                size="sm"
-                variant="outline"
-                onClick={() => go("sign-in")}
-                className="h-8 px-3 text-xs"
-              >
-                Sign In
-              </Button>
+              <>
+                <Button
+                  size="sm"
+                  variant="ghost"
+                  onClick={() => go("sign-in")}
+                  className="h-8 px-3 text-xs"
+                >
+                  Sign In
+                </Button>
+                <Button
+                  size="sm"
+                  onClick={() => go("sign-up")}
+                  className="h-8 px-3 text-xs"
+                >
+                  Get Started
+                </Button>
+              </>
             )
           )}
         </div>
@@ -293,40 +294,29 @@ function Navbar({ route, setRoute }: { route: Route; setRoute: (r: Route) => voi
                   <img src="/polymartlogo.png" alt="POLYMART" className="h-8 w-auto" />
                 </div>
                 <nav className="flex flex-col p-4 gap-1">
-                  {NAV_LINKS.map(([r, label]) => (
-                    <button
-                      key={r}
-                      onClick={() => go(r)}
-                      className={cn(
-                        "flex items-center px-4 py-3 rounded-lg text-sm font-medium transition-colors cursor-pointer bg-transparent border-0 text-left w-full",
-                        route === r
-                          ? "bg-accent text-foreground"
-                          : "text-muted-foreground hover:bg-accent/60 hover:text-foreground"
-                      )}
-                    >
-                      {label}
-                    </button>
-                  ))}
-                  {isLoaded && isSignedIn && (
-                    <button
-                      onClick={() => go("dashboard")}
-                      className={cn(
-                        "flex items-center px-4 py-3 rounded-lg text-sm font-medium transition-colors cursor-pointer bg-transparent border-0 text-left w-full",
-                        isDashboardRoute
-                          ? "bg-accent text-foreground"
-                          : "text-muted-foreground hover:bg-accent/60 hover:text-foreground"
-                      )}
-                    >
-                      Dashboard
-                    </button>
-                  )}
+                  {NAV_LINKS.map(([r, label]) => {
+                    const isPaperTrading = r === "dashboard"
+                    const isActive = isPaperTrading ? isDashboardRoute : route === r
+                    return (
+                      <button
+                        key={r}
+                        onClick={() => isPaperTrading && !isSignedIn ? go("sign-up") : go(r)}
+                        className={cn(
+                          "flex items-center px-4 py-3 rounded-lg text-sm font-medium transition-colors cursor-pointer bg-transparent border-0 text-left w-full",
+                          isActive
+                            ? "bg-accent text-foreground"
+                            : "text-muted-foreground hover:bg-accent/60 hover:text-foreground"
+                        )}
+                      >
+                        {label}
+                      </button>
+                    )
+                  })}
                   {isLoaded && !isSignedIn && (
-                    <button
-                      onClick={() => go("sign-in")}
-                      className="flex items-center px-4 py-3 rounded-lg text-sm font-medium text-muted-foreground hover:bg-accent/60 hover:text-foreground transition-colors cursor-pointer bg-transparent border-0 text-left w-full"
-                    >
-                      Sign In
-                    </button>
+                    <div className="mt-2 px-4 space-y-2">
+                      <Button size="sm" className="w-full" onClick={() => go("sign-up")}>Get Started</Button>
+                      <Button size="sm" variant="ghost" className="w-full" onClick={() => go("sign-in")}>Sign In</Button>
+                    </div>
                   )}
                 </nav>
               </div>
@@ -384,12 +374,13 @@ function Footer({ setRoute }: { setRoute: (r: Route) => void }) {
         <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-x-8 gap-y-10 mb-12">
 
           <NavCol title="Platform">
-            <FLink label="Home"     route="home" />
-            <FLink label="Market"   route="market" />
-            <FLink label="Products" route="products" />
-            <FLink label="Widgets"  route="widgets" />
-            <FLink label="Sponsor"  route="sponsor" />
-            <FExt  label="Demo Site" href="/demo/index.html" />
+            <FLink label="Home"          route="home" />
+            <FLink label="Market"        route="market" />
+            <FLink label="Paper Trading" route="dashboard" />
+            <FLink label="Products"      route="products" />
+            <FLink label="Widgets"       route="widgets" />
+            <FLink label="Sponsor"       route="sponsor" />
+            <FExt  label="Demo Site"     href="/demo/index.html" />
           </NavCol>
 
           <NavCol title="Learn">
