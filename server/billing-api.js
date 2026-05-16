@@ -5,7 +5,12 @@ import pool from './db.js';
 import TIER_CONFIG from './tier-config.js';
 
 const router = Router();
-const stripe = new Stripe(process.env.STRIPE_SECRET_KEY || '');
+let _stripe = null;
+function getStripe() {
+  if (!process.env.STRIPE_SECRET_KEY) return null;
+  if (!_stripe) _stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
+  return _stripe;
+}
 
 // ── Rate limit for checkout endpoint (5/min per user) ─────────────────────────
 const checkoutRateMap = new Map();
@@ -34,6 +39,8 @@ export async function stripeWebhookHandler(req, res) {
 
   let event;
   try {
+    const stripe = getStripe();
+    if (!stripe) return res.status(500).json({ error: 'Stripe not configured' });
     event = stripe.webhooks.constructEvent(req.body, sig, secret);
   } catch (err) {
     console.error('[billing-api] Stripe webhook signature invalid:', err.message);
@@ -102,7 +109,8 @@ router.get('/', async (req, res) => {
     if (!user) return res.status(404).json({ error: 'User not found' });
 
     let portalUrl = null;
-    if (user.stripe_customer_id && process.env.STRIPE_SECRET_KEY) {
+    const stripe = getStripe();
+    if (user.stripe_customer_id && stripe) {
       const session = await stripe.billingPortal.sessions.create({
         customer: user.stripe_customer_id,
         return_url: `${process.env.APP_URL || 'http://localhost:5173'}/#/account`,
@@ -148,6 +156,8 @@ router.post('/checkout', checkoutRateLimit, async (req, res) => {
       sessionParams.customer_email = user.email;
     }
 
+    const stripe = getStripe();
+    if (!stripe) return res.status(503).json({ error: 'Billing not configured' });
     const session = await stripe.checkout.sessions.create(sessionParams);
     res.json({ url: session.url });
   } catch (err) {
