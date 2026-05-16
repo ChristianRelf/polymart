@@ -56,7 +56,7 @@ function pct(n: number) {
 
 export default function PortfolioPage({ portfolioId, onNavigate }: Props) {
   const { getPortfolio, placeOrder, getOrders } = useAccount()
-  const { stocks, forex } = useSimulation()
+  const { stocks, forexPairs } = useSimulation()
 
   const [portfolio, setPortfolio] = useState<Portfolio | null>(null)
   const [orders, setOrders] = useState<Order[]>([])
@@ -93,7 +93,7 @@ export default function PortfolioPage({ portfolioId, onNavigate }: Props) {
 
   function getCurrentPrice(asset_type: string, sym: string): number | null {
     if (asset_type === "stock") return stocks[sym]?.price ?? null
-    if (asset_type === "forex") return forex[sym]?.price ?? null
+    if (asset_type === "forex") return forexPairs[sym]?.price ?? null
     return null
   }
 
