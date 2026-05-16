@@ -5,7 +5,12 @@ import pool from './db.js';
 import TIER_CONFIG from './tier-config.js';
 
 const router = Router();
-const stripe = new Stripe(process.env.STRIPE_SECRET_KEY || '');
+let _stripe = null;
+function getStripe() {
+  if (!process.env.STRIPE_SECRET_KEY) return null;
+  if (!_stripe) _stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
+  return _stripe;
+}
 
 // ── Admin auth middleware ──────────────────────────────────────────────────────
 // Admin role is set server-side in Clerk publicMetadata — users cannot self-elevate.
@@ -245,7 +250,7 @@ router.post('/billing/refund', async (req, res) => {
   if (!process.env.STRIPE_SECRET_KEY) return res.status(503).json({ error: 'Billing not configured' });
 
   try {
-    const refund = await stripe.refunds.create({
+    const refund = await getStripe().refunds.create({
       charge: charge_id,
       reason: reason || 'requested_by_customer',
     });
@@ -273,7 +278,7 @@ router.post('/billing/cancel/:clerkId', async (req, res) => {
       return res.status(404).json({ error: 'No active subscription found for this user' });
     }
 
-    await stripe.subscriptions.cancel(user.stripe_subscription_id);
+    await getStripe().subscriptions.cancel(user.stripe_subscription_id);
     await pool.query(
       "UPDATE user_profiles SET tier = 'basic', stripe_subscription_id = NULL, updated_at = NOW() WHERE clerk_id = ?",
       [clerkId]
