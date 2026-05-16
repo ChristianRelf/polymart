@@ -37,7 +37,12 @@
     "zod": "^4.3.6",
     "express": "^4.21.2",
     "mysql2": "^3.14.0",
-    "dotenv": "^16.4.7"
+    "dotenv": "^16.4.7",
+    "@clerk/clerk-react": "^5.27.0",
+    "@clerk/express": "^1.4.5",
+    "svix": "^1.67.0",
+    "stripe": "^17.7.0",
+    "resend": "^4.5.2"
   },
   "devDependencies": {
     "@types/node": "^24.12.0",
