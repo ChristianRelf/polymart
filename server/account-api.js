@@ -111,7 +111,7 @@ export async function clerkWebhookHandler(req, res) {
     console.error('[account-api] Webhook error:', err.message);
     res.status(400).json({ error: 'Invalid webhook signature' });
   }
-});
+}
 
 // ── All routes below require authentication ───────────────────────────────────
 router.use(requireAuth(), userRateLimit);

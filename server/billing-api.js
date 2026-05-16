@@ -86,7 +86,7 @@ export async function stripeWebhookHandler(req, res) {
     console.error('[billing-api] Stripe webhook handler error:', err.message);
     res.status(500).json({ error: 'Webhook handler failed' });
   }
-});
+}
 
 // ── All routes below require authentication ───────────────────────────────────
 router.use(requireAuth());
