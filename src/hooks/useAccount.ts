@@ -140,6 +140,26 @@ export function useAccount() {
     [withToken]
   )
 
+  const getPortfolioSnapshots = useCallback(
+    (id: number) => withToken(t => apiFetch(`/account/portfolios/${id}/snapshots`, t)),
+    [withToken]
+  )
+
+  const getStats = useCallback(
+    () => withToken(t => apiFetch("/account/stats", t)),
+    [withToken]
+  )
+
+  const getRecentOrders = useCallback(
+    () => withToken(t => apiFetch("/account/orders/recent", t)),
+    [withToken]
+  )
+
+  const getSupportTickets = useCallback(
+    () => withToken(t => apiFetch("/support/tickets", t)),
+    [withToken]
+  )
+
   return {
     getMe,
     updateMe,
@@ -156,5 +176,9 @@ export function useAccount() {
     getBilling,
     startCheckout,
     submitSupportTicket,
+    getPortfolioSnapshots,
+    getStats,
+    getRecentOrders,
+    getSupportTickets,
   }
 }

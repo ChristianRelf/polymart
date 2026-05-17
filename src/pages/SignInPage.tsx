@@ -1,33 +1,106 @@
 import { SignIn } from "@clerk/clerk-react"
+import { TrendingUp, BarChart2, Globe, Target, Activity } from "lucide-react"
+import { useSimulation } from "@/lib/SimulationContext"
+
+const FEATURES = [
+  { icon: Activity,  text: "Live market simulation, updated every 10 seconds" },
+  { icon: BarChart2, text: "132 stocks across 20 sectors plus 40 forex pairs" },
+  { icon: TrendingUp, text: "Portfolio analytics with P&L tracking" },
+  { icon: Target,    text: "Risk-free paper trading with real market data" },
+  { icon: Globe,     text: "Full REST API for bots, screeners and custom tools" },
+]
+
+function fearGreedColor(score: number) {
+  if (score <= 25) return "text-red-400"
+  if (score <= 45) return "text-orange-400"
+  if (score <= 55) return "text-yellow-400"
+  if (score <= 75) return "text-lime-400"
+  return "text-emerald-400"
+}
 
 export default function SignInPage() {
+  const { overview } = useSimulation()
+
   return (
-    <div
-      className="flex flex-col min-h-[calc(100vh-4rem)] items-center justify-center px-4 py-12"
-      style={{
-        backgroundImage: "url('/polymartbackground.png')",
-        backgroundSize: "cover",
-        backgroundPosition: "center",
-        backgroundRepeat: "no-repeat",
-      }}
-    >
-      <img
-        src="/polymartlogoblack.png"
-        alt="Polymart"
-        className="h-10 mb-8 select-none"
-        draggable={false}
-      />
-      <SignIn
-        routing="virtual"
-        signUpUrl="/#/sign-up"
-        afterSignInUrl="/#/dashboard"
-        appearance={{
-          elements: {
-            card: "shadow-2xl rounded-2xl",
-            rootBox: "w-full max-w-sm",
-          },
-        }}
-      />
+    <div className="flex min-h-[calc(100vh-4rem)]">
+      {/* Left panel — marketing */}
+      <div className="hidden lg:flex flex-col justify-between w-[52%] bg-foreground text-background px-12 py-14">
+        <div>
+          <img
+            src="/polymartlogoblack.png"
+            alt="Polymart"
+            className="h-9 mb-12 brightness-0 invert select-none"
+            draggable={false}
+          />
+
+          <h1 className="text-4xl font-bold leading-tight mb-4">
+            Trade smarter.<br />Risk nothing.
+          </h1>
+          <p className="text-background/60 text-base mb-10 max-w-sm">
+            A full-featured paper trading simulator powered by live market data.
+            Practice strategies, test your bot, and track your progress.
+          </p>
+
+          <ul className="space-y-4">
+            {FEATURES.map(({ icon: Icon, text }) => (
+              <li key={text} className="flex items-start gap-3">
+                <div className="shrink-0 w-7 h-7 rounded-lg bg-background/10 flex items-center justify-center mt-0.5">
+                  <Icon className="w-3.5 h-3.5 text-background/80" />
+                </div>
+                <span className="text-sm text-background/80 leading-relaxed">{text}</span>
+              </li>
+            ))}
+          </ul>
+        </div>
+
+        {/* Live stats strip */}
+        {overview && (
+          <div className="border-t border-background/10 pt-6 grid grid-cols-3 gap-4">
+            <div>
+              <p className="text-[11px] text-background/40 uppercase tracking-wide mb-1">Index</p>
+              <p className="text-sm font-semibold">
+                {overview.index.toLocaleString("en-US", { maximumFractionDigits: 0 })}
+                <span className={`ml-1.5 text-xs ${overview.indexChangePct >= 0 ? "text-emerald-400" : "text-red-400"}`}>
+                  {overview.indexChangePct >= 0 ? "+" : ""}{overview.indexChangePct.toFixed(2)}%
+                </span>
+              </p>
+            </div>
+            <div>
+              <p className="text-[11px] text-background/40 uppercase tracking-wide mb-1">Fear &amp; Greed</p>
+              <p className={`text-sm font-semibold ${fearGreedColor(overview.fearGreed)}`}>
+                {overview.fearGreed} <span className="text-xs font-normal">{overview.fearGreedLabel}</span>
+              </p>
+            </div>
+            <div>
+              <p className="text-[11px] text-background/40 uppercase tracking-wide mb-1">VIX</p>
+              <p className="text-sm font-semibold">{overview.vix.toFixed(1)}</p>
+            </div>
+          </div>
+        )}
+      </div>
+
+      {/* Right panel — auth widget */}
+      <div className="flex-1 flex flex-col items-center justify-center px-4 py-12 bg-background">
+        {/* Mobile-only logo */}
+        <img
+          src="/polymartlogoblack.png"
+          alt="Polymart"
+          className="h-8 mb-8 lg:hidden select-none dark:invert"
+          draggable={false}
+        />
+
+        <SignIn
+          routing="virtual"
+          signUpUrl="/#/sign-up"
+          afterSignInUrl="/#/dashboard"
+          appearance={{
+            elements: {
+              card: "shadow-xl rounded-2xl",
+              rootBox: "w-full max-w-sm",
+            },
+          }}
+        />
+      </div>
     </div>
   )
 }

@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Input } from "@/components/ui/input"
 import { Separator } from "@/components/ui/separator"
-import { Loader2, AlertCircle, CheckCircle2, Camera, CreditCard, ShieldCheck } from "lucide-react"
+import { Loader2, AlertCircle, CheckCircle2, Camera, CreditCard, ShieldCheck, TrendingUp, TrendingDown, Activity, Clock, Ticket } from "lucide-react"
 import { useAccount } from "@/hooks/useAccount"
 import type { Route } from "@/App"
 
@@ -27,6 +27,35 @@ interface UserProfile {
   tier_expires_at: string | null
 }
 
+interface AccountStats {
+  total_value: number
+  total_cash: number
+  position_value: number
+  unrealised_pnl: number
+  total_orders: number
+  created_at: string | null
+}
+
+interface RecentOrder {
+  id: number
+  asset_type: string
+  symbol: string
+  side: "buy" | "sell"
+  quantity: number
+  price: number
+  total: number
+  executed_at: string
+  portfolio_id: number
+  portfolio_name: string
+}
+
+interface SupportTicket {
+  id: number
+  subject: string
+  status: "open" | "in_progress" | "resolved"
+  created_at: string
+}
+
 interface Props {
   onNavigate: (r: Route) => void
 }
@@ -35,12 +64,172 @@ function fmt(n: number) {
   return n.toLocaleString("en-US", { style: "currency", currency: "USD", maximumFractionDigits: 0 })
 }
 
+function fmtFull(n: number) {
+  return n.toLocaleString("en-US", { style: "currency", currency: "USD", maximumFractionDigits: 2 })
+}
+
+function ticketStatusBadge(status: SupportTicket["status"]) {
+  switch (status) {
+    case "open":        return { label: "Open",        cls: "bg-blue-500/10 text-blue-600 border-blue-500/20" }
+    case "in_progress": return { label: "In Progress",  cls: "bg-yellow-500/10 text-yellow-600 border-yellow-500/20" }
+    case "resolved":    return { label: "Resolved",     cls: "bg-emerald-500/10 text-emerald-600 border-emerald-500/20" }
+  }
+}
+
+// ── Trading overview card ──────────────────────────────────────────────────────
+function TradingOverview({ stats }: { stats: AccountStats }) {
+  const memberSince = stats.created_at
+    ? new Date(stats.created_at).toLocaleDateString("en-US", { month: "long", year: "numeric" })
+    : null
+  const pnlUp = stats.unrealised_pnl >= 0
+
+  return (
+    <Card className="bg-card border-border">
+      <CardHeader className="pb-3">
+        <CardTitle className="text-base flex items-center gap-2">
+          <Activity className="w-4 h-4 text-muted-foreground" />
+          Trading Overview
+        </CardTitle>
+      </CardHeader>
+      <CardContent>
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+          <div className="rounded-md bg-muted/30 p-3">
+            <p className="text-[10px] text-muted-foreground uppercase tracking-wide mb-1">Total Value</p>
+            <p className="text-lg font-bold tabular-nums">{fmt(stats.total_value)}</p>
+            <p className="text-[10px] text-muted-foreground mt-0.5">{fmt(stats.total_cash)} cash</p>
+          </div>
+          <div className="rounded-md bg-muted/30 p-3">
+            <p className="text-[10px] text-muted-foreground uppercase tracking-wide mb-1">Unrealised P&amp;L</p>
+            <p className={`text-lg font-bold tabular-nums flex items-center gap-1 ${pnlUp ? "text-emerald-600" : "text-red-500"}`}>
+              {pnlUp ? <TrendingUp className="w-4 h-4 shrink-0" /> : <TrendingDown className="w-4 h-4 shrink-0" />}
+              {fmtFull(stats.unrealised_pnl)}
+            </p>
+            <p className="text-[10px] text-muted-foreground mt-0.5">across all portfolios</p>
+          </div>
+          <div className="rounded-md bg-muted/30 p-3">
+            <p className="text-[10px] text-muted-foreground uppercase tracking-wide mb-1">Total Trades</p>
+            <p className="text-lg font-bold tabular-nums">{stats.total_orders.toLocaleString()}</p>
+            <p className="text-[10px] text-muted-foreground mt-0.5">lifetime orders</p>
+          </div>
+          <div className="rounded-md bg-muted/30 p-3">
+            <p className="text-[10px] text-muted-foreground uppercase tracking-wide mb-1">Member Since</p>
+            <p className="text-sm font-semibold">{memberSince ?? "-"}</p>
+          </div>
+        </div>
+      </CardContent>
+    </Card>
+  )
+}
+
+// ── Recent activity feed ───────────────────────────────────────────────────────
+function ActivityFeed({
+  orders,
+  onNavigateToPortfolio,
+}: {
+  orders: RecentOrder[]
+  onNavigateToPortfolio: (id: number) => void
+}) {
+  if (!orders.length) return null
+
+  return (
+    <Card className="bg-card border-border">
+      <CardHeader className="pb-3">
+        <CardTitle className="text-base flex items-center gap-2">
+          <Clock className="w-4 h-4 text-muted-foreground" />
+          Recent Activity
+        </CardTitle>
+      </CardHeader>
+      <CardContent className="p-0">
+        <div className="divide-y divide-border">
+          {orders.map(o => (
+            <div key={o.id} className="flex items-center justify-between px-6 py-3 gap-4">
+              <div className="flex items-center gap-3 min-w-0">
+                <Badge
+                  variant="outline"
+                  className={`text-[10px] shrink-0 ${
+                    o.side === "buy"
+                      ? "bg-emerald-500/10 text-emerald-700 border-emerald-500/20"
+                      : "bg-red-500/10 text-red-600 border-red-500/20"
+                  }`}
+                >
+                  {o.side.toUpperCase()}
+                </Badge>
+                <div className="min-w-0">
+                  <span className="font-mono text-sm font-semibold">{o.symbol}</span>
+                  <span className="text-xs text-muted-foreground ml-2">{o.quantity} @ {fmtFull(o.price)}</span>
+                </div>
+              </div>
+              <div className="text-right shrink-0">
+                <p className="text-sm font-semibold tabular-nums">{fmtFull(o.total)}</p>
+                <button
+                  type="button"
+                  onClick={() => onNavigateToPortfolio(o.portfolio_id)}
+                  className="text-xs text-muted-foreground hover:text-foreground transition-colors cursor-pointer bg-transparent border-0 p-0"
+                >
+                  {o.portfolio_name}
+                </button>
+              </div>
+            </div>
+          ))}
+        </div>
+      </CardContent>
+    </Card>
+  )
+}
+
+// ── Support ticket history ─────────────────────────────────────────────────────
+function TicketHistory({ tickets, onNavigate }: { tickets: SupportTicket[]; onNavigate: (r: Route) => void }) {
+  return (
+    <Card className="bg-card border-border">
+      <CardHeader className="pb-3">
+        <CardTitle className="text-base flex items-center gap-2">
+          <Ticket className="w-4 h-4 text-muted-foreground" />
+          Support Tickets
+        </CardTitle>
+      </CardHeader>
+      <CardContent className={tickets.length ? "p-0" : undefined}>
+        {tickets.length === 0 ? (
+          <div className="text-center py-4">
+            <p className="text-sm text-muted-foreground">No support tickets.</p>
+            <Button variant="link" size="sm" onClick={() => onNavigate("help")} className="text-xs mt-1 h-auto p-0">
+              Visit Help &amp; Support
+            </Button>
+          </div>
+        ) : (
+          <div className="divide-y divide-border">
+            {tickets.map(t => {
+              const badge = ticketStatusBadge(t.status)
+              return (
+                <div key={t.id} className="flex items-center justify-between px-6 py-3 gap-4">
+                  <div className="min-w-0">
+                    <p className="text-sm font-medium truncate">{t.subject}</p>
+                    <p className="text-xs text-muted-foreground mt-0.5">
+                      #{t.id} &middot; {new Date(t.created_at).toLocaleDateString()}
+                    </p>
+                  </div>
+                  <Badge variant="outline" className={`text-[10px] shrink-0 ${badge.cls}`}>
+                    {badge.label}
+                  </Badge>
+                </div>
+              )
+            })}
+          </div>
+        )}
+      </CardContent>
+    </Card>
+  )
+}
+
+// ── Main page ──────────────────────────────────────────────────────────────────
 export default function AccountPage({ onNavigate }: Props) {
   const { user } = useUser()
-  const { getMe, updateMe, getBilling, startCheckout } = useAccount()
+  const { getMe, updateMe, getBilling, startCheckout, getStats, getRecentOrders, getSupportTickets } = useAccount()
 
   const [profile, setProfile] = useState<UserProfile | null>(null)
   const [billing, setBilling] = useState<{ portalUrl: string | null } | null>(null)
+  const [stats, setStats] = useState<AccountStats | null>(null)
+  const [recentOrders, setRecentOrders] = useState<RecentOrder[]>([])
+  const [tickets, setTickets] = useState<SupportTicket[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
 
@@ -58,17 +247,26 @@ export default function AccountPage({ onNavigate }: Props) {
 
   const load = useCallback(async () => {
     try {
-      const [me, bill] = await Promise.all([getMe(), getBilling().catch(() => null)])
+      const [me, bill, st, orders, tix] = await Promise.all([
+        getMe(),
+        getBilling().catch(() => null),
+        getStats().catch(() => null),
+        getRecentOrders().catch(() => []),
+        getSupportTickets().catch(() => []),
+      ])
       setProfile(me)
       setDisplayName(me.display_name ?? "")
       setBio(me.bio ?? "")
       if (bill) setBilling(bill)
+      if (st) setStats(st)
+      setRecentOrders(Array.isArray(orders) ? orders : [])
+      setTickets(Array.isArray(tix) ? tix : [])
     } catch (e: unknown) {
       setError(e instanceof Error ? e.message : "Failed to load account")
     } finally {
       setLoading(false)
     }
-  }, [getMe, getBilling])
+  }, [getMe, getBilling, getStats, getRecentOrders, getSupportTickets])
 
   useEffect(() => { load() }, [load])
 
@@ -131,20 +329,30 @@ export default function AccountPage({ onNavigate }: Props) {
   const isPremium = profile.tier === "premium"
   const limits = profile.tierLimits
 
+  function goToPortfolio(portfolioId: number) {
+    window.location.hash = `/portfolio/${portfolioId}`
+  }
+
   return (
     <div className="max-w-3xl mx-auto px-4 sm:px-8 py-8 space-y-6">
 
       <div>
-        <h1 className="text-2xl font-bold text-foreground">Account Settings</h1>
+        <h1 className="text-2xl font-bold text-foreground">Account</h1>
         <p className="text-sm text-muted-foreground mt-1">{profile.email}</p>
       </div>
+
+      {/* Trading overview */}
+      {stats && <TradingOverview stats={stats} />}
+
+      {/* Recent activity */}
+      {recentOrders.length > 0 && (
+        <ActivityFeed orders={recentOrders} onNavigateToPortfolio={goToPortfolio} />
+      )}
 
       {/* Profile */}
       <Card className="bg-card border-border">
         <CardHeader className="pb-3">
-          <CardTitle className="text-base flex items-center gap-2">
-            Profile
-          </CardTitle>
+          <CardTitle className="text-base">Profile</CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
 
@@ -289,6 +497,9 @@ export default function AccountPage({ onNavigate }: Props) {
           )}
         </CardContent>
       </Card>
+
+      {/* Support ticket history */}
+      <TicketHistory tickets={tickets} onNavigate={onNavigate} />
 
       {/* Quick links */}
       <Card className="bg-card border-border">

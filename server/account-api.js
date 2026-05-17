@@ -176,13 +176,17 @@ router.get('/portfolios', async (req, res) => {
       [userId]
     );
 
-    // Attach position count to each portfolio
+    // Attach position count and top symbols to each portfolio
     const withCounts = await Promise.all(portfolios.map(async p => {
       const [[{ cnt }]] = await pool.query(
         'SELECT COUNT(*) as cnt FROM positions WHERE portfolio_id = ?',
         [p.id]
       );
-      return { ...p, position_count: cnt };
+      const [posRows] = await pool.query(
+        'SELECT symbol, asset_type FROM positions WHERE portfolio_id = ? LIMIT 5',
+        [p.id]
+      );
+      return { ...p, position_count: cnt, position_symbols: posRows };
     }));
 
     res.json(withCounts);
@@ -591,6 +595,103 @@ router.delete('/watchlists/:id/items', async (req, res) => {
     res.json({ success: true });
   } catch (err) {
     console.error('[account-api] DELETE /watchlists/:id/items:', err.message);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+// ── GET /portfolios/:id/snapshots ─────────────────────────────────────────────
+router.get('/portfolios/:id/snapshots', async (req, res) => {
+  const { userId } = getAuth(req);
+  const portfolioId = parseInt(req.params.id);
+  if (!portfolioId) return res.status(400).json({ error: 'Invalid portfolio ID' });
+
+  try {
+    const portfolio = await getOwnedPortfolio(portfolioId, userId);
+    if (!portfolio) return res.status(404).json({ error: 'Portfolio not found' });
+
+    const [rows] = await pool.query(
+      'SELECT total_value, snapped_at FROM portfolio_snapshots WHERE portfolio_id = ? ORDER BY snapped_at ASC LIMIT 90',
+      [portfolioId]
+    );
+    res.json(rows);
+  } catch (err) {
+    console.error('[account-api] GET /portfolios/:id/snapshots:', err.message);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+// ── GET /stats ────────────────────────────────────────────────────────────────
+router.get('/stats', async (req, res) => {
+  const { userId } = getAuth(req);
+
+  try {
+    const [[{ total_cash }]] = await pool.query(
+      'SELECT COALESCE(SUM(cash_balance), 0) as total_cash FROM portfolios WHERE clerk_id = ?',
+      [userId]
+    );
+
+    const [positions] = await pool.query(`
+      SELECT p.quantity, p.avg_cost, p.asset_type,
+        COALESCE(ss.price, fs.price, p.avg_cost) as current_price
+      FROM positions p
+      JOIN portfolios port ON p.portfolio_id = port.id
+      LEFT JOIN stocks_state ss ON p.asset_type = 'stock' AND p.symbol = ss.ticker
+      LEFT JOIN forex_state fs ON p.asset_type = 'forex' AND p.symbol = fs.pair
+      WHERE port.clerk_id = ?
+    `, [userId]);
+
+    const position_value = positions.reduce((sum, pos) =>
+      sum + Number(pos.quantity) * Number(pos.current_price), 0);
+    const cost_basis = positions.reduce((sum, pos) =>
+      sum + Number(pos.quantity) * Number(pos.avg_cost), 0);
+
+    const total_value = Number(total_cash) + position_value;
+    const unrealised_pnl = position_value - cost_basis;
+
+    const [[{ total_orders }]] = await pool.query(
+      `SELECT COUNT(*) as total_orders FROM orders o
+       JOIN portfolios port ON o.portfolio_id = port.id
+       WHERE port.clerk_id = ?`,
+      [userId]
+    );
+
+    const [[userRow]] = await pool.query(
+      'SELECT created_at FROM user_profiles WHERE clerk_id = ?',
+      [userId]
+    );
+
+    res.json({
+      total_value,
+      total_cash: Number(total_cash),
+      position_value,
+      unrealised_pnl,
+      total_orders: Number(total_orders),
+      created_at: userRow?.created_at ?? null,
+    });
+  } catch (err) {
+    console.error('[account-api] GET /stats:', err.message);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+// ── GET /orders/recent ────────────────────────────────────────────────────────
+router.get('/orders/recent', async (req, res) => {
+  const { userId } = getAuth(req);
+
+  try {
+    const [orders] = await pool.query(
+      `SELECT o.id, o.asset_type, o.symbol, o.side, o.quantity, o.price, o.total, o.executed_at,
+              port.id as portfolio_id, port.name as portfolio_name
+       FROM orders o
+       JOIN portfolios port ON o.portfolio_id = port.id
+       WHERE port.clerk_id = ?
+       ORDER BY o.executed_at DESC
+       LIMIT 10`,
+      [userId]
+    );
+    res.json(orders);
+  } catch (err) {
+    console.error('[account-api] GET /orders/recent:', err.message);
     res.status(500).json({ error: 'Internal server error' });
   }
 });

@@ -247,6 +247,51 @@ async function ensureForexInitialised(pairs) {
   return pairs;
 }
 
+// ── Portfolio snapshots ───────────────────────────────────────────────────────
+// Upsert one row per portfolio per day. Throttled to run at most once per 5 min.
+
+let lastSnapshotRun = 0;
+
+async function snapshotPortfolios() {
+  const now = Date.now();
+  if (now - lastSnapshotRun < 5 * 60 * 1000) return;
+  lastSnapshotRun = now;
+
+  try {
+    const [portfolios] = await pool.query('SELECT id FROM portfolios');
+    if (!portfolios.length) return;
+
+    for (const port of portfolios) {
+      const [positions] = await pool.query(
+        `SELECT p.quantity, p.asset_type,
+           COALESCE(ss.price, fs.price, p.avg_cost) as current_price
+         FROM positions p
+         LEFT JOIN stocks_state ss ON p.asset_type = 'stock' AND p.symbol = ss.ticker
+         LEFT JOIN forex_state fs ON p.asset_type = 'forex' AND p.symbol = fs.pair
+         WHERE p.portfolio_id = ?`,
+        [port.id]
+      );
+      const [[{ cash }]] = await pool.query(
+        'SELECT cash_balance as cash FROM portfolios WHERE id = ?',
+        [port.id]
+      );
+      const positionValue = positions.reduce(
+        (sum, p) => sum + Number(p.quantity) * Number(p.current_price), 0
+      );
+      const totalValue = Number(cash) + positionValue;
+
+      await pool.query(
+        `INSERT INTO portfolio_snapshots (portfolio_id, total_value, snapped_at)
+         VALUES (?, ?, CURDATE())
+         ON DUPLICATE KEY UPDATE total_value = VALUES(total_value)`,
+        [port.id, totalValue]
+      );
+    }
+  } catch (err) {
+    console.error('[tick] snapshotPortfolios error:', err.message);
+  }
+}
+
 // ── Universal tick ────────────────────────────────────────────────────────────
 
 export async function tick() {
@@ -269,6 +314,7 @@ export async function tick() {
     await Promise.all([
       writeStocksBatch(newMs, newStocks, newSectors, newEvent),
       writeForexBatch(newForexPairs),
+      snapshotPortfolios(),
     ]);
 
     const elapsed = Date.now() - t0;
