@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from "react"
-import { useAuth } from "@clerk/clerk-react"
+import { useAuth, useUser } from "@clerk/clerk-react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
@@ -35,12 +35,10 @@ interface Props {
 }
 
 function useAdminFetch() {
-  const { getToken, sessionClaims } = useAuth() as {
-    getToken: () => Promise<string | null>
-    sessionClaims: Record<string, unknown> | null
-  }
+  const { getToken } = useAuth()
+  const { user } = useUser()
 
-  const isAdmin = (sessionClaims as { publicMetadata?: { role?: string } } | null)?.publicMetadata?.role === "admin"
+  const isAdmin = user?.publicMetadata?.role === "admin"
 
   async function adminFetch(path: string, options: RequestInit = {}) {
     const token = await getToken()

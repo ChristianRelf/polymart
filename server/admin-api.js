@@ -1,6 +1,6 @@
 import { Router } from 'express';
 import Stripe from 'stripe';
-import { getAuth } from '@clerk/express';
+import { getAuth, clerkClient } from '@clerk/express';
 import pool from './db.js';
 import TIER_CONFIG from './tier-config.js';
 
@@ -13,15 +13,19 @@ function getStripe() {
 }
 
 // ── Admin auth middleware ──────────────────────────────────────────────────────
-// Admin role is set server-side in Clerk publicMetadata — users cannot self-elevate.
-// To grant admin: clerkClient.users.updateUserMetadata(userId, { publicMetadata: { role: 'admin' } })
-function requireAdmin(req, res, next) {
-  const { sessionClaims } = getAuth(req);
-  const role = sessionClaims?.publicMetadata?.role;
-  if (role !== 'admin') {
+// publicMetadata is not in the JWT by default — fetch it from Clerk's API directly.
+// To grant admin: set publicMetadata = { role: 'admin' } in the Clerk dashboard.
+async function requireAdmin(req, res, next) {
+  const { userId } = getAuth(req);
+  try {
+    const user = await clerkClient.users.getUser(userId);
+    if (user.publicMetadata?.role !== 'admin') {
+      return res.status(403).json({ error: 'Forbidden' });
+    }
+    next();
+  } catch {
     return res.status(403).json({ error: 'Forbidden' });
   }
-  next();
 }
 
 // ── Audit logger ──────────────────────────────────────────────────────────────
