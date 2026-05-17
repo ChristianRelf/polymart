@@ -126,11 +126,15 @@ router.use((req, res, next) => {
 router.get('/me', async (req, res) => {
   const { userId } = getAuth(req);
   try {
+    // Auto-create profile if the Clerk webhook hasn't fired yet (e.g. first sign-in).
+    await pool.query(
+      'INSERT IGNORE INTO user_profiles (clerk_id) VALUES (?)',
+      [userId]
+    );
     const [[user]] = await pool.query(
       'SELECT clerk_id, display_name, email, tier, avatar_url, bio, stripe_subscription_id, tier_expires_at, created_at FROM user_profiles WHERE clerk_id = ?',
       [userId]
     );
-    if (!user) return res.status(404).json({ error: 'User profile not found. Try signing out and back in.' });
     const tierLimits = TIER_CONFIG[user.tier] || TIER_CONFIG.basic;
     res.json({ ...user, tierLimits });
   } catch (err) {
