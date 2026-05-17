@@ -1,0 +1,552 @@
+POLYMART - STATUS PAGE ENDPOINTS
+=================================
+Base URL: https://polymart.co
+All endpoints return JSON unless noted. HTTP 200 = up, anything else = degraded/down.
+"Stale" means the simulation tick loop has stopped (check secondsSinceLastTick > 30).
+
+See the bottom of this file for full LLM instructions on how to build the status page.
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+CORE HEALTH (monitor every 30s, alert immediately)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+GET /api/v1/getHealth
+  - Primary health check. Hits the DB and returns simulation status.
+  - Healthy response: { "status": "ok", "stale": false, "secondsSinceLastTick": <30 }
+  - Degraded: status = "uninitialised" (sim hasn't started yet)
+  - Down: stale = true (tick loop has stopped, last tick > 30s ago)
+  - Down: HTTP 500 (DB unreachable)
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+PUBLIC MARKET API (no auth required)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+These are the most user-facing endpoints. All serve live simulation data.
+
+GET /api/v1/getMarket
+  - Returns index value, Fear & Greed, VIX, session, top gainer/loser.
+  - Healthy: HTTP 200, "updatedAt" field is recent.
+  - Degraded: HTTP 503 with "Simulation not yet initialised."
+
+GET /api/v1/getStocks
+  - Returns all 132 stocks as a keyed object.
+  - Healthy: HTTP 200, response object has 132 keys.
+
+GET /api/v1/getStock?ticker=AAPL
+  - Single stock detail with full technical indicators.
+  - Healthy: HTTP 200, "price" field present.
+  - Use AAPL as a canary ticker - it should always exist.
+
+GET /api/v1/getSectors
+  - All 20 sector summaries.
+  - Healthy: HTTP 200, object with 20+ keys.
+
+GET /api/v1/getTopMovers
+  - Top 5 gainers and losers.
+  - Healthy: HTTP 200, "gainers" and "losers" arrays both non-empty.
+
+GET /api/v1/getMacro
+  - Macroeconomic state (interest rate, inflation, GDP, VIX).
+  - Healthy: HTTP 200.
+
+GET /api/v1/getLeaderboard
+  - Stocks sorted by % change.
+  - Healthy: HTTP 200, "stocks" array non-empty.
+
+GET /api/v1/getEvents
+  - Recent market events log (up to 40 entries).
+  - Healthy: HTTP 200, array (may be empty on fresh start).
+
+GET /api/v1/getHistory?ticker=AAPL
+  - Price history array for a stock.
+  - Healthy: HTTP 200, "history" array non-empty.
+
+GET /api/v1/getSector?sector=tech
+  - Single sector detail with constituent stocks.
+  - Healthy: HTTP 200, "stocks" array non-empty.
+
+GET /api/v1/search?q=apple
+  - Stock search by ticker/name/sector.
+  - Healthy: HTTP 200, "results" array.
+
+GET /api/v1/info?ticker=AAPL
+  - Company profile, analyst rating, AI-generated news.
+  - Healthy: HTTP 200, "companyName" field present.
+
+GET /api/v1/sims
+  - List of available simulations and their status.
+  - Healthy: HTTP 200, array with "stocks" and "forex" entries both showing status: "live".
+
+GET /api/v1/rss
+  - RSS feed of market events (returns XML, not JSON).
+  - Healthy: HTTP 200, Content-Type: application/rss+xml.
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+FOREX API (no auth required)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+GET /api/v1/forex/getPairs
+  - All forex pairs as a keyed object.
+  - Healthy: HTTP 200, object with 40 keys.
+
+GET /api/v1/forex/getPair?pair=EURUSD
+  - Single pair detail with indicators, pivots, history.
+  - Healthy: HTTP 200, "price" field present.
+  - Use EURUSD as a canary pair.
+
+GET /api/v1/forex/getTopMovers
+  - Top 5 forex gainers and losers.
+  - Healthy: HTTP 200, both arrays non-empty.
+
+GET /api/v1/forex/getHistory?pair=EURUSD
+  - Price history for a currency pair.
+  - Healthy: HTTP 200, "history" array non-empty.
+
+GET /api/v1/forex/getMarketOverview
+  - USD strength index, currency strength table, session status.
+  - Healthy: HTTP 200, "currencyStrength" array non-empty.
+
+GET /api/v1/forex/getLeaderboard
+  - Forex pairs ranked by % change (or other metric).
+  - Healthy: HTTP 200, "pairs" array non-empty.
+
+GET /api/v1/forex/getCandles?pair=EURUSD
+  - OHLC candle data for a pair.
+  - Healthy: HTTP 200, "candles" array non-empty.
+
+GET /api/v1/forex/getCorrelations
+  - Correlation matrix for forex pairs.
+  - Healthy: HTTP 200, "matrix" object non-empty.
+
+GET /api/v1/forex/getSessions
+  - Which forex sessions are currently open (Sydney/Tokyo/London/NY).
+  - Healthy: HTTP 200, "sessions" array has 4 items.
+
+GET /api/v1/forex/getCurrencies
+  - Per-currency strength index derived from all pairs.
+  - Healthy: HTTP 200, "currencies" array non-empty.
+
+GET /api/v1/forex/search?q=eur
+  - Forex pair search.
+  - Healthy: HTTP 200, "results" array.
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+ACCOUNT API (requires valid Clerk JWT — use a test user token)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+These require Authorization: Bearer <token>. A 401 = auth service down.
+A 200 but with error body = DB issue.
+
+GET /api/v1/account/me
+  - Returns user profile + tier limits.
+  - Healthy: HTTP 200, "clerk_id" field present.
+  - Down: HTTP 401 (Clerk JWT verification failing).
+
+GET /api/v1/account/portfolios
+  - Returns list of user portfolios.
+  - Healthy: HTTP 200, array (may be empty for a fresh account).
+
+GET /api/v1/account/stats
+  - Returns aggregate total value, unrealised P&L, order count.
+  - Healthy: HTTP 200, "total_value" field present.
+
+GET /api/v1/account/orders/recent
+  - Returns last 10 orders across all portfolios.
+  - Healthy: HTTP 200, array.
+
+GET /api/v1/account/watchlists
+  - Returns user watchlists with items.
+  - Healthy: HTTP 200, array.
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+BILLING API (requires valid Clerk JWT)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+Note: GET /billing calls Stripe to generate a portal URL.
+A 503 means Stripe is not configured (not necessarily down in prod).
+
+GET /api/v1/billing
+  - Returns user tier, Stripe subscription info, billing portal URL.
+  - Healthy: HTTP 200, "tier" field present.
+  - Degraded: HTTP 503 "Billing not configured" (Stripe env vars missing).
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+SUPPORT API (requires valid Clerk JWT)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+GET /api/v1/support/tickets
+  - Returns list of user's own support tickets.
+  - Healthy: HTTP 200, array.
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+WEBHOOK ENDPOINTS (internal — not publicly monitorable)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+These are POST-only and require signed payloads. Do not health-check them
+directly; verify via the Clerk and Stripe dashboards instead.
+
+POST /api/v1/account/webhook       (Clerk user sync — signed with CLERK_WEBHOOK_SECRET)
+POST /api/v1/webhooks/stripe       (Stripe billing events — signed with STRIPE_WEBHOOK_SECRET)
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+ADMIN API (requires admin Clerk role — not for public status page)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+GET  /api/v1/admin/users
+GET  /api/v1/admin/users/:clerkId
+PUT  /api/v1/admin/users/:clerkId/tier
+POST /api/v1/admin/users/:clerkId/reset-portfolio/:portfolioId
+GET  /api/v1/admin/tickets
+GET  /api/v1/admin/tickets/:id
+PUT  /api/v1/admin/tickets/:id
+POST /api/v1/admin/billing/refund
+POST /api/v1/admin/billing/cancel/:clerkId
+GET  /api/v1/admin/audit-log
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+SUGGESTED MONITORING TIERS
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+CRITICAL (alert immediately, every 30s):
+  /api/v1/getHealth            — primary canary, checks DB + tick freshness
+  /api/v1/getMarket            — most-hit public endpoint
+  /api/v1/forex/getPairs       — covers forex simulation
+
+HIGH (alert after 2 consecutive failures, every 60s):
+  /api/v1/getStocks            — large response, covers DB read path
+  /api/v1/getStock?ticker=AAPL — single-ticker path
+  /api/v1/forex/getPair?pair=EURUSD
+  /api/v1/account/me           — covers Clerk JWT verification + DB
+
+MEDIUM (alert after 3 failures, every 5 min):
+  /api/v1/getTopMovers
+  /api/v1/getMacro
+  /api/v1/forex/getMarketOverview
+  /api/v1/forex/getSessions
+  /api/v1/account/stats
+  /api/v1/billing              — covers Stripe connectivity
+
+LOW (daily check, informational):
+  /api/v1/getLeaderboard
+  /api/v1/getEvents
+  /api/v1/forex/getCorrelations
+  /api/v1/rss
+  /api/v1/sims
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+EXTERNAL DEPENDENCIES TO MONITOR SEPARATELY
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+These are not Polymart endpoints but failures here will surface as errors:
+
+Clerk (auth)     — https://status.clerk.com
+Stripe (billing) — https://status.stripe.com
+Resend (email)   — https://status.resend.com
+MySQL / MariaDB  — monitored indirectly via /api/v1/getHealth returning HTTP 500
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+LLM INSTRUCTIONS — HOW TO BUILD THE STATUS PAGE
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Use the following prompt when asking an LLM (Claude, GPT-4, etc.) to build
+the Polymart status page. Paste it in full and attach or quote this file.
+
+──────────────────────────────────────────────────────
+PROMPT START
+──────────────────────────────────────────────────────
+
+Build a public-facing status page for Polymart (https://polymart.co), a
+live paper trading simulator. The page should be a single self-contained
+HTML file (or a React/TSX component if building inside the existing Vite
+project at src/pages/StatusPage.tsx). Use the endpoint list in this file
+to know what to monitor and what each response means.
+
+
+DESIGN LANGUAGE — match the existing Polymart site exactly
+──────────────────────────────────────────────────────────
+The existing app uses Tailwind CSS with shadcn/ui and a dark-first theme.
+Replicate this aesthetic:
+
+  Background:   Very dark near-black (#09090b, Tailwind: bg-zinc-950 or bg-background)
+  Cards:        Slightly lighter dark (#18181b, Tailwind: bg-zinc-900 / bg-card)
+  Borders:      Subtle (#27272a, Tailwind: border-zinc-800 / border-border)
+  Text primary: Near-white (#fafafa, Tailwind: text-zinc-50 / text-foreground)
+  Text muted:   Mid-grey (#71717a, Tailwind: text-zinc-500 / text-muted-foreground)
+  Accent green: Emerald (#10b981, Tailwind: text-emerald-500 / bg-emerald-500)
+  Danger red:   (#ef4444, Tailwind: text-red-500)
+  Warning:      Amber (#f59e0b, Tailwind: text-amber-500)
+
+  Font:         System sans-serif (Inter or the user's default)
+  Mono font:    Used for endpoint paths, latency numbers, timestamps
+  Radius:       Rounded corners on all cards (rounded-xl or rounded-2xl)
+  Density:      Compact — small text (text-xs to text-sm), tight padding
+
+Logo: use <img src="/polymartlogo.png"> for light-on-dark contexts.
+The logo is already served from the same origin at /polymartlogo.png.
+Place it top-left in the header, height h-9 (36px).
+
+DO NOT use bright backgrounds, heavy gradients, or any colour palette
+that looks like a generic SaaS status page (no blue/purple branding,
+no white backgrounds). It should feel like it belongs on polymart.co.
+
+
+PAGE STRUCTURE
+──────────────────────────────────────────────────────
+Build the page in these sections, top to bottom:
+
+1. HEADER
+   - Polymart logo left-aligned
+   - Page title: "System Status" right-aligned in text-sm font-medium
+   - One-line overall status banner directly below the header:
+       Green  "All systems operational" when everything is up
+       Amber  "Partial degradation — some services affected" when 1+ degraded
+       Red    "Major outage" when any CRITICAL service is down
+   - Show last-checked timestamp (e.g. "Last checked 12 seconds ago") in
+     muted text, updating live.
+
+2. OVERALL UPTIME STRIP (optional but nice)
+   - A thin horizontal bar showing 90-day uptime percentage for each
+     service group, rendered as a coloured dot-per-day strip (green/red/grey).
+   - If you don't have real history, show a placeholder of 90 green dots
+     with a note "History recording from [today's date]".
+
+3. SERVICE GROUPS
+   Organise checks into these named groups (one card per group):
+
+   a) Core Simulation
+      Endpoints to check:
+        GET /api/v1/getHealth
+        GET /api/v1/getMarket
+        GET /api/v1/getMacro
+      Special logic for getHealth:
+        - Parse the JSON response.
+        - If secondsSinceLastTick > 30, show status as DEGRADED even if
+          HTTP 200, with label "Simulation stale".
+        - If secondsSinceLastTick > 120, show as DOWN.
+
+   b) Stock Market API
+      Endpoints to check:
+        GET /api/v1/getStocks
+        GET /api/v1/getStock?ticker=AAPL
+        GET /api/v1/getTopMovers
+        GET /api/v1/getSectors
+        GET /api/v1/getLeaderboard
+
+   c) Forex API
+      Endpoints to check:
+        GET /api/v1/forex/getPairs
+        GET /api/v1/forex/getPair?pair=EURUSD
+        GET /api/v1/forex/getTopMovers
+        GET /api/v1/forex/getSessions
+        GET /api/v1/forex/getMarketOverview
+
+   d) Paper Trading (Account)
+      Endpoints to check (no auth token — just verify HTTP response):
+        GET /api/v1/account/me     → expect HTTP 401 (correct, means server is up)
+      Explanation: without a token this returns 401. A 401 proves the
+      auth middleware is running. A 500 or no response means server down.
+      Display as "Operational" on 401, "Down" on 5xx or timeout.
+
+   e) Billing (Stripe)
+      Endpoints to check:
+        GET /api/v1/billing        → expect 401 (no token) = server up
+      Same logic as (d). The Stripe integration itself is out-of-band;
+      link to https://status.stripe.com for Stripe's own status.
+
+   f) External Dependencies
+      Do not health-check these — just link to their status pages:
+        Clerk (auth)     https://status.clerk.com
+        Stripe (billing) https://status.stripe.com
+        Resend (email)   https://status.resend.com
+      Show as static informational rows with an external link icon.
+
+4. LIVE MARKET SNAPSHOT (bonus section — makes the page feel alive)
+   Since /api/v1/getHealth and /api/v1/getMarket are already being polled,
+   surface a few fields from those responses to show real data:
+     - Market session badge (Open / Pre-market / After-hours / Closed)
+       coloured the same way as the main app (green = Open, amber = Pre/After)
+     - Index value + % change
+     - Fear & Greed score with label
+     - VIX
+     - Tick count (shows the simulation is running)
+     - "Last tick Xs ago" counter (from secondsSinceLastTick in getHealth)
+   Display these in a compact horizontal strip or a 2-column mini-grid.
+   This section doubles as a visual confirmation that the simulation is live.
+
+5. INCIDENT HISTORY (static, manually maintained)
+   A simple list of past incidents with date, title, and status.
+   Start with an empty state: "No incidents in the past 90 days."
+   Format each entry as:
+     [RESOLVED] 2025-05-14  —  Brief database connectivity issue (duration: 4 min)
+   Keep this section collapsible if there are more than 5 entries.
+
+6. FOOTER
+   Small text: "Polymart status · Updated every 30 seconds"
+   Link back to https://polymart.co
+
+
+STATUS STATES AND HOW TO DISPLAY THEM
+──────────────────────────────────────────────────────
+Each individual endpoint check has one of four states. Use these
+consistently across all groups:
+
+  OPERATIONAL   — HTTP 200 (or expected 401 for auth endpoints), latency normal
+                  Green dot ● + text "Operational"
+                  Tailwind: text-emerald-500, bg-emerald-500/10
+
+  DEGRADED      — HTTP 200 but response time > 2000ms, OR getHealth stale flag
+                  Amber dot ● + text "Degraded" + optional detail in muted text
+                  Tailwind: text-amber-500, bg-amber-500/10
+
+  PARTIAL OUTAGE — Some checks in the group failing, not all
+                  Amber dot ● + text "Partial Outage"
+
+  DOWN          — HTTP 4xx (unexpected), HTTP 5xx, or request timeout (>5s)
+                  Red dot ● + text "Down" + last seen timestamp
+                  Tailwind: text-red-500, bg-red-500/10
+
+  UNKNOWN       — Not yet checked since page load (initial state)
+                  Grey dot ● + text "Checking..."
+                  Tailwind: text-zinc-500
+
+The coloured dot should be a pulsing animation (animate-ping) when
+DEGRADED or DOWN, so problems are immediately visible without reading text.
+Use a static dot for OPERATIONAL.
+
+Group-level status = worst status of any endpoint in the group.
+Overall status = worst status of any CRITICAL group (Core Simulation,
+Stock Market API, Forex API).
+
+
+POLLING BEHAVIOUR
+──────────────────────────────────────────────────────
+- Poll all CRITICAL endpoints every 30 seconds.
+- Poll all other endpoints every 60 seconds.
+- Stagger requests by 200ms between each to avoid a thundering herd.
+- Show a subtle "Refreshing..." indicator in the header while a check
+  cycle is in progress.
+- Record response time (ms) for each check and display it in muted text
+  next to each endpoint row (e.g. "143ms").
+- Keep a rolling window of the last 10 response times per endpoint and
+  compute a p95 — show it on hover/tooltip as "p95: 340ms".
+- If an endpoint fails, retry once after 3 seconds before marking it down.
+
+
+IMPLEMENTATION NOTES
+──────────────────────────────────────────────────────
+If building as a standalone HTML file:
+  - Use vanilla JS with fetch(). No build step needed.
+  - Import Tailwind from CDN: <script src="https://cdn.tailwindcss.com">
+  - Use CSS variables to match the Polymart dark theme (set on :root).
+  - The file should work when opened directly in a browser (no server needed
+    for the page itself — it just calls the live polymart.co API).
+
+If building as a React component (src/pages/StatusPage.tsx) inside the
+existing Vite project:
+  - Import useSimulation from @/lib/SimulationContext — this already polls
+    /api/v1/getMarket and /api/v1/getHealth every 10 seconds. Use it for
+    the live market snapshot section instead of polling those again.
+  - Use shadcn Card, Badge, Separator components to match the app exactly.
+  - Add the route "status" to the HASH_MAP in src/App.tsx and add a link
+    in the footer nav under a new "Platform" entry: "Status" → "status".
+  - The route should be publicly accessible (no ProtectedRoute wrapper).
+  - Add a small green/red dot indicator to the footer link showing overall
+    system status so users on any page can see it at a glance.
+
+Either way — DO NOT embed any API keys, secrets, or user tokens in the
+page. All endpoints polled from the status page must be either:
+  a) Publicly accessible (the public market API), or
+  b) Verified via the "expect 401" pattern for auth-protected endpoints.
+
+CORS is already set to wildcard (*) on the public API endpoints, so
+polling from a browser on a different origin is fine.
+
+
+EXAMPLE COMPONENT SKELETON (React/TSX)
+──────────────────────────────────────────────────────
+
+  type CheckStatus = "unknown" | "operational" | "degraded" | "down"
+
+  interface Check {
+    name: string
+    url: string
+    expectStatus?: number        // default 200; set 401 for auth endpoints
+    staleCheck?: boolean         // true = parse JSON and check secondsSinceLastTick
+    latency: number | null
+    status: CheckStatus
+    lastChecked: Date | null
+    detail: string | null        // e.g. "stale: 45s since last tick"
+  }
+
+  const GROUPS: { name: string; checks: Omit<Check, "latency"|"status"|"lastChecked"|"detail">[] }[] = [
+    {
+      name: "Core Simulation",
+      checks: [
+        { name: "Health",       url: "/api/v1/getHealth", staleCheck: true },
+        { name: "Market State", url: "/api/v1/getMarket" },
+        { name: "Macro Data",   url: "/api/v1/getMacro"  },
+      ],
+    },
+    {
+      name: "Stock Market API",
+      checks: [
+        { name: "All Stocks",   url: "/api/v1/getStocks" },
+        { name: "Single Stock", url: "/api/v1/getStock?ticker=AAPL" },
+        { name: "Top Movers",   url: "/api/v1/getTopMovers" },
+        { name: "Sectors",      url: "/api/v1/getSectors" },
+        { name: "Leaderboard",  url: "/api/v1/getLeaderboard" },
+      ],
+    },
+    {
+      name: "Forex API",
+      checks: [
+        { name: "All Pairs",     url: "/api/v1/forex/getPairs" },
+        { name: "Single Pair",   url: "/api/v1/forex/getPair?pair=EURUSD" },
+        { name: "Top Movers",    url: "/api/v1/forex/getTopMovers" },
+        { name: "Sessions",      url: "/api/v1/forex/getSessions" },
+        { name: "Overview",      url: "/api/v1/forex/getMarketOverview" },
+      ],
+    },
+    {
+      name: "Paper Trading",
+      checks: [
+        { name: "Account API",  url: "/api/v1/account/me", expectStatus: 401 },
+      ],
+    },
+    {
+      name: "Billing",
+      checks: [
+        { name: "Billing API",  url: "/api/v1/billing", expectStatus: 401 },
+      ],
+    },
+  ]
+
+  async function runCheck(check): Promise<{ status: CheckStatus; latency: number; detail: string | null }> {
+    const start = Date.now()
+    const expected = check.expectStatus ?? 200
+    try {
+      const res = await fetch(check.url, { signal: AbortSignal.timeout(5000) })
+      const latency = Date.now() - start
+      if (res.status !== expected) {
+        return { status: "down", latency, detail: `HTTP ${res.status}` }
+      }
+      if (check.staleCheck) {
+        const json = await res.json()
+        if (json.secondsSinceLastTick > 120) return { status: "down",      latency, detail: `stale: ${json.secondsSinceLastTick}s since last tick` }
+        if (json.secondsSinceLastTick > 30)  return { status: "degraded",  latency, detail: `stale: ${json.secondsSinceLastTick}s since last tick` }
+      }
+      if (latency > 2000) return { status: "degraded", latency, detail: `slow: ${latency}ms` }
+      return { status: "operational", latency, detail: null }
+    } catch {
+      return { status: "down", latency: Date.now() - start, detail: "timeout or network error" }
+    }
+  }
+
+──────────────────────────────────────────────────────
+PROMPT END
+──────────────────────────────────────────────────────
