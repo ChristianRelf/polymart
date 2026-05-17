@@ -319,6 +319,7 @@ CREATE TABLE IF NOT EXISTS ticket_notes (
 -- display_name/avatar_url are denormalised from user_profiles at post time.
 CREATE TABLE IF NOT EXISTS community_posts (
   id            INT           NOT NULL AUTO_INCREMENT,
+  share_id      VARCHAR(18)   NULL,
   clerk_id      VARCHAR(64)   NOT NULL,
   display_name  VARCHAR(128)  DEFAULT NULL,
   avatar_url    TEXT          DEFAULT NULL,
@@ -328,6 +329,7 @@ CREATE TABLE IF NOT EXISTS community_posts (
   likes         INT           NOT NULL DEFAULT 0,
   created_at    DATETIME      NOT NULL DEFAULT CURRENT_TIMESTAMP,
   PRIMARY KEY (id),
+  UNIQUE KEY idx_posts_share   (share_id),
   KEY idx_posts_clerk   (clerk_id),
   KEY idx_posts_created (created_at)
 ) ENGINE=InnoDB;

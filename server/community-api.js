@@ -1,6 +1,13 @@
 import { Router } from 'express';
 import { getAuth } from '@clerk/express';
+import { randomBytes } from 'crypto';
 import pool from './db.js';
+
+const SHARE_ALPHABET = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
+function generateShareId() {
+  const bytes = randomBytes(18);
+  return Array.from(bytes, b => SHARE_ALPHABET[b % 62]).join('');
+}
 
 const router = Router();
 
@@ -43,7 +50,7 @@ router.get('/posts', async (req, res) => {
     const params  = hasType ? [type] : [];
 
     const [rows] = await pool.query(
-      `SELECT cp.id, cp.clerk_id, cp.display_name, cp.avatar_url,
+      `SELECT cp.id, cp.share_id, cp.clerk_id, cp.display_name, cp.avatar_url,
               cp.title, cp.body, cp.post_type, cp.likes, cp.created_at,
               COUNT(cc.id) AS comment_count
        FROM community_posts cp
@@ -87,15 +94,18 @@ router.post('/posts', postRateLimit, async (req, res) => {
       [userId]
     );
 
+    const shareId = generateShareId();
+
     const [result] = await pool.query(
-      `INSERT INTO community_posts (clerk_id, display_name, avatar_url, title, body, post_type)
-       VALUES (?, ?, ?, ?, ?, ?)`,
-      [userId, profile?.display_name ?? null, profile?.avatar_url ?? null,
+      `INSERT INTO community_posts (share_id, clerk_id, display_name, avatar_url, title, body, post_type)
+       VALUES (?, ?, ?, ?, ?, ?, ?)`,
+      [shareId, userId, profile?.display_name ?? null, profile?.avatar_url ?? null,
        title.trim(), body.trim(), post_type]
     );
 
     res.status(201).json({
       id: result.insertId,
+      share_id: shareId,
       clerk_id: userId,
       display_name: profile?.display_name ?? null,
       avatar_url:   profile?.avatar_url   ?? null,

@@ -64,6 +64,70 @@ app.use("/api/v1/admin", restrictedCors, adminRouter);
 // ── Community API (GET posts is public; write ops check auth internally) ──────
 app.use("/api/v1/community", restrictedCors, communityRouter);
 
+// ── Share embed route ─────────────────────────────────────────────────────────
+// Serves an OG-tagged HTML page for /s/:shareId so Discord/Slack/etc can unfurl
+// the link. Real users are JS-redirected to the SPA immediately.
+function escapeHtml(str) {
+  return String(str)
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#x27;");
+}
+
+app.get("/s/:shareId", async (req, res) => {
+  const { shareId } = req.params;
+  const origin = process.env.ORIGIN || "https://polymart.co";
+  const spaUrl = "/#/community";
+
+  try {
+    const [[post]] = await pool.query(
+      `SELECT title, body, display_name, post_type, likes
+       FROM community_posts WHERE share_id = ?`,
+      [shareId]
+    );
+
+    if (!post) return res.redirect(spaUrl);
+
+    const title   = post.title;
+    const author  = post.display_name || "Anonymous";
+    const type    = post.post_type.charAt(0).toUpperCase() + post.post_type.slice(1);
+    const preview = post.body.length > 200 ? post.body.slice(0, 197) + "…" : post.body;
+    const desc    = `${type} post by ${author} · ${post.likes} likes\n\n${preview}`;
+    const postUrl = `${origin}/s/${shareId}`;
+    const ogImage = `${origin}/polymartlogo.png`;
+
+    res.setHeader("Content-Type", "text/html; charset=utf-8");
+    res.send(`<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>${escapeHtml(title)} — Polymart Community</title>
+<meta name="description" content="${escapeHtml(preview)}">
+<meta property="og:type"        content="article">
+<meta property="og:site_name"   content="Polymart Community">
+<meta property="og:title"       content="${escapeHtml(title)}">
+<meta property="og:description" content="${escapeHtml(desc)}">
+<meta property="og:url"         content="${escapeHtml(postUrl)}">
+<meta property="og:image"       content="${escapeHtml(ogImage)}">
+<meta name="twitter:card"        content="summary">
+<meta name="twitter:title"       content="${escapeHtml(title)}">
+<meta name="twitter:description" content="${escapeHtml(desc)}">
+<meta name="twitter:image"       content="${escapeHtml(ogImage)}">
+<meta http-equiv="refresh" content="0;url=${escapeHtml(spaUrl)}">
+</head>
+<body>
+<p>Redirecting to Polymart&hellip;</p>
+<script>window.location.replace(${JSON.stringify(spaUrl)});</script>
+</body>
+</html>`);
+  } catch (err) {
+    console.error("[share] Error:", err.message);
+    res.redirect(spaUrl);
+  }
+});
+
 // ── Global JSON error handler (must be before static/catch-all) ──────────────
 // Catches next(err) from any middleware (e.g. requireAuth, clerkMiddleware)
 // and returns JSON instead of Express's default HTML error page.
@@ -116,6 +180,25 @@ async function applySchema() {
   }
 }
 
+async function applyMigrations() {
+  // Add share_id to community_posts if the column doesn't exist yet.
+  const [[{ cnt }]] = await pool.query(
+    `SELECT COUNT(*) AS cnt FROM INFORMATION_SCHEMA.COLUMNS
+     WHERE TABLE_SCHEMA = DATABASE()
+       AND TABLE_NAME   = 'community_posts'
+       AND COLUMN_NAME  = 'share_id'`
+  );
+  if (!cnt) {
+    await pool.query(
+      `ALTER TABLE community_posts ADD COLUMN share_id VARCHAR(18) NULL AFTER id`
+    );
+    await pool.query(
+      `ALTER TABLE community_posts ADD UNIQUE INDEX idx_posts_share_id (share_id)`
+    );
+    console.log("[polymart] Migration: added share_id to community_posts");
+  }
+}
+
 async function waitForDb(retries = 30, delayMs = 2000) {
   for (let i = 1; i <= retries; i++) {
     try {
@@ -133,7 +216,7 @@ async function waitForDb(retries = 30, delayMs = 2000) {
 
 const PORT = parseInt(process.env.PORT || "4000");
 
-waitForDb().then(() => applySchema()).then(() => {
+waitForDb().then(() => applySchema()).then(() => applyMigrations()).then(() => {
   app.listen(PORT, "0.0.0.0", () => {
     console.log(`[polymart] API + frontend running on port ${PORT}`);
   });

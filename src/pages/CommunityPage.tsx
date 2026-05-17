@@ -7,7 +7,7 @@ import { Input } from "@/components/ui/input"
 import { Textarea } from "@/components/ui/textarea"
 import {
   Users, ArrowRight, Bot, Coffee, Heart, Trash2, Plus, Loader2,
-  AlertCircle, Send, MessageCircle, Pencil, Flag, Check,
+  AlertCircle, Send, MessageCircle, Pencil, Flag, Check, Link,
 } from "lucide-react"
 import { useAccount } from "@/hooks/useAccount"
 import type { Route } from "@/App"
@@ -41,6 +41,7 @@ type ReportReason = typeof REPORT_REASONS[number]
 
 interface Post {
   id: number
+  share_id: string | null
   clerk_id: string
   display_name: string | null
   avatar_url: string | null
@@ -410,6 +411,16 @@ function PostCard({
   const [commentsOpen, setCommentsOpen] = useState(false)
   const [commentCount, setCommentCount] = useState(Number(post.comment_count))
   const [editing, setEditing]       = useState(false)
+  const [copied, setCopied]         = useState(false)
+
+  function handleShare() {
+    if (!post.share_id) return
+    const url = `${window.location.origin}/s/${post.share_id}`
+    navigator.clipboard.writeText(url).then(() => {
+      setCopied(true)
+      setTimeout(() => setCopied(false), 2000)
+    }).catch(() => {})
+  }
 
   const isLong  = post.body.length > 320
   const bodyText = isLong && !expanded ? post.body.slice(0, 320) + "…" : post.body
@@ -500,6 +511,18 @@ function PostCard({
             </button>
 
             <div className="ml-auto flex items-center gap-3">
+              {post.share_id && (
+                <button
+                  type="button"
+                  onClick={handleShare}
+                  className={`flex items-center gap-1 text-xs transition-colors cursor-pointer bg-transparent border-0 p-0 ${
+                    copied ? "text-emerald-500" : "text-muted-foreground hover:text-foreground"
+                  }`}
+                  title="Copy share link"
+                >
+                  {copied ? <Check className="w-3.5 h-3.5" /> : <Link className="w-3.5 h-3.5" />}
+                </button>
+              )}
               {isOwn ? (
                 <>
                   <button
