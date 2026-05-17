@@ -332,6 +332,36 @@ CREATE TABLE IF NOT EXISTS community_posts (
   KEY idx_posts_created (created_at)
 ) ENGINE=InnoDB;
 
+-- ── community_comments ───────────────────────────────────────────────────────
+-- Comments on community posts. display_name/avatar_url denormalised at comment time.
+CREATE TABLE IF NOT EXISTS community_comments (
+  id            INT           NOT NULL AUTO_INCREMENT,
+  post_id       INT           NOT NULL,
+  clerk_id      VARCHAR(64)   NOT NULL,
+  display_name  VARCHAR(128)  DEFAULT NULL,
+  avatar_url    TEXT          DEFAULT NULL,
+  body          TEXT          NOT NULL,
+  created_at    DATETIME      NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (id),
+  KEY idx_comments_post  (post_id),
+  KEY idx_comments_clerk (clerk_id),
+  CONSTRAINT fk_comment_post FOREIGN KEY (post_id) REFERENCES community_posts(id) ON DELETE CASCADE
+) ENGINE=InnoDB;
+
+-- ── community_reports ────────────────────────────────────────────────────────
+-- One report per user per post. UNIQUE prevents duplicate reports.
+CREATE TABLE IF NOT EXISTS community_reports (
+  id                  INT           NOT NULL AUTO_INCREMENT,
+  post_id             INT           NOT NULL,
+  reporter_clerk_id   VARCHAR(64)   NOT NULL,
+  reason              VARCHAR(280)  NOT NULL,
+  created_at          DATETIME      NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (id),
+  UNIQUE KEY uk_report (post_id, reporter_clerk_id),
+  KEY idx_reports_post (post_id),
+  CONSTRAINT fk_report_post FOREIGN KEY (post_id) REFERENCES community_posts(id) ON DELETE CASCADE
+) ENGINE=InnoDB;
+
 -- ── admin_audit_log ───────────────────────────────────────────────────────────
 -- Append-only. Records every admin action for accountability.
 CREATE TABLE IF NOT EXISTS admin_audit_log (

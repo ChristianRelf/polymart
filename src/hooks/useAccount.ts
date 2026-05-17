@@ -161,10 +161,11 @@ export function useAccount() {
   )
 
   const getCommunityPosts = useCallback(
-    (params?: { page?: number; type?: string }) => {
+    (params?: { page?: number; type?: string; sort?: string }) => {
       const qs = new URLSearchParams()
       if (params?.page) qs.set("page", String(params.page))
       if (params?.type) qs.set("type", params.type)
+      if (params?.sort) qs.set("sort", params.sort)
       return fetch(`${API}/community/posts?${qs}`).then(r => r.json())
     },
     []
@@ -183,6 +184,34 @@ export function useAccount() {
 
   const deletePost = useCallback(
     (id: number) => withToken(t => apiFetch(`/community/posts/${id}`, t, { method: "DELETE" })),
+    [withToken]
+  )
+
+  const updatePost = useCallback(
+    (id: number, data: { title?: string; body?: string; post_type?: string }) =>
+      withToken(t => apiFetch(`/community/posts/${id}`, t, { method: "PUT", body: JSON.stringify(data) })),
+    [withToken]
+  )
+
+  const getComments = useCallback(
+    (postId: number) => fetch(`${API}/community/posts/${postId}/comments`).then(r => r.json()),
+    []
+  )
+
+  const createComment = useCallback(
+    (postId: number, body: string) =>
+      withToken(t => apiFetch(`/community/posts/${postId}/comments`, t, { method: "POST", body: JSON.stringify({ body }) })),
+    [withToken]
+  )
+
+  const deleteComment = useCallback(
+    (id: number) => withToken(t => apiFetch(`/community/comments/${id}`, t, { method: "DELETE" })),
+    [withToken]
+  )
+
+  const reportPost = useCallback(
+    (postId: number, reason: string) =>
+      withToken(t => apiFetch(`/community/posts/${postId}/report`, t, { method: "POST", body: JSON.stringify({ reason }) })),
     [withToken]
   )
 
@@ -210,5 +239,10 @@ export function useAccount() {
     createCommunityPost,
     likePost,
     deletePost,
+    updatePost,
+    getComments,
+    createComment,
+    deleteComment,
+    reportPost,
   }
 }
