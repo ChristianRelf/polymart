@@ -11,6 +11,7 @@ import billingRouter, { stripeWebhookHandler } from "./billing-api.js";
 import supportRouter from "./support-api.js";
 import adminRouter from "./admin-api.js";
 import communityRouter from "./community-api.js";
+import communitiesRouter from "./communities-api.js";
 import { startTickLoop } from "./tick.js";
 
 dotenv.config();
@@ -64,6 +65,9 @@ app.use("/api/v1/admin", restrictedCors, adminRouter);
 // ── Community API (GET posts is public; write ops check auth internally) ──────
 app.use("/api/v1/community", restrictedCors, communityRouter);
 
+// ── Communities API (sub-communities, memberships, mod tools) ─────────────────
+app.use("/api/v1/communities", restrictedCors, communitiesRouter);
+
 // ── Share embed route ─────────────────────────────────────────────────────────
 // Serves an OG-tagged HTML page for /s/:shareId so Discord/Slack/etc can unfurl
 // the link. Real users are JS-redirected to the SPA immediately.
@@ -78,8 +82,9 @@ function escapeHtml(str) {
 
 app.get("/s/:shareId", async (req, res) => {
   const { shareId } = req.params;
-  const origin = process.env.ORIGIN || "https://polymart.co";
-  const spaUrl = "/#/community";
+  const origin    = process.env.ORIGIN || "https://polymart.co";
+  const fallback  = "/#/community";
+  const postSpaUrl = `/#/community/post/${shareId}`;
 
   try {
     const [[post]] = await pool.query(
@@ -88,7 +93,7 @@ app.get("/s/:shareId", async (req, res) => {
       [shareId]
     );
 
-    if (!post) return res.redirect(spaUrl);
+    if (!post) return res.redirect(fallback);
 
     const title   = post.title;
     const author  = post.display_name || "Anonymous";
@@ -115,16 +120,16 @@ app.get("/s/:shareId", async (req, res) => {
 <meta name="twitter:title"       content="${escapeHtml(title)}">
 <meta name="twitter:description" content="${escapeHtml(desc)}">
 <meta name="twitter:image"       content="${escapeHtml(ogImage)}">
-<meta http-equiv="refresh" content="0;url=${escapeHtml(spaUrl)}">
+<meta http-equiv="refresh" content="0;url=${escapeHtml(postSpaUrl)}">
 </head>
 <body>
 <p>Redirecting to Polymart&hellip;</p>
-<script>window.location.replace(${JSON.stringify(spaUrl)});</script>
+<script>window.location.replace(${JSON.stringify(postSpaUrl)});</script>
 </body>
 </html>`);
   } catch (err) {
     console.error("[share] Error:", err.message);
-    res.redirect(spaUrl);
+    res.redirect(fallback);
   }
 });
 
@@ -136,6 +141,10 @@ app.use((err, req, res, _next) => {
   console.error(`[polymart] Unhandled error ${status} on ${req.method} ${req.path}:`, err.message);
   res.status(status).json({ error: err.message || 'Internal server error' });
 });
+
+// ── Community image uploads ───────────────────────────────────────────────────
+// Persistent storage outside dist/ so rebuilds don't wipe uploads.
+app.use("/uploads", express.static(path.join(__dirname, "uploads")));
 
 // ── Serve built frontend ──────────────────────────────────────────────────────
 const distPath = path.join(__dirname, "..", "dist");
@@ -181,7 +190,7 @@ async function applySchema() {
 }
 
 async function applyMigrations() {
-  // Add share_id to community_posts if the column doesn't exist yet.
+  // Add share_id column to community_posts if not present.
   const [[{ cnt }]] = await pool.query(
     `SELECT COUNT(*) AS cnt FROM INFORMATION_SCHEMA.COLUMNS
      WHERE TABLE_SCHEMA = DATABASE()
@@ -196,6 +205,153 @@ async function applyMigrations() {
       `ALTER TABLE community_posts ADD UNIQUE INDEX idx_posts_share_id (share_id)`
     );
     console.log("[polymart] Migration: added share_id to community_posts");
+  }
+
+  // Backfill share_id for any existing posts that don't have one yet.
+  // Uses MySQL's UUID() (hex, URL-safe) truncated to 18 chars.
+  const [result] = await pool.query(
+    `UPDATE community_posts
+     SET share_id = SUBSTR(REPLACE(UUID(), '-', ''), 1, 18)
+     WHERE share_id IS NULL`
+  );
+  if (result.affectedRows > 0) {
+    console.log(`[polymart] Migration: backfilled share_id for ${result.affectedRows} post(s)`);
+  }
+
+  // Add parent_id column to community_comments if not present (thread support).
+  const [[{ parentCnt }]] = await pool.query(
+    `SELECT COUNT(*) AS parentCnt FROM INFORMATION_SCHEMA.COLUMNS
+     WHERE TABLE_SCHEMA = DATABASE()
+       AND TABLE_NAME   = 'community_comments'
+       AND COLUMN_NAME  = 'parent_id'`
+  );
+  if (!parentCnt) {
+    await pool.query(
+      `ALTER TABLE community_comments ADD COLUMN parent_id INT NULL AFTER post_id`
+    );
+    await pool.query(
+      `ALTER TABLE community_comments ADD KEY idx_comments_parent (parent_id)`
+    );
+    console.log("[polymart] Migration: added parent_id to community_comments");
+  }
+
+  // Add community_id to community_posts for sub-community scoping.
+  const [[{ commIdCnt }]] = await pool.query(
+    `SELECT COUNT(*) AS commIdCnt FROM INFORMATION_SCHEMA.COLUMNS
+     WHERE TABLE_SCHEMA = DATABASE()
+       AND TABLE_NAME   = 'community_posts'
+       AND COLUMN_NAME  = 'community_id'`
+  );
+  if (!commIdCnt) {
+    await pool.query(`ALTER TABLE community_posts ADD COLUMN community_id INT NULL AFTER id`);
+    await pool.query(`ALTER TABLE community_posts ADD KEY idx_posts_community (community_id)`);
+    console.log("[polymart] Migration: added community_id to community_posts");
+  }
+
+  // Add is_pinned to community_posts.
+  const [[{ pinnedCnt }]] = await pool.query(
+    `SELECT COUNT(*) AS pinnedCnt FROM INFORMATION_SCHEMA.COLUMNS
+     WHERE TABLE_SCHEMA = DATABASE()
+       AND TABLE_NAME   = 'community_posts'
+       AND COLUMN_NAME  = 'is_pinned'`
+  );
+  if (!pinnedCnt) {
+    await pool.query(`ALTER TABLE community_posts ADD COLUMN is_pinned TINYINT NOT NULL DEFAULT 0 AFTER post_type`);
+    console.log("[polymart] Migration: added is_pinned to community_posts");
+  }
+
+  // Add is_removed to community_posts.
+  const [[{ removedCnt }]] = await pool.query(
+    `SELECT COUNT(*) AS removedCnt FROM INFORMATION_SCHEMA.COLUMNS
+     WHERE TABLE_SCHEMA = DATABASE()
+       AND TABLE_NAME   = 'community_posts'
+       AND COLUMN_NAME  = 'is_removed'`
+  );
+  if (!removedCnt) {
+    await pool.query(`ALTER TABLE community_posts ADD COLUMN is_removed TINYINT NOT NULL DEFAULT 0 AFTER is_pinned`);
+    console.log("[polymart] Migration: added is_removed to community_posts");
+  }
+
+  // Create communities table if not present (schema.sql handles fresh installs;
+  // this guard covers existing deployments before the table was in schema.sql).
+  const [[{ commTableCnt }]] = await pool.query(
+    `SELECT COUNT(*) AS commTableCnt FROM INFORMATION_SCHEMA.TABLES
+     WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'communities'`
+  );
+  if (!commTableCnt) {
+    await pool.query(`
+      CREATE TABLE communities (
+        id              INT           NOT NULL AUTO_INCREMENT,
+        slug            VARCHAR(64)   NOT NULL,
+        display_name    VARCHAR(128)  NOT NULL,
+        description     TEXT,
+        icon_url        TEXT,
+        banner_url      TEXT,
+        owner_clerk_id  VARCHAR(64)   NOT NULL,
+        member_count    INT           NOT NULL DEFAULT 0,
+        post_count      INT           NOT NULL DEFAULT 0,
+        created_at      DATETIME      NOT NULL DEFAULT CURRENT_TIMESTAMP,
+        PRIMARY KEY (id),
+        UNIQUE KEY uk_communities_slug (slug),
+        KEY idx_communities_owner   (owner_clerk_id),
+        KEY idx_communities_created (created_at)
+      ) ENGINE=InnoDB`);
+    await pool.query(`
+      CREATE TABLE community_memberships (
+        id            INT           NOT NULL AUTO_INCREMENT,
+        community_id  INT           NOT NULL,
+        clerk_id      VARCHAR(64)   NOT NULL,
+        role          ENUM('member','moderator','owner') NOT NULL DEFAULT 'member',
+        joined_at     DATETIME      NOT NULL DEFAULT CURRENT_TIMESTAMP,
+        PRIMARY KEY (id),
+        UNIQUE KEY uk_membership (community_id, clerk_id),
+        KEY idx_memberships_clerk (clerk_id)
+      ) ENGINE=InnoDB`);
+    await pool.query(`
+      CREATE TABLE community_bans (
+        id            INT           NOT NULL AUTO_INCREMENT,
+        community_id  INT           NOT NULL,
+        clerk_id      VARCHAR(64)   NOT NULL,
+        banned_by     VARCHAR(64)   NOT NULL,
+        reason        VARCHAR(500),
+        banned_at     DATETIME      NOT NULL DEFAULT CURRENT_TIMESTAMP,
+        PRIMARY KEY (id),
+        UNIQUE KEY uk_ban (community_id, clerk_id)
+      ) ENGINE=InnoDB`);
+    await pool.query(`
+      CREATE TABLE community_mod_log (
+        id                INT           NOT NULL AUTO_INCREMENT,
+        community_id      INT           NOT NULL,
+        mod_clerk_id      VARCHAR(64)   NOT NULL,
+        action_type       VARCHAR(32)   NOT NULL,
+        target_clerk_id   VARCHAR(64)   DEFAULT NULL,
+        target_post_id    INT           DEFAULT NULL,
+        details           VARCHAR(500)  DEFAULT NULL,
+        created_at        DATETIME      NOT NULL DEFAULT CURRENT_TIMESTAMP,
+        PRIMARY KEY (id),
+        KEY idx_mod_log_community (community_id, created_at)
+      ) ENGINE=InnoDB`);
+    await pool.query(`
+      CREATE TABLE community_rules (
+        id            INT           NOT NULL AUTO_INCREMENT,
+        community_id  INT           NOT NULL,
+        title         VARCHAR(128)  NOT NULL,
+        description   TEXT,
+        display_order INT           NOT NULL DEFAULT 0,
+        PRIMARY KEY (id),
+        KEY idx_rules_community (community_id)
+      ) ENGINE=InnoDB`);
+    await pool.query(`
+      CREATE TABLE community_community_reports (
+        id                  INT           NOT NULL AUTO_INCREMENT,
+        community_id        INT           NOT NULL,
+        reporter_clerk_id   VARCHAR(64)   NOT NULL,
+        reason              VARCHAR(280)  NOT NULL,
+        created_at          DATETIME      NOT NULL DEFAULT CURRENT_TIMESTAMP,
+        PRIMARY KEY (id),
+        UNIQUE KEY uk_community_report (community_id, reporter_clerk_id)
+      ) ENGINE=InnoDB`);
+    console.log("[polymart] Migration: created communities + related tables");
   }
 }
 

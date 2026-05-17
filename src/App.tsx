@@ -18,6 +18,10 @@ import HelpCenterPage from "@/pages/HelpCenterPage"
 import WidgetsPage from "@/pages/WidgetsPage"
 import EduToolsPage from "@/pages/EduToolsPage"
 import CommunityPage from "@/pages/CommunityPage"
+import CommunityPostPage from "@/pages/CommunityPostPage"
+import CommunitiesPage from "@/pages/CommunitiesPage"
+import SubCommunityPage from "@/pages/SubCommunityPage"
+import SubCommunityModPage from "@/pages/SubCommunityModPage"
 import BotLegalPage from "@/pages/BotLegalPage"
 import KofiLegalPage from "@/pages/KofiLegalPage"
 import CommunityBlogPage from "@/pages/CommunityBlogPage"
@@ -36,7 +40,8 @@ export type Route =
   | "home" | "market" | "forex" | "api" | "terms" | "privacy" | "changelog"
   | "education" | "products" | "help" | "widgets" | "edu-tools" | "community"
   | "bot-terms" | "bot-privacy" | "community-blog" | "sponsor" | "stock-info"
-  | "kofi-terms" | "kofi-privacy"
+  | "kofi-terms" | "kofi-privacy" | "community-post"
+  | "communities" | "sub-community" | "sub-community-mod"
   | "sign-in" | "sign-up" | "dashboard" | "portfolio" | "account" | "admin"
 
 const HASH_MAP: Record<string, Route> = {
@@ -55,6 +60,7 @@ const HASH_MAP: Record<string, Route> = {
   "/widgets": "widgets",
   "/edu-tools": "edu-tools",
   "/community": "community",
+  "/communities": "communities",
   "/docs/bots/terms": "bot-terms",
   "/docs/bots/privacy": "bot-privacy",
   "/docs/kofi-terms": "kofi-terms",
@@ -82,6 +88,9 @@ const ROUTE_HASH: Record<Route, string> = {
   widgets: "/widgets",
   "edu-tools": "/edu-tools",
   community: "/community",
+  communities: "/communities",
+  "sub-community": "/communities",
+  "sub-community-mod": "/communities",
   "bot-terms": "/docs/bots/terms",
   "bot-privacy": "/docs/bots/privacy",
   "community-blog": "/community/blog",
@@ -89,6 +98,7 @@ const ROUTE_HASH: Record<Route, string> = {
   "kofi-terms": "/docs/kofi-terms",
   sponsor: "/sponsor",
   "stock-info": "/market",
+  "community-post": "/community",
   "sign-in": "/sign-in",
   "sign-up": "/sign-up",
   dashboard: "/dashboard",
@@ -103,6 +113,12 @@ function parseHash(): { route: Route; params: Record<string, string> } {
   if (stockInfo) return { route: "stock-info", params: { ticker: stockInfo[1].toUpperCase() } }
   const portfolio = hash.match(/^\/portfolio\/(\d+)$/)
   if (portfolio) return { route: "portfolio", params: { portfolioId: portfolio[1] } }
+  const communityPost = hash.match(/^\/community\/post\/([A-Za-z0-9]+)$/)
+  if (communityPost) return { route: "community-post", params: { shareId: communityPost[1] } }
+  const subCommunityMod = hash.match(/^\/c\/([a-z0-9-]+)\/mod$/)
+  if (subCommunityMod) return { route: "sub-community-mod", params: { slug: subCommunityMod[1] } }
+  const subCommunity = hash.match(/^\/c\/([a-z0-9-]+)$/)
+  if (subCommunity) return { route: "sub-community", params: { slug: subCommunity[1] } }
   return { route: HASH_MAP[hash] ?? "home", params: {} }
 }
 
@@ -122,6 +138,21 @@ function navigateToInfo(ticker: string) {
 
 function navigateToPortfolio(id: number) {
   window.location.hash = `/portfolio/${id}`
+  window.scrollTo({ top: 0, behavior: "instant" })
+}
+
+function navigateToCommunityPost(shareId: string) {
+  window.location.hash = `/community/post/${shareId}`
+  window.scrollTo({ top: 0, behavior: "instant" })
+}
+
+function navigateToSubCommunity(slug: string) {
+  window.location.hash = `/c/${slug}`
+  window.scrollTo({ top: 0, behavior: "instant" })
+}
+
+function navigateToSubCommunityMod(slug: string) {
+  window.location.hash = `/c/${slug}/mod`
   window.scrollTo({ top: 0, behavior: "instant" })
 }
 
@@ -198,6 +229,7 @@ const NAV_LINKS: [Route, string][] = [
   ["products", "Products"],
   ["education", "Education"],
   ["community", "Community"],
+  ["communities", "Sub-Communities"],
   ["help", "Help"],
   ["dashboard", "Paper Trading"],
 ]
@@ -628,6 +660,24 @@ export default function App() {
     setRouteParams({ portfolioId: String(id) })
   }
 
+  const goToCommunityPost = (shareId: string) => {
+    navigateToCommunityPost(shareId)
+    setRoute("community-post")
+    setRouteParams({ shareId })
+  }
+
+  const goToSubCommunity = (slug: string) => {
+    navigateToSubCommunity(slug)
+    setRoute("sub-community")
+    setRouteParams({ slug })
+  }
+
+  const goToSubCommunityMod = (slug: string) => {
+    navigateToSubCommunityMod(slug)
+    setRoute("sub-community-mod")
+    setRouteParams({ slug })
+  }
+
   const isAccountRoute = route === "dashboard" || route === "portfolio" || route === "account" || route === "admin"
 
   return (
@@ -651,7 +701,11 @@ export default function App() {
           {route === "help"           && <HelpCenterPage   onNavigate={go} />}
           {route === "widgets"        && <WidgetsPage      onNavigate={go} />}
           {route === "edu-tools"      && <EduToolsPage     onNavigate={go} />}
-          {route === "community"      && <CommunityPage    onNavigate={go} />}
+          {route === "community"          && <CommunityPage       onNavigate={go} onNavigateToPost={goToCommunityPost} onNavigateToCommunity={goToSubCommunity} />}
+          {route === "community-post"    && <CommunityPostPage   shareId={routeParams.shareId ?? ""} onNavigate={go} />}
+          {route === "communities"       && <CommunitiesPage     onNavigate={go} onNavigateToCommunity={goToSubCommunity} />}
+          {route === "sub-community"     && <SubCommunityPage    slug={routeParams.slug ?? ""} onNavigate={go} onNavigateToCommunity={goToSubCommunity} onNavigateToMod={goToSubCommunityMod} onNavigateToPost={goToCommunityPost} />}
+          {route === "sub-community-mod" && <SubCommunityModPage slug={routeParams.slug ?? ""} onNavigate={go} onNavigateToCommunity={goToSubCommunity} />}
           {route === "bot-terms"      && <BotLegalPage     type="bot-terms"   onNavigate={go} />}
           {route === "bot-privacy"    && <BotLegalPage     type="bot-privacy" onNavigate={go} />}
           {route === "kofi-privacy"   && <KofiLegalPage    type="kofi-privacy" onNavigate={go} />}
@@ -679,7 +733,7 @@ export default function App() {
           )}
           {route === "account" && (
             <ProtectedRoute onRedirect={() => go("sign-in")}>
-              <AccountPage onNavigate={go} />
+              <AccountPage onNavigate={go} onNavigateToCommunity={goToSubCommunity} />
             </ProtectedRoute>
           )}
           {route === "admin" && (

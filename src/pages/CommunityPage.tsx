@@ -8,8 +8,11 @@ import { Textarea } from "@/components/ui/textarea"
 import {
   Users, ArrowRight, Bot, Coffee, Heart, Trash2, Plus, Loader2,
   AlertCircle, Send, MessageCircle, Pencil, Flag, Check, Link,
+  CornerDownRight,
 } from "lucide-react"
 import { useAccount } from "@/hooks/useAccount"
+import { MarkdownBody } from "@/components/MarkdownBody"
+import { MarkdownEditor } from "@/components/MarkdownEditor"
 import type { Route } from "@/App"
 
 const KOFI_URL = "https://ko-fi.com/polymartco"
@@ -51,16 +54,41 @@ interface Post {
   likes: number
   comment_count: number
   created_at: string
+  community_id: number | null
+  community_slug: string | null
+  community_display_name: string | null
+  is_pinned?: number
+  is_removed?: number
 }
 
 interface Comment {
   id: number
   post_id: number
+  parent_id: number | null
   clerk_id: string
   display_name: string | null
   avatar_url: string | null
   body: string
   created_at: string
+}
+
+interface CommentNode extends Comment {
+  children: CommentNode[]
+}
+
+function buildTree(flat: Comment[]): CommentNode[] {
+  const map = new Map<number, CommentNode>()
+  for (const c of flat) map.set(c.id, { ...c, children: [] })
+  const roots: CommentNode[] = []
+  for (const c of flat) {
+    const node = map.get(c.id)!
+    if (c.parent_id != null && map.has(c.parent_id)) {
+      map.get(c.parent_id)!.children.push(node)
+    } else {
+      roots.push(node)
+    }
+  }
+  return roots
 }
 
 function timeAgo(dateStr: string) {
@@ -95,25 +123,151 @@ function Avatar({ name, url, size = 8 }: { name: string | null; url: string | nu
   )
 }
 
+// ── CommentThread (compact, inside PostCard) ──────────────────────────────────
+
+function CommentThread({
+  node,
+  depth,
+  postAuthorId,
+  currentUserId,
+  isSignedIn,
+  onDelete,
+  onSubmitReply,
+}: {
+  node: CommentNode
+  depth: number
+  postAuthorId: string
+  currentUserId: string | null | undefined
+  isSignedIn: boolean
+  onDelete: (id: number) => void
+  onSubmitReply: (parentId: number | null, body: string) => Promise<void>
+}) {
+  const [replying, setReplying] = useState(false)
+  const [replyBody, setReplyBody] = useState("")
+  const [submitting, setSubmitting] = useState(false)
+
+  const canDelete = currentUserId === node.clerk_id || currentUserId === postAuthorId
+
+  function startReply() {
+    setReplyBody(node.display_name ? `@${node.display_name} ` : "")
+    setReplying(true)
+  }
+
+  async function handleReply() {
+    if (!replyBody.trim()) return
+    setSubmitting(true)
+    try {
+      await onSubmitReply(node.id, replyBody.trim())
+      setReplyBody("")
+      setReplying(false)
+    } finally {
+      setSubmitting(false)
+    }
+  }
+
+  return (
+    <div className={depth > 0 ? "ml-4 border-l-2 border-border/30 pl-2.5 mt-2" : "mt-2"}>
+      <div className="flex items-start gap-2">
+        <Avatar name={node.display_name} url={node.avatar_url} size={6} />
+        <div className="flex-1 min-w-0">
+          <div className="bg-muted/40 rounded-lg px-3 py-2">
+            <div className="flex items-center gap-1.5 mb-1">
+              <span className="text-xs font-semibold text-foreground">
+                {node.display_name ?? "Anonymous"}
+              </span>
+              <span className="text-[10px] text-muted-foreground">{timeAgo(node.created_at)}</span>
+              {canDelete && (
+                <button
+                  type="button"
+                  onClick={() => onDelete(node.id)}
+                  className="ml-auto text-muted-foreground hover:text-destructive transition-colors cursor-pointer bg-transparent border-0 p-0"
+                  title="Delete"
+                >
+                  <Trash2 className="w-3 h-3" />
+                </button>
+              )}
+            </div>
+            <MarkdownBody content={node.body} className="text-xs" />
+          </div>
+          {isSignedIn && depth < 3 && (
+            <button
+              type="button"
+              onClick={startReply}
+              className="mt-1 flex items-center gap-1 text-[10px] text-muted-foreground hover:text-foreground transition-colors cursor-pointer bg-transparent border-0 p-0"
+            >
+              <CornerDownRight className="w-3 h-3" /> Reply
+            </button>
+          )}
+          {replying && (
+            <div className="mt-1.5 flex items-end gap-1.5">
+              <Textarea
+                autoFocus
+                value={replyBody}
+                onChange={e => setReplyBody(e.target.value)}
+                maxLength={2000}
+                rows={2}
+                placeholder="Write a reply..."
+                className="text-xs resize-none flex-1"
+              />
+              <div className="flex flex-col gap-1">
+                <Button
+                  size="sm"
+                  onClick={handleReply}
+                  disabled={submitting || !replyBody.trim()}
+                  className="h-7 px-2"
+                >
+                  {submitting ? <Loader2 className="w-3 h-3 animate-spin" /> : <Send className="w-3 h-3" />}
+                </Button>
+                <Button
+                  size="sm"
+                  variant="ghost"
+                  onClick={() => setReplying(false)}
+                  className="h-7 px-2 text-xs"
+                >
+                  ✕
+                </Button>
+              </div>
+            </div>
+          )}
+        </div>
+      </div>
+      {node.children.map(child => (
+        <CommentThread
+          key={child.id}
+          node={child}
+          depth={Math.min(depth + 1, 3)}
+          postAuthorId={postAuthorId}
+          currentUserId={currentUserId}
+          isSignedIn={isSignedIn}
+          onDelete={onDelete}
+          onSubmitReply={onSubmitReply}
+        />
+      ))}
+    </div>
+  )
+}
+
 // ── CommentsSection ───────────────────────────────────────────────────────────
 
 function CommentsSection({
   postId,
+  postAuthorId,
   currentUserId,
   isSignedIn,
   onCountChange,
 }: {
   postId: number
+  postAuthorId: string
   currentUserId: string | null | undefined
   isSignedIn: boolean
   onCountChange: (delta: number) => void
 }) {
   const { getComments, createComment, deleteComment } = useAccount()
-  const [comments, setComments]   = useState<Comment[]>([])
-  const [loading, setLoading]     = useState(true)
-  const [body, setBody]           = useState("")
+  const [comments, setComments]     = useState<Comment[]>([])
+  const [loading, setLoading]       = useState(true)
+  const [rootBody, setRootBody]     = useState("")
   const [submitting, setSubmitting] = useState(false)
-  const [error, setError]         = useState<string | null>(null)
+  const [error, setError]           = useState<string | null>(null)
 
   useEffect(() => {
     getComments(postId)
@@ -122,15 +276,37 @@ function CommentsSection({
       .finally(() => setLoading(false))
   }, [postId, getComments])
 
-  async function handleComment() {
-    if (!body.trim()) return
+  async function handleSubmitReply(parentId: number | null, body: string) {
+    const comment: Comment = await createComment(postId, body, parentId)
+    setComments(prev => [...prev, comment])
+    onCountChange(1)
+  }
+
+  function handleDelete(id: number) {
+    if (!window.confirm("Delete this comment?")) return
+    deleteComment(id)
+      .then(() => {
+        setComments(prev => {
+          const toRemove = new Set<number>()
+          function mark(cid: number) {
+            toRemove.add(cid)
+            prev.filter(c => c.parent_id === cid).forEach(c => mark(c.id))
+          }
+          mark(id)
+          onCountChange(-toRemove.size)
+          return prev.filter(c => !toRemove.has(c.id))
+        })
+      })
+      .catch(() => {})
+  }
+
+  async function handleRootComment() {
+    if (!rootBody.trim()) return
     setSubmitting(true)
     setError(null)
     try {
-      const comment = await createComment(postId, body.trim())
-      setComments(prev => [...prev, comment])
-      setBody("")
-      onCountChange(1)
+      await handleSubmitReply(null, rootBody.trim())
+      setRootBody("")
     } catch (e: unknown) {
       setError(e instanceof Error ? e.message : "Failed to post comment")
     } finally {
@@ -138,81 +314,58 @@ function CommentsSection({
     }
   }
 
-  function handleDeleteComment(id: number) {
-    deleteComment(id)
-      .then(() => {
-        setComments(prev => prev.filter(c => c.id !== id))
-        onCountChange(-1)
-      })
-      .catch(() => {})
-  }
-
   if (loading) {
     return (
       <div className="mt-3 pt-3 border-t border-border/60 flex items-center gap-2 py-2 text-xs text-muted-foreground">
-        <Loader2 className="w-3 h-3 animate-spin" /> Loading comments...
+        <Loader2 className="w-3 h-3 animate-spin" /> Loading replies...
       </div>
     )
   }
 
+  const tree = buildTree(comments)
+
   return (
     <div className="mt-3 pt-3 border-t border-border/60">
-      {comments.length === 0 ? (
-        <p className="text-xs text-muted-foreground mb-3">No comments yet.</p>
-      ) : (
-        <div className="space-y-3 mb-4">
-          {comments.map(c => (
-            <div key={c.id} className="flex items-start gap-2">
-              <Avatar name={c.display_name} url={c.avatar_url} size={6} />
-              <div className="flex-1 min-w-0 bg-muted/40 rounded-lg px-3 py-2">
-                <div className="flex items-center gap-1.5 mb-1">
-                  <span className="text-xs font-semibold text-foreground">
-                    {c.display_name ?? "Anonymous"}
-                  </span>
-                  <span className="text-[10px] text-muted-foreground">{timeAgo(c.created_at)}</span>
-                  {currentUserId === c.clerk_id && (
-                    <button
-                      type="button"
-                      onClick={() => handleDeleteComment(c.id)}
-                      className="ml-auto text-muted-foreground hover:text-destructive transition-colors cursor-pointer bg-transparent border-0 p-0"
-                      title="Delete comment"
-                    >
-                      <Trash2 className="w-3 h-3" />
-                    </button>
-                  )}
-                </div>
-                <p className="text-xs text-muted-foreground leading-relaxed whitespace-pre-wrap break-words">
-                  {c.body}
-                </p>
-              </div>
-            </div>
-          ))}
-        </div>
+      {comments.length === 0 && (
+        <p className="text-xs text-muted-foreground mb-3">No replies yet.</p>
       )}
 
+      <div className="space-y-0">
+        {tree.map(node => (
+          <CommentThread
+            key={node.id}
+            node={node}
+            depth={0}
+            postAuthorId={postAuthorId}
+            currentUserId={currentUserId}
+            isSignedIn={isSignedIn}
+            onDelete={handleDelete}
+            onSubmitReply={handleSubmitReply}
+          />
+        ))}
+      </div>
+
       {isSignedIn ? (
-        <div className="flex items-start gap-2">
-          <div className="flex-1 flex gap-2 items-end">
-            <Textarea
-              placeholder="Write a comment..."
-              value={body}
-              onChange={e => setBody(e.target.value)}
-              maxLength={1000}
-              rows={2}
-              className="text-xs resize-none flex-1"
-            />
-            <Button
-              size="sm"
-              onClick={handleComment}
-              disabled={submitting || !body.trim()}
-              className="shrink-0 h-8 px-3"
-            >
-              {submitting ? <Loader2 className="w-3 h-3 animate-spin" /> : <Send className="w-3 h-3" />}
-            </Button>
-          </div>
+        <div className="flex items-end gap-2 mt-3">
+          <Textarea
+            placeholder="Write a reply..."
+            value={rootBody}
+            onChange={e => setRootBody(e.target.value)}
+            maxLength={2000}
+            rows={2}
+            className="text-xs resize-none flex-1"
+          />
+          <Button
+            size="sm"
+            onClick={handleRootComment}
+            disabled={submitting || !rootBody.trim()}
+            className="shrink-0 h-8 px-3"
+          >
+            {submitting ? <Loader2 className="w-3 h-3 animate-spin" /> : <Send className="w-3 h-3" />}
+          </Button>
         </div>
       ) : (
-        <p className="text-xs text-muted-foreground">Sign in to comment.</p>
+        <p className="text-xs text-muted-foreground mt-3">Sign in to reply.</p>
       )}
 
       {error && (
@@ -235,12 +388,12 @@ function EditPostForm({
   onSave: (updated: Partial<Post>) => void
   onCancel: () => void
 }) {
-  const { updatePost } = useAccount()
-  const [title, setTitle]     = useState(post.title)
-  const [body, setBody]       = useState(post.body)
-  const [postType, setPostType] = useState(post.post_type)
+  const { updatePost, uploadCommunityImage } = useAccount()
+  const [title, setTitle]         = useState(post.title)
+  const [body, setBody]           = useState(post.body)
+  const [postType, setPostType]   = useState(post.post_type)
   const [submitting, setSubmitting] = useState(false)
-  const [error, setError]     = useState<string | null>(null)
+  const [error, setError]         = useState<string | null>(null)
 
   async function handleSave() {
     setSubmitting(true)
@@ -280,16 +433,16 @@ function EditPostForm({
         className="text-sm"
         placeholder="Title"
       />
-      <Textarea
+      <MarkdownEditor
         value={body}
-        onChange={e => setBody(e.target.value)}
-        maxLength={2000}
-        rows={4}
-        className="text-sm resize-none"
-        placeholder="Post body"
+        onChange={setBody}
+        maxLength={10000}
+        rows={5}
+        placeholder="Post body (markdown supported)"
+        onUploadImage={uploadCommunityImage}
       />
       <div className="flex items-center justify-between">
-        <span className="text-xs text-muted-foreground">{body.length}/2000</span>
+        <span className="text-xs text-muted-foreground">{body.length}/10000</span>
         <div className="flex gap-2">
           <Button size="sm" variant="ghost" onClick={onCancel} disabled={submitting} className="h-7 text-xs">
             Cancel
@@ -342,12 +495,13 @@ function ReportButton({
   }
 
   async function handleReport(reason: ReportReason) {
+    if (!window.confirm(`Report this post as "${reason}"?`)) { setOpen(false); return }
     setSubmitting(true)
     try {
       await onReport(postId, reason)
       setReported(true)
     } catch {
-      // silently ignore — user sees no change
+      // silently ignore
     } finally {
       setSubmitting(false)
       setOpen(false)
@@ -396,6 +550,8 @@ function PostCard({
   onDelete,
   onEdit,
   onReport,
+  onNavigateToPost,
+  onNavigateToCommunity,
 }: {
   post: Post
   currentUserId: string | null | undefined
@@ -404,6 +560,8 @@ function PostCard({
   onDelete: (id: number) => void
   onEdit: (id: number, updated: Partial<Post>) => void
   onReport: (postId: number, reason: string) => Promise<void>
+  onNavigateToPost: (shareId: string) => void
+  onNavigateToCommunity?: (slug: string) => void
 }) {
   const [liked, setLiked]           = useState(false)
   const [likes, setLikes]           = useState(post.likes)
@@ -413,6 +571,9 @@ function PostCard({
   const [editing, setEditing]       = useState(false)
   const [copied, setCopied]         = useState(false)
 
+  const isLong = post.body.length > 280 || post.body.includes("![")
+  const isOwn  = currentUserId === post.clerk_id
+
   function handleShare() {
     if (!post.share_id) return
     const url = `${window.location.origin}/s/${post.share_id}`
@@ -421,10 +582,6 @@ function PostCard({
       setTimeout(() => setCopied(false), 2000)
     }).catch(() => {})
   }
-
-  const isLong  = post.body.length > 320
-  const bodyText = isLong && !expanded ? post.body.slice(0, 320) + "…" : post.body
-  const isOwn   = currentUserId === post.clerk_id
 
   function handleLike() {
     if (liked) return
@@ -467,10 +624,27 @@ function PostCard({
           />
         ) : (
           <>
-            <h3 className="text-sm font-bold text-foreground mb-1.5 leading-snug">{post.title}</h3>
-            <p className="text-sm text-muted-foreground leading-relaxed whitespace-pre-wrap break-words">
-              {bodyText}
-            </p>
+            <button
+              type="button"
+              onClick={() => post.share_id && onNavigateToPost(post.share_id)}
+              className={`text-sm font-bold text-foreground mb-1.5 leading-snug text-left w-full bg-transparent border-0 p-0 ${
+                post.share_id ? "hover:text-muted-foreground cursor-pointer" : "cursor-default"
+              }`}
+            >
+              {post.title}
+            </button>
+            {post.community_slug && onNavigateToCommunity && (
+              <button
+                type="button"
+                onClick={e => { e.stopPropagation(); onNavigateToCommunity!(post.community_slug!) }}
+                className="inline-flex items-center gap-1 text-[10px] text-muted-foreground/60 hover:text-muted-foreground mb-2 cursor-pointer bg-transparent border-0 p-0 transition-colors"
+              >
+                <Users className="w-2.5 h-2.5" />c/{post.community_slug}
+              </button>
+            )}
+            <div className={!expanded ? "line-clamp-4 overflow-hidden" : ""}>
+              <MarkdownBody content={post.body} />
+            </div>
             {isLong && (
               <button
                 type="button"
@@ -504,25 +678,23 @@ function PostCard({
               className={`flex items-center gap-1.5 text-xs transition-colors cursor-pointer bg-transparent border-0 p-0 ${
                 commentsOpen ? "text-foreground" : "text-muted-foreground hover:text-foreground"
               }`}
-              title="View comments"
+              title="View replies"
             >
               <MessageCircle className="w-3.5 h-3.5" />
               <span>{commentCount}</span>
             </button>
 
             <div className="ml-auto flex items-center gap-3">
-              {post.share_id && (
-                <button
-                  type="button"
-                  onClick={handleShare}
-                  className={`flex items-center gap-1 text-xs transition-colors cursor-pointer bg-transparent border-0 p-0 ${
-                    copied ? "text-emerald-500" : "text-muted-foreground hover:text-foreground"
-                  }`}
-                  title="Copy share link"
-                >
-                  {copied ? <Check className="w-3.5 h-3.5" /> : <Link className="w-3.5 h-3.5" />}
-                </button>
-              )}
+              <button
+                type="button"
+                onClick={handleShare}
+                className={`flex items-center gap-1 text-xs transition-colors cursor-pointer bg-transparent border-0 p-0 ${
+                  copied ? "text-emerald-500" : "text-muted-foreground hover:text-foreground"
+                }`}
+                title="Copy share link"
+              >
+                {copied ? <Check className="w-3.5 h-3.5" /> : <Link className="w-3.5 h-3.5" />}
+              </button>
               {isOwn ? (
                 <>
                   <button
@@ -535,7 +707,7 @@ function PostCard({
                   </button>
                   <button
                     type="button"
-                    onClick={() => onDelete(post.id)}
+                    onClick={() => { if (window.confirm("Delete this post? This cannot be undone.")) onDelete(post.id) }}
                     className="text-muted-foreground hover:text-destructive transition-colors cursor-pointer bg-transparent border-0 p-0"
                     title="Delete post"
                   >
@@ -549,10 +721,11 @@ function PostCard({
           </div>
         )}
 
-        {/* Inline comments */}
+        {/* Inline threaded comments */}
         {commentsOpen && !editing && (
           <CommentsSection
             postId={post.id}
+            postAuthorId={post.clerk_id}
             currentUserId={currentUserId}
             isSignedIn={isSignedIn}
             onCountChange={delta => setCommentCount(c => c + delta)}
@@ -572,7 +745,7 @@ function ComposeForm({ onPosted }: { onPosted: (post: Post) => void }) {
   const [postType, setPostType] = useState("general")
   const [submitting, setSubmitting] = useState(false)
   const [error, setError]       = useState<string | null>(null)
-  const { createCommunityPost } = useAccount()
+  const { createCommunityPost, uploadCommunityImage } = useAccount()
 
   async function handleSubmit() {
     if (!title.trim() || !body.trim()) return
@@ -635,16 +808,16 @@ function ComposeForm({ onPosted }: { onPosted: (post: Post) => void }) {
           maxLength={280}
           className="text-sm"
         />
-        <Textarea
-          placeholder="Share your trade, analysis, or question..."
+        <MarkdownEditor
           value={body}
-          onChange={e => setBody(e.target.value)}
-          maxLength={2000}
-          rows={4}
-          className="text-sm resize-none"
+          onChange={setBody}
+          maxLength={10000}
+          rows={5}
+          placeholder="Share your trade, analysis, or question... (markdown supported)"
+          onUploadImage={uploadCommunityImage}
         />
         <div className="flex items-center justify-between">
-          <span className="text-xs text-muted-foreground">{body.length}/2000</span>
+          <span className="text-xs text-muted-foreground">{body.length}/10000</span>
           <div className="flex gap-2">
             <Button
               size="sm"
@@ -680,11 +853,13 @@ function ComposeForm({ onPosted }: { onPosted: (post: Post) => void }) {
 
 interface Props {
   onNavigate: (r: Route) => void
+  onNavigateToPost: (shareId: string) => void
+  onNavigateToCommunity?: (slug: string) => void
 }
 
-export default function CommunityPage({ onNavigate }: Props) {
+export default function CommunityPage({ onNavigate, onNavigateToPost, onNavigateToCommunity }: Props) {
   const { isSignedIn, userId } = useAuth()
-  const { getCommunityPosts, likePost, deletePost, reportPost } = useAccount()
+  const { getCommunityPosts, likePost, deletePost, reportPost, getCommunities } = useAccount()
 
   const [posts, setPosts]           = useState<Post[]>([])
   const [loading, setLoading]       = useState(true)
@@ -694,6 +869,13 @@ export default function CommunityPage({ onNavigate }: Props) {
   const [typeFilter, setTypeFilter] = useState("")
   const [sort, setSort]             = useState<"new" | "top">("new")
   const [loadingMore, setLoadingMore] = useState(false)
+  const [popularCommunities, setPopularCommunities] = useState<{ slug: string; display_name: string; icon_url: string | null; member_count: number }[]>([])
+
+  useEffect(() => {
+    getCommunities({ sort: "members", page: 1 }).then((d: { communities?: typeof popularCommunities }) => {
+      setPopularCommunities((d.communities ?? []).slice(0, 5))
+    }).catch(() => {})
+  }, [])
 
   const load = useCallback(
     async (p: number, type: string, s: string, replace: boolean) => {
@@ -747,20 +929,16 @@ export default function CommunityPage({ onNavigate }: Props) {
     await reportPost(postId, reason)
   }, [reportPost])
 
-  // Sidebar nav used on both desktop and mobile (different layouts)
   function FilterNav({ vertical }: { vertical: boolean }) {
     const base = vertical
       ? "w-full flex items-center gap-2 px-3 py-2 rounded-lg text-sm transition-colors cursor-pointer bg-transparent border-0 text-left"
       : "shrink-0 text-xs font-medium px-3 py-1.5 rounded-full border transition-colors cursor-pointer"
-
     const active = vertical
       ? "bg-muted text-foreground font-semibold"
       : "bg-foreground text-background border-foreground"
-
     const inactive = vertical
       ? "text-muted-foreground hover:bg-muted/50 hover:text-foreground"
       : "border-border text-muted-foreground bg-transparent hover:border-foreground/40 hover:text-foreground"
-
     return (
       <>
         {TYPE_FILTER_ITEMS.map(f => (
@@ -783,7 +961,6 @@ export default function CommunityPage({ onNavigate }: Props) {
       : "shrink-0 text-xs font-medium px-3 py-1.5 rounded-full border transition-colors cursor-pointer"
     const active = "bg-foreground text-background border-foreground"
     const inactive = "border-border text-muted-foreground bg-transparent hover:border-foreground/40 hover:text-foreground"
-
     return (
       <>
         {(["new", "top"] as const).map(s => (
@@ -828,7 +1005,7 @@ export default function CommunityPage({ onNavigate }: Props) {
             Join on Discord
           </a>
           <button
-            onClick={() => onNavigate("community-blog")}
+            onClick={() => onNavigate("community-blog" as Route)}
             className="inline-flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground transition-colors cursor-pointer bg-transparent border-0 p-0"
           >
             Browse the blog <ArrowRight className="w-3.5 h-3.5" />
@@ -857,7 +1034,6 @@ export default function CommunityPage({ onNavigate }: Props) {
                 <FilterNav vertical={true} />
               </div>
             </div>
-
             <div>
               <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest mb-1.5 px-3">
                 Sort
@@ -866,7 +1042,6 @@ export default function CommunityPage({ onNavigate }: Props) {
                 <SortNav vertical={true} />
               </div>
             </div>
-
             <a
               href="https://discord.com/oauth2/authorize?client_id=1503197938027860102"
               target="_blank"
@@ -877,13 +1052,42 @@ export default function CommunityPage({ onNavigate }: Props) {
               <Bot className="w-3.5 h-3.5" />
               Join Discord
             </a>
+            {popularCommunities.length > 0 && onNavigateToCommunity && (
+              <div>
+                <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest mb-1.5 px-3">
+                  Popular Communities
+                </p>
+                <div className="space-y-0.5">
+                  {popularCommunities.map(c => (
+                    <button
+                      key={c.slug}
+                      type="button"
+                      onClick={() => onNavigateToCommunity!(c.slug)}
+                      className="w-full flex items-center gap-2 px-3 py-2 rounded-lg text-sm text-muted-foreground hover:bg-muted/50 hover:text-foreground transition-colors cursor-pointer bg-transparent border-0 text-left"
+                    >
+                      {c.icon_url
+                        ? <img src={c.icon_url} alt="" className="w-5 h-5 rounded-full object-cover shrink-0" />
+                        : <div className="w-5 h-5 rounded-full bg-muted flex items-center justify-center text-[10px] font-bold text-muted-foreground shrink-0">{c.display_name[0]?.toUpperCase()}</div>
+                      }
+                      <span className="truncate flex-1">{c.display_name}</span>
+                      <span className="text-[10px] text-muted-foreground/50 shrink-0">{c.member_count.toLocaleString()}</span>
+                    </button>
+                  ))}
+                </div>
+                <button
+                  type="button"
+                  onClick={() => onNavigate("communities")}
+                  className="flex items-center gap-1 text-[10px] text-muted-foreground/60 hover:text-muted-foreground px-3 mt-1 cursor-pointer bg-transparent border-0 transition-colors"
+                >
+                  Browse all communities <ArrowRight className="w-2.5 h-2.5" />
+                </button>
+              </div>
+            )}
           </div>
         </aside>
 
         {/* Main feed */}
         <main className="flex-1 min-w-0 space-y-4">
-
-          {/* Compose / sign-in nudge */}
           {isSignedIn ? (
             <ComposeForm onPosted={handlePosted} />
           ) : (
@@ -897,7 +1101,6 @@ export default function CommunityPage({ onNavigate }: Props) {
             </div>
           )}
 
-          {/* Feed */}
           {loading ? (
             <div className="flex items-center justify-center py-16">
               <Loader2 className="w-5 h-5 animate-spin text-muted-foreground" />
@@ -929,6 +1132,8 @@ export default function CommunityPage({ onNavigate }: Props) {
                     onDelete={handleDelete}
                     onEdit={handleEdit}
                     onReport={handleReport}
+                    onNavigateToPost={onNavigateToPost}
+                    onNavigateToCommunity={onNavigateToCommunity}
                   />
                 ))}
               </div>
@@ -974,7 +1179,7 @@ export default function CommunityPage({ onNavigate }: Props) {
               Buy a coffee
             </a>
             <button
-              onClick={() => onNavigate("sponsor")}
+              onClick={() => onNavigate("sponsor" as Route)}
               className="flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground transition-colors cursor-pointer bg-transparent border-0 p-0"
             >
               Learn more <ArrowRight className="w-3 h-3" />

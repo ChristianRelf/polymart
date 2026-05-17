@@ -339,14 +339,16 @@ CREATE TABLE IF NOT EXISTS community_posts (
 CREATE TABLE IF NOT EXISTS community_comments (
   id            INT           NOT NULL AUTO_INCREMENT,
   post_id       INT           NOT NULL,
+  parent_id     INT           NULL,
   clerk_id      VARCHAR(64)   NOT NULL,
   display_name  VARCHAR(128)  DEFAULT NULL,
   avatar_url    TEXT          DEFAULT NULL,
   body          TEXT          NOT NULL,
   created_at    DATETIME      NOT NULL DEFAULT CURRENT_TIMESTAMP,
   PRIMARY KEY (id),
-  KEY idx_comments_post  (post_id),
-  KEY idx_comments_clerk (clerk_id),
+  KEY idx_comments_post   (post_id),
+  KEY idx_comments_parent (parent_id),
+  KEY idx_comments_clerk  (clerk_id),
   CONSTRAINT fk_comment_post FOREIGN KEY (post_id) REFERENCES community_posts(id) ON DELETE CASCADE
 ) ENGINE=InnoDB;
 
@@ -362,6 +364,90 @@ CREATE TABLE IF NOT EXISTS community_reports (
   UNIQUE KEY uk_report (post_id, reporter_clerk_id),
   KEY idx_reports_post (post_id),
   CONSTRAINT fk_report_post FOREIGN KEY (post_id) REFERENCES community_posts(id) ON DELETE CASCADE
+) ENGINE=InnoDB;
+
+-- ── communities ──────────────────────────────────────────────────────────────
+-- Sub-communities (like subreddits). member_count/post_count are denormalised counters.
+CREATE TABLE IF NOT EXISTS communities (
+  id              INT           NOT NULL AUTO_INCREMENT,
+  slug            VARCHAR(64)   NOT NULL,
+  display_name    VARCHAR(128)  NOT NULL,
+  description     TEXT,
+  icon_url        TEXT,
+  banner_url      TEXT,
+  owner_clerk_id  VARCHAR(64)   NOT NULL,
+  member_count    INT           NOT NULL DEFAULT 0,
+  post_count      INT           NOT NULL DEFAULT 0,
+  created_at      DATETIME      NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (id),
+  UNIQUE KEY uk_communities_slug (slug),
+  KEY idx_communities_owner   (owner_clerk_id),
+  KEY idx_communities_created (created_at)
+) ENGINE=InnoDB;
+
+-- ── community_memberships ─────────────────────────────────────────────────────
+-- Tracks who has joined each community and their role.
+CREATE TABLE IF NOT EXISTS community_memberships (
+  id            INT           NOT NULL AUTO_INCREMENT,
+  community_id  INT           NOT NULL,
+  clerk_id      VARCHAR(64)   NOT NULL,
+  role          ENUM('member','moderator','owner') NOT NULL DEFAULT 'member',
+  joined_at     DATETIME      NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (id),
+  UNIQUE KEY uk_membership (community_id, clerk_id),
+  KEY idx_memberships_clerk (clerk_id)
+) ENGINE=InnoDB;
+
+-- ── community_bans ────────────────────────────────────────────────────────────
+-- Users banned from posting in a specific community.
+CREATE TABLE IF NOT EXISTS community_bans (
+  id            INT           NOT NULL AUTO_INCREMENT,
+  community_id  INT           NOT NULL,
+  clerk_id      VARCHAR(64)   NOT NULL,
+  banned_by     VARCHAR(64)   NOT NULL,
+  reason        VARCHAR(500),
+  banned_at     DATETIME      NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (id),
+  UNIQUE KEY uk_ban (community_id, clerk_id)
+) ENGINE=InnoDB;
+
+-- ── community_mod_log ─────────────────────────────────────────────────────────
+-- Append-only log of moderator actions per community.
+CREATE TABLE IF NOT EXISTS community_mod_log (
+  id                INT           NOT NULL AUTO_INCREMENT,
+  community_id      INT           NOT NULL,
+  mod_clerk_id      VARCHAR(64)   NOT NULL,
+  action_type       VARCHAR(32)   NOT NULL,
+  target_clerk_id   VARCHAR(64)   DEFAULT NULL,
+  target_post_id    INT           DEFAULT NULL,
+  details           VARCHAR(500)  DEFAULT NULL,
+  created_at        DATETIME      NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (id),
+  KEY idx_mod_log_community (community_id, created_at)
+) ENGINE=InnoDB;
+
+-- ── community_rules ───────────────────────────────────────────────────────────
+-- Per-community rules displayed in the sidebar.
+CREATE TABLE IF NOT EXISTS community_rules (
+  id            INT           NOT NULL AUTO_INCREMENT,
+  community_id  INT           NOT NULL,
+  title         VARCHAR(128)  NOT NULL,
+  description   TEXT,
+  display_order INT           NOT NULL DEFAULT 0,
+  PRIMARY KEY (id),
+  KEY idx_rules_community (community_id)
+) ENGINE=InnoDB;
+
+-- ── community_community_reports ───────────────────────────────────────────────
+-- Reports filed against a community itself (distinct from post reports).
+CREATE TABLE IF NOT EXISTS community_community_reports (
+  id                  INT           NOT NULL AUTO_INCREMENT,
+  community_id        INT           NOT NULL,
+  reporter_clerk_id   VARCHAR(64)   NOT NULL,
+  reason              VARCHAR(280)  NOT NULL,
+  created_at          DATETIME      NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (id),
+  UNIQUE KEY uk_community_report (community_id, reporter_clerk_id)
 ) ENGINE=InnoDB;
 
 -- ── admin_audit_log ───────────────────────────────────────────────────────────

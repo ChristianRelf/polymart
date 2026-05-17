@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Input } from "@/components/ui/input"
 import { Separator } from "@/components/ui/separator"
-import { Loader2, AlertCircle, CheckCircle2, Camera, CreditCard, ShieldCheck, TrendingUp, TrendingDown, Activity, Clock, Ticket } from "lucide-react"
+import { Loader2, AlertCircle, CheckCircle2, Camera, CreditCard, ShieldCheck, TrendingUp, TrendingDown, Activity, Clock, Ticket, Users, Flag, Shield } from "lucide-react"
 import { useAccount } from "@/hooks/useAccount"
 import type { Route } from "@/App"
 
@@ -56,8 +56,37 @@ interface SupportTicket {
   created_at: string
 }
 
+interface MyReport {
+  id: number
+  post_id: number
+  reason: string
+  created_at: string
+  post_body: string | null
+}
+
+interface ModAction {
+  id: number
+  action_type: string
+  community_id: number
+  community_slug: string
+  community_display_name: string
+  mod_display_name: string | null
+  details: string | null
+  created_at: string
+}
+
+interface JoinedCommunity {
+  id: number
+  slug: string
+  display_name: string
+  icon_url: string | null
+  member_count: number
+  role: "member" | "moderator" | "owner"
+}
+
 interface Props {
   onNavigate: (r: Route) => void
+  onNavigateToCommunity?: (slug: string) => void
 }
 
 function fmt(n: number) {
@@ -220,16 +249,154 @@ function TicketHistory({ tickets, onNavigate }: { tickets: SupportTicket[]; onNa
   )
 }
 
+const MOD_ACTION_LABELS: Record<string, string> = {
+  ban: "Banned",
+  unban: "Unbanned",
+  remove_post: "Post Removed",
+  restore_post: "Post Restored",
+  pin: "Post Pinned",
+  unpin: "Post Unpinned",
+  add_mod: "Added as Moderator",
+  remove_mod: "Removed as Moderator",
+}
+
+// ── Community activity card ────────────────────────────────────────────────────
+function CommunitySection({
+  communities,
+  reports,
+  modHistory,
+  onNavigateToCommunity,
+}: {
+  communities: JoinedCommunity[]
+  reports: MyReport[]
+  modHistory: ModAction[]
+  onNavigateToCommunity?: (slug: string) => void
+}) {
+  if (!communities.length && !reports.length && !modHistory.length) return null
+
+  return (
+    <Card className="bg-card border-border">
+      <CardHeader className="pb-3">
+        <CardTitle className="text-base flex items-center gap-2">
+          <Users className="w-4 h-4 text-muted-foreground" />
+          Community Activity
+        </CardTitle>
+      </CardHeader>
+      <CardContent className="space-y-5">
+
+        {/* Joined communities */}
+        {communities.length > 0 && (
+          <div>
+            <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide mb-2">Joined Communities</p>
+            <div className="flex flex-wrap gap-2">
+              {communities.map(c => (
+                <button
+                  key={c.id}
+                  type="button"
+                  onClick={() => onNavigateToCommunity?.(c.slug)}
+                  className="flex items-center gap-2 rounded-md border border-border bg-muted/30 px-2.5 py-1.5 text-sm hover:bg-muted/60 transition-colors cursor-pointer"
+                >
+                  {c.icon_url ? (
+                    <img src={c.icon_url} alt="" className="w-5 h-5 rounded-full object-cover" />
+                  ) : (
+                    <div className="w-5 h-5 rounded-full bg-primary/20 flex items-center justify-center text-[9px] font-bold text-primary">
+                      {c.display_name.charAt(0).toUpperCase()}
+                    </div>
+                  )}
+                  <span className="font-medium">{c.display_name}</span>
+                  {c.role !== "member" && (
+                    <Badge variant="outline" className="text-[9px] ml-0.5 capitalize">
+                      {c.role}
+                    </Badge>
+                  )}
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* My reports */}
+        {reports.length > 0 && (
+          <div>
+            <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide mb-2 flex items-center gap-1">
+              <Flag className="w-3 h-3" /> My Submitted Reports
+            </p>
+            <div className="divide-y divide-border rounded-md border border-border overflow-hidden">
+              {reports.map(r => (
+                <div key={r.id} className="flex items-start justify-between gap-4 px-3 py-2.5">
+                  <div className="min-w-0">
+                    <p className="text-xs text-muted-foreground truncate">
+                      {r.post_body ? `"${r.post_body.slice(0, 80)}${r.post_body.length > 80 ? "..." : ""}"` : `Post #${r.post_id}`}
+                    </p>
+                    <p className="text-xs mt-0.5">
+                      <span className="text-muted-foreground">Reason: </span>
+                      <span>{r.reason}</span>
+                    </p>
+                  </div>
+                  <span className="text-[10px] text-muted-foreground shrink-0 mt-0.5">
+                    {new Date(r.created_at).toLocaleDateString()}
+                  </span>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* Moderation history */}
+        {modHistory.length > 0 && (
+          <div>
+            <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide mb-2 flex items-center gap-1">
+              <Shield className="w-3 h-3" /> Moderation History
+            </p>
+            <div className="divide-y divide-border rounded-md border border-border overflow-hidden">
+              {modHistory.map(a => (
+                <div key={a.id} className="flex items-start justify-between gap-4 px-3 py-2.5">
+                  <div className="min-w-0">
+                    <p className="text-sm font-medium">
+                      {MOD_ACTION_LABELS[a.action_type] ?? a.action_type}
+                      {" "}
+                      <span className="font-normal text-muted-foreground">in</span>
+                      {" "}
+                      <button
+                        type="button"
+                        onClick={() => onNavigateToCommunity?.(a.community_slug)}
+                        className="text-foreground hover:underline cursor-pointer bg-transparent border-0 p-0 font-medium"
+                      >
+                        {a.community_display_name}
+                      </button>
+                    </p>
+                    {a.details && <p className="text-xs text-muted-foreground mt-0.5">{a.details}</p>}
+                    {a.mod_display_name && (
+                      <p className="text-xs text-muted-foreground mt-0.5">by {a.mod_display_name}</p>
+                    )}
+                  </div>
+                  <span className="text-[10px] text-muted-foreground shrink-0 mt-0.5">
+                    {new Date(a.created_at).toLocaleDateString()}
+                  </span>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+      </CardContent>
+    </Card>
+  )
+}
+
 // ── Main page ──────────────────────────────────────────────────────────────────
-export default function AccountPage({ onNavigate }: Props) {
+export default function AccountPage({ onNavigate, onNavigateToCommunity }: Props) {
   const { user } = useUser()
-  const { getMe, updateMe, getBilling, startCheckout, getStats, getRecentOrders, getSupportTickets } = useAccount()
+  const { getMe, updateMe, getBilling, startCheckout, getStats, getRecentOrders, getSupportTickets, getMyReports, getModActionsAgainstMe, getMyJoinedCommunities } = useAccount()
 
   const [profile, setProfile] = useState<UserProfile | null>(null)
   const [billing, setBilling] = useState<{ portalUrl: string | null } | null>(null)
   const [stats, setStats] = useState<AccountStats | null>(null)
   const [recentOrders, setRecentOrders] = useState<RecentOrder[]>([])
   const [tickets, setTickets] = useState<SupportTicket[]>([])
+  const [myReports, setMyReports] = useState<MyReport[]>([])
+  const [modHistory, setModHistory] = useState<ModAction[]>([])
+  const [joinedCommunities, setJoinedCommunities] = useState<JoinedCommunity[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
 
@@ -247,12 +414,15 @@ export default function AccountPage({ onNavigate }: Props) {
 
   const load = useCallback(async () => {
     try {
-      const [me, bill, st, orders, tix] = await Promise.all([
+      const [me, bill, st, orders, tix, reports, modActs, comms] = await Promise.all([
         getMe(),
         getBilling().catch(() => null),
         getStats().catch(() => null),
         getRecentOrders().catch(() => []),
         getSupportTickets().catch(() => []),
+        getMyReports().catch(() => []),
+        getModActionsAgainstMe().catch(() => []),
+        getMyJoinedCommunities().catch(() => []),
       ])
       setProfile(me)
       setDisplayName(me.display_name ?? "")
@@ -261,12 +431,15 @@ export default function AccountPage({ onNavigate }: Props) {
       if (st) setStats(st)
       setRecentOrders(Array.isArray(orders) ? orders : [])
       setTickets(Array.isArray(tix) ? tix : [])
+      setMyReports(Array.isArray(reports) ? reports : [])
+      setModHistory(Array.isArray(modActs) ? modActs : [])
+      setJoinedCommunities(Array.isArray(comms) ? comms : [])
     } catch (e: unknown) {
       setError(e instanceof Error ? e.message : "Failed to load account")
     } finally {
       setLoading(false)
     }
-  }, [getMe, getBilling, getStats, getRecentOrders, getSupportTickets])
+  }, [getMe, getBilling, getStats, getRecentOrders, getSupportTickets, getMyReports, getModActionsAgainstMe, getMyJoinedCommunities])
 
   useEffect(() => { load() }, [load])
 
@@ -501,12 +674,23 @@ export default function AccountPage({ onNavigate }: Props) {
       {/* Support ticket history */}
       <TicketHistory tickets={tickets} onNavigate={onNavigate} />
 
+      {/* Community activity */}
+      <CommunitySection
+        communities={joinedCommunities}
+        reports={myReports}
+        modHistory={modHistory}
+        onNavigateToCommunity={onNavigateToCommunity}
+      />
+
       {/* Quick links */}
       <Card className="bg-card border-border">
         <CardContent className="py-4">
           <div className="flex flex-wrap gap-3">
             <Button variant="ghost" size="sm" onClick={() => onNavigate("dashboard")}>
               My Portfolios
+            </Button>
+            <Button variant="ghost" size="sm" onClick={() => onNavigate("communities")}>
+              Browse Communities
             </Button>
             <Button variant="ghost" size="sm" onClick={() => onNavigate("help")}>
               Help &amp; Support

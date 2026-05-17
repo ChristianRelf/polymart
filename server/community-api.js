@@ -1,7 +1,32 @@
-import { Router } from 'express';
-import { getAuth } from '@clerk/express';
-import { randomBytes } from 'crypto';
-import pool from './db.js';
+import { Router }          from 'express';
+import { getAuth }         from '@clerk/express';
+import { randomBytes }     from 'crypto';
+import { fileURLToPath }   from 'url';
+import path                from 'path';
+import fs                  from 'fs';
+import multer              from 'multer';
+import pool                from './db.js';
+
+const __dirname    = path.dirname(fileURLToPath(import.meta.url));
+const UPLOADS_DIR  = path.join(__dirname, 'uploads', 'community');
+fs.mkdirSync(UPLOADS_DIR, { recursive: true });
+
+const storage = multer.diskStorage({
+  destination: (_req, _file, cb) => cb(null, UPLOADS_DIR),
+  filename:    (_req, file,  cb) => {
+    const ext = path.extname(file.originalname).toLowerCase().replace(/[^.a-z]/g, '') || '.jpg';
+    cb(null, randomBytes(16).toString('hex') + ext);
+  },
+});
+
+const upload = multer({
+  storage,
+  limits: { fileSize: 3 * 1024 * 1024 },
+  fileFilter: (_req, file, cb) => {
+    const allowed = new Set(['image/jpeg', 'image/png', 'image/gif', 'image/webp']);
+    cb(null, allowed.has(file.mimetype));
+  },
+});
 
 const SHARE_ALPHABET = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
 function generateShareId() {
@@ -19,7 +44,7 @@ const postRateMap = new Map();
 function postRateLimit(req, res, next) {
   const { userId } = getAuth(req);
   if (!userId) return next();
-  const now = Date.now();
+  const now   = Date.now();
   const entry = postRateMap.get(userId);
   if (!entry || now - entry.resetAt > 3_600_000) {
     postRateMap.set(userId, { count: 1, resetAt: now });
@@ -32,29 +57,92 @@ function postRateLimit(req, res, next) {
   next();
 }
 
+// ── POST /community/upload ────────────────────────────────────────────────────
+// Auth required. Accepts a single image file ≤ 3 MB. Returns { url }.
+router.post('/upload', (req, res, next) => {
+  const { userId } = getAuth(req);
+  if (!userId) return res.status(401).json({ error: 'Authentication required' });
+  upload.single('image')(req, res, err => {
+    if (err) {
+      const msg = err.code === 'LIMIT_FILE_SIZE'
+        ? 'File too large — maximum 3 MB'
+        : (err.message || 'Upload error');
+      return res.status(400).json({ error: msg });
+    }
+    next();
+  });
+}, (req, res) => {
+  if (!req.file) return res.status(400).json({ error: 'No valid image provided (jpeg/png/gif/webp, max 3 MB)' });
+  res.json({ url: `/uploads/community/${req.file.filename}` });
+});
+
+// ── GET /community/my-reports ─────────────────────────────────────────────────
+// Auth required. Returns posts the current user has reported.
+// Must be before /posts to avoid route shadowing.
+router.get('/my-reports', async (req, res) => {
+  const { userId } = getAuth(req);
+  if (!userId) return res.status(401).json({ error: 'Authentication required' });
+  try {
+    const [rows] = await pool.query(
+      `SELECT cr.id, cr.post_id, cr.reason, cr.created_at,
+              cp.title, cp.share_id, cp.is_removed
+       FROM community_reports cr
+       JOIN community_posts cp ON cp.id = cr.post_id
+       WHERE cr.reporter_clerk_id = ?
+       ORDER BY cr.created_at DESC
+       LIMIT 100`,
+      [userId]
+    );
+    res.json({ reports: rows });
+  } catch (err) {
+    console.error('[community-api] GET /my-reports:', err.message);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
 // ── GET /community/posts ──────────────────────────────────────────────────────
 // Public. Returns paginated posts with comment counts.
-// ?page=1 &type=trade|analysis|question|general &sort=new|top
+// ?page=1 &type=trade|analysis|question|general &sort=new|top &community=slug
 router.get('/posts', async (req, res) => {
-  const page  = Math.max(1, parseInt(req.query.page) || 1);
-  const type  = req.query.type;
-  const sort  = req.query.sort === 'top'
-    ? 'cp.likes DESC, cp.created_at DESC'
-    : 'cp.created_at DESC';
+  const page      = Math.max(1, parseInt(req.query.page) || 1);
+  const type      = req.query.type;
+  const community = req.query.community?.trim() || '';
+  const sort      = req.query.sort === 'top'
+    ? 'cp.is_pinned DESC, cp.likes DESC, cp.created_at DESC'
+    : 'cp.is_pinned DESC, cp.created_at DESC';
   const limit  = 20;
   const offset = (page - 1) * limit;
 
   try {
-    const hasType = type && VALID_TYPES.has(type);
-    const where   = hasType ? 'WHERE cp.post_type = ?' : '';
-    const params  = hasType ? [type] : [];
+    const conditions = ['cp.is_removed = 0'];
+    const params     = [];
+
+    if (type && VALID_TYPES.has(type)) {
+      conditions.push('cp.post_type = ?');
+      params.push(type);
+    }
+
+    if (community) {
+      const [[comm]] = await pool.query('SELECT id FROM communities WHERE slug = ?', [community]);
+      if (!comm) return res.json({ posts: [], total: 0, page, pages: 0 });
+      conditions.push('cp.community_id = ?');
+      params.push(comm.id);
+    } else {
+      // General feed: posts with no community OR posts from any community.
+      // (no extra filter — show everything not removed)
+    }
+
+    const where = `WHERE ${conditions.join(' AND ')}`;
 
     const [rows] = await pool.query(
       `SELECT cp.id, cp.share_id, cp.clerk_id, cp.display_name, cp.avatar_url,
               cp.title, cp.body, cp.post_type, cp.likes, cp.created_at,
+              cp.is_pinned, cp.is_removed, cp.community_id,
+              c.slug AS community_slug, c.display_name AS community_display_name,
               COUNT(cc.id) AS comment_count
        FROM community_posts cp
        LEFT JOIN community_comments cc ON cc.post_id = cp.id
+       LEFT JOIN communities c ON c.id = cp.community_id
        ${where}
        GROUP BY cp.id
        ORDER BY ${sort}
@@ -63,8 +151,8 @@ router.get('/posts', async (req, res) => {
     );
 
     const [[{ total }]] = await pool.query(
-      `SELECT COUNT(*) AS total FROM community_posts${hasType ? ' WHERE post_type = ?' : ''}`,
-      hasType ? [type] : []
+      `SELECT COUNT(*) AS total FROM community_posts cp ${where}`,
+      params
     );
 
     res.json({ posts: rows, total, page, pages: Math.ceil(total / limit) });
@@ -79,14 +167,34 @@ router.post('/posts', postRateLimit, async (req, res) => {
   const { userId } = getAuth(req);
   if (!userId) return res.status(401).json({ error: 'Authentication required' });
 
-  const { title, body, post_type = 'general' } = req.body;
+  const { title, body, post_type = 'general', community_id = null } = req.body;
 
   if (!title || typeof title !== 'string' || !title.trim() || title.length > 280)
     return res.status(400).json({ error: 'title is required and must be under 280 characters' });
-  if (!body || typeof body !== 'string' || !body.trim() || body.length > 2000)
-    return res.status(400).json({ error: 'body is required and must be under 2000 characters' });
+  if (!body || typeof body !== 'string' || !body.trim() || body.length > 10000)
+    return res.status(400).json({ error: 'body is required and must be under 10000 characters' });
   if (!VALID_TYPES.has(post_type))
     return res.status(400).json({ error: 'Invalid post_type' });
+
+  let resolvedCommunityId = null;
+  if (community_id) {
+    resolvedCommunityId = parseInt(community_id) || null;
+    if (resolvedCommunityId) {
+      // Verify membership and no ban.
+      const [[membership]] = await pool.query(
+        'SELECT role FROM community_memberships WHERE community_id = ? AND clerk_id = ?',
+        [resolvedCommunityId, userId]
+      );
+      if (!membership)
+        return res.status(403).json({ error: 'You must join this community before posting' });
+      const [[ban]] = await pool.query(
+        'SELECT id FROM community_bans WHERE community_id = ? AND clerk_id = ?',
+        [resolvedCommunityId, userId]
+      );
+      if (ban)
+        return res.status(403).json({ error: 'You are banned from posting in this community' });
+    }
+  }
 
   try {
     const [[profile]] = await pool.query(
@@ -97,27 +205,57 @@ router.post('/posts', postRateLimit, async (req, res) => {
     const shareId = generateShareId();
 
     const [result] = await pool.query(
-      `INSERT INTO community_posts (share_id, clerk_id, display_name, avatar_url, title, body, post_type)
-       VALUES (?, ?, ?, ?, ?, ?, ?)`,
-      [shareId, userId, profile?.display_name ?? null, profile?.avatar_url ?? null,
+      `INSERT INTO community_posts (community_id, share_id, clerk_id, display_name, avatar_url, title, body, post_type)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+      [resolvedCommunityId, shareId, userId, profile?.display_name ?? null, profile?.avatar_url ?? null,
        title.trim(), body.trim(), post_type]
     );
 
+    if (resolvedCommunityId) {
+      await pool.query('UPDATE communities SET post_count = post_count + 1 WHERE id = ?', [resolvedCommunityId]);
+    }
+
     res.status(201).json({
-      id: result.insertId,
-      share_id: shareId,
-      clerk_id: userId,
-      display_name: profile?.display_name ?? null,
-      avatar_url:   profile?.avatar_url   ?? null,
-      title: title.trim(),
-      body:  body.trim(),
+      id:            result.insertId,
+      share_id:      shareId,
+      clerk_id:      userId,
+      display_name:  profile?.display_name ?? null,
+      avatar_url:    profile?.avatar_url   ?? null,
+      title:         title.trim(),
+      body:          body.trim(),
       post_type,
-      likes: 0,
+      community_id:  resolvedCommunityId,
+      is_pinned:     0,
+      is_removed:    0,
+      likes:         0,
       comment_count: 0,
-      created_at: new Date().toISOString(),
+      created_at:    new Date().toISOString(),
     });
   } catch (err) {
     console.error('[community-api] POST /posts:', err.message);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+// ── GET /community/posts/share/:shareId ──────────────────────────────────────
+// Public. Must be defined before /:id routes.
+router.get('/posts/share/:shareId', async (req, res) => {
+  const { shareId } = req.params;
+  try {
+    const [[post]] = await pool.query(
+      `SELECT cp.id, cp.share_id, cp.clerk_id, cp.display_name, cp.avatar_url,
+              cp.title, cp.body, cp.post_type, cp.likes, cp.created_at,
+              COUNT(cc.id) AS comment_count
+       FROM community_posts cp
+       LEFT JOIN community_comments cc ON cc.post_id = cp.id
+       WHERE cp.share_id = ?
+       GROUP BY cp.id`,
+      [shareId]
+    );
+    if (!post) return res.status(404).json({ error: 'Post not found' });
+    res.json(post);
+  } catch (err) {
+    console.error('[community-api] GET /posts/share/:shareId:', err.message);
     res.status(500).json({ error: 'Internal server error' });
   }
 });
@@ -134,8 +272,8 @@ router.put('/posts/:id', async (req, res) => {
 
   if (!title || typeof title !== 'string' || !title.trim() || title.length > 280)
     return res.status(400).json({ error: 'title is required and must be under 280 characters' });
-  if (!body || typeof body !== 'string' || !body.trim() || body.length > 2000)
-    return res.status(400).json({ error: 'body is required and must be under 2000 characters' });
+  if (!body || typeof body !== 'string' || !body.trim() || body.length > 10000)
+    return res.status(400).json({ error: 'body is required and must be under 10000 characters' });
 
   const type = post_type && VALID_TYPES.has(post_type) ? post_type : null;
 
@@ -201,14 +339,14 @@ router.delete('/posts/:id', async (req, res) => {
 });
 
 // ── GET /community/posts/:id/comments ────────────────────────────────────────
-// Public.
+// Public. Returns flat list with parent_id; client builds the tree.
 router.get('/posts/:id/comments', async (req, res) => {
   const postId = parseInt(req.params.id);
   if (!postId) return res.status(400).json({ error: 'Invalid post id' });
 
   try {
     const [rows] = await pool.query(
-      `SELECT id, post_id, clerk_id, display_name, avatar_url, body, created_at
+      `SELECT id, post_id, parent_id, clerk_id, display_name, avatar_url, body, created_at
        FROM community_comments
        WHERE post_id = ?
        ORDER BY created_at ASC`,
@@ -229,9 +367,20 @@ router.post('/posts/:id/comments', async (req, res) => {
   const postId = parseInt(req.params.id);
   if (!postId) return res.status(400).json({ error: 'Invalid post id' });
 
-  const { body } = req.body;
-  if (!body || typeof body !== 'string' || !body.trim() || body.length > 1000)
-    return res.status(400).json({ error: 'Comment must be between 1 and 1000 characters' });
+  const { body, parent_id } = req.body;
+  if (!body || typeof body !== 'string' || !body.trim() || body.length > 2000)
+    return res.status(400).json({ error: 'Comment must be between 1 and 2000 characters' });
+
+  let parentId = null;
+  if (parent_id != null) {
+    parentId = parseInt(parent_id);
+    if (!parentId) return res.status(400).json({ error: 'Invalid parent_id' });
+    // Verify the parent comment belongs to this post
+    const [[parent]] = await pool.query(
+      'SELECT id FROM community_comments WHERE id = ? AND post_id = ?', [parentId, postId]
+    );
+    if (!parent) return res.status(400).json({ error: 'Parent comment not found in this post' });
+  }
 
   try {
     const [[post]] = await pool.query(
@@ -244,14 +393,15 @@ router.post('/posts/:id/comments', async (req, res) => {
     );
 
     const [result] = await pool.query(
-      `INSERT INTO community_comments (post_id, clerk_id, display_name, avatar_url, body)
-       VALUES (?, ?, ?, ?, ?)`,
-      [postId, userId, profile?.display_name ?? null, profile?.avatar_url ?? null, body.trim()]
+      `INSERT INTO community_comments (post_id, parent_id, clerk_id, display_name, avatar_url, body)
+       VALUES (?, ?, ?, ?, ?, ?)`,
+      [postId, parentId, userId, profile?.display_name ?? null, profile?.avatar_url ?? null, body.trim()]
     );
 
     res.status(201).json({
       id:           result.insertId,
       post_id:      postId,
+      parent_id:    parentId,
       clerk_id:     userId,
       display_name: profile?.display_name ?? null,
       avatar_url:   profile?.avatar_url   ?? null,
