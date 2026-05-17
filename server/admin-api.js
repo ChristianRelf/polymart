@@ -318,4 +318,115 @@ router.get('/audit-log', async (req, res) => {
   }
 });
 
+// ── GET /admin/community-reports ─────────────────────────────────────────────
+router.get('/community-reports', async (req, res) => {
+  const page   = Math.max(1, parseInt(req.query.page) || 1);
+  const limit  = 50;
+  const offset = (page - 1) * limit;
+  try {
+    const [rows] = await pool.query(
+      `SELECT cr.id, cr.post_id, cr.reporter_clerk_id, cr.reason, cr.created_at,
+              cp.title AS post_title, cp.is_removed,
+              c.id AS community_id, c.slug AS community_slug, c.display_name AS community_name,
+              COALESCE(rp.display_name, cr.reporter_clerk_id) AS reporter_name
+       FROM community_reports cr
+       JOIN community_posts cp ON cp.id = cr.post_id
+       JOIN communities c ON c.id = cp.community_id
+       LEFT JOIN user_profiles rp ON rp.clerk_id = cr.reporter_clerk_id
+       ORDER BY cr.created_at DESC
+       LIMIT ? OFFSET ?`,
+      [limit, offset]
+    );
+    const [[{ total }]] = await pool.query(
+      `SELECT COUNT(*) AS total FROM community_reports cr
+       JOIN community_posts cp ON cp.id = cr.post_id
+       WHERE cp.community_id IS NOT NULL`
+    );
+    res.json({ reports: rows, total, pages: Math.ceil(total / limit) });
+  } catch (err) {
+    console.error('[admin-api] GET /community-reports:', err.message);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+// ── GET /admin/communities ────────────────────────────────────────────────────
+router.get('/communities', async (req, res) => {
+  const q = req.query.q?.trim() || '';
+  try {
+    const where  = q ? 'WHERE c.slug LIKE ? OR c.display_name LIKE ?' : '';
+    const params = q ? [`%${q}%`, `%${q}%`] : [];
+    const [rows] = await pool.query(
+      `SELECT c.id, c.slug, c.display_name, c.icon_url,
+              c.member_count, c.post_count, c.owner_clerk_id, c.created_at, c.verification_type,
+              (SELECT COUNT(*) FROM community_reports cr
+               JOIN community_posts cp ON cp.id = cr.post_id
+               WHERE cp.community_id = c.id AND cp.is_removed = 0) AS open_reports
+       FROM communities c
+       ${where}
+       ORDER BY open_reports DESC, c.member_count DESC`,
+      params
+    );
+    res.json({ communities: rows });
+  } catch (err) {
+    console.error('[admin-api] GET /communities:', err.message);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+// ── PUT /admin/communities/:slug/verification ─────────────────────────────────
+router.put('/communities/:slug/verification', async (req, res) => {
+  const { slug } = req.params;
+  const { verification_type } = req.body;
+  const { userId } = getAuth(req);
+  if (!['none', 'verified', 'official'].includes(verification_type)) {
+    return res.status(400).json({ error: 'Invalid verification_type' });
+  }
+  try {
+    const [[c]] = await pool.query('SELECT id FROM communities WHERE slug = ?', [slug]);
+    if (!c) return res.status(404).json({ error: 'Community not found' });
+    await pool.query('UPDATE communities SET verification_type = ? WHERE slug = ?', [verification_type, slug]);
+    await auditLog(userId, 'set_community_verification', null, JSON.stringify({ slug, verification_type }));
+    res.json({ ok: true });
+  } catch (err) {
+    console.error('[admin-api] PUT /communities/:slug/verification:', err.message);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+// ── DELETE /admin/communities/:slug ──────────────────────────────────────────
+router.delete('/communities/:slug', async (req, res) => {
+  const { slug } = req.params;
+  const { userId } = getAuth(req);
+  try {
+    const [[c]] = await pool.query('SELECT id, display_name FROM communities WHERE slug = ?', [slug]);
+    if (!c) return res.status(404).json({ error: 'Community not found' });
+    await pool.query('DELETE FROM community_bans          WHERE community_id = ?', [c.id]);
+    await pool.query('DELETE FROM community_memberships   WHERE community_id = ?', [c.id]);
+    await pool.query('DELETE FROM community_rules         WHERE community_id = ?', [c.id]);
+    await pool.query('DELETE FROM community_mod_log       WHERE community_id = ?', [c.id]);
+    await pool.query('DELETE FROM community_community_reports WHERE community_id = ?', [c.id]);
+    await pool.query('UPDATE community_posts SET community_id = NULL WHERE community_id = ?', [c.id]);
+    await pool.query('DELETE FROM communities WHERE id = ?', [c.id]);
+    await auditLog(userId, 'delete_community', null, JSON.stringify({ slug, display_name: c.display_name }));
+    res.json({ ok: true });
+  } catch (err) {
+    console.error('[admin-api] DELETE /communities/:slug:', err.message);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+// ── POST /admin/community-posts/:postId/remove ────────────────────────────────
+router.post('/community-posts/:postId/remove', async (req, res) => {
+  const postId = parseInt(req.params.postId);
+  const { userId } = getAuth(req);
+  try {
+    await pool.query('UPDATE community_posts SET is_removed = 1 WHERE id = ?', [postId]);
+    await auditLog(userId, 'admin_remove_community_post', null, JSON.stringify({ postId }));
+    res.json({ ok: true });
+  } catch (err) {
+    console.error('[admin-api] POST /community-posts/:postId/remove:', err.message);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
 export default router;

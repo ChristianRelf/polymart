@@ -122,7 +122,7 @@ router.get('/', async (req, res) => {
 
     const [rows] = await pool.query(
       `SELECT c.id, c.slug, c.display_name, c.description, c.icon_url, c.banner_url,
-              c.member_count, c.post_count, c.owner_clerk_id, c.created_at
+              c.member_count, c.post_count, c.owner_clerk_id, c.created_at, c.verification_type
        FROM communities c
        ${where}
        ORDER BY ${sort}
@@ -148,7 +148,7 @@ router.get('/mine', async (req, res) => {
   try {
     const [rows] = await pool.query(
       `SELECT c.id, c.slug, c.display_name, c.description, c.icon_url, c.banner_url,
-              c.member_count, c.post_count, c.owner_clerk_id, c.created_at, m.role
+              c.member_count, c.post_count, c.owner_clerk_id, c.created_at, c.verification_type, m.role
        FROM communities c
        JOIN community_memberships m ON m.community_id = c.id AND m.clerk_id = ?
        ORDER BY m.joined_at DESC`,

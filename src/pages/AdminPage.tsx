@@ -188,10 +188,19 @@ export default function AdminPage({ onNavigate }: Props) {
   return (
     <div className="max-w-[1600px] mx-auto px-4 sm:px-8 py-8 space-y-6">
 
-      <div className="flex items-center gap-3">
-        <ShieldAlert className="w-5 h-5 text-muted-foreground" />
-        <h1 className="text-2xl font-bold text-foreground">Admin Panel</h1>
-        <Badge variant="destructive" className="text-[10px]">Internal</Badge>
+      <div className="flex items-center justify-between gap-3 flex-wrap">
+        <div className="flex items-center gap-3">
+          <ShieldAlert className="w-5 h-5 text-muted-foreground" />
+          <h1 className="text-2xl font-bold text-foreground">Admin Panel</h1>
+          <Badge variant="destructive" className="text-[10px]">Internal</Badge>
+        </div>
+        <button
+          type="button"
+          onClick={() => onNavigate("community-admin" as Route)}
+          className="flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground cursor-pointer bg-transparent border-0 transition-colors"
+        >
+          Community Moderation →
+        </button>
       </div>
 
       {error && (

@@ -13,6 +13,7 @@ import {
 import { useAccount } from "@/hooks/useAccount"
 import { MarkdownBody } from "@/components/MarkdownBody"
 import { MarkdownEditor } from "@/components/MarkdownEditor"
+import { CommunitySidebar } from "@/components/CommunitySidebar"
 import type { Route } from "@/App"
 
 const KOFI_URL = "https://ko-fi.com/polymartco"
@@ -859,7 +860,7 @@ interface Props {
 
 export default function CommunityPage({ onNavigate, onNavigateToPost, onNavigateToCommunity }: Props) {
   const { isSignedIn, userId } = useAuth()
-  const { getCommunityPosts, likePost, deletePost, reportPost, getCommunities } = useAccount()
+  const { getCommunityPosts, likePost, deletePost, reportPost } = useAccount()
 
   const [posts, setPosts]           = useState<Post[]>([])
   const [loading, setLoading]       = useState(true)
@@ -869,13 +870,6 @@ export default function CommunityPage({ onNavigate, onNavigateToPost, onNavigate
   const [typeFilter, setTypeFilter] = useState("")
   const [sort, setSort]             = useState<"new" | "top">("new")
   const [loadingMore, setLoadingMore] = useState(false)
-  const [popularCommunities, setPopularCommunities] = useState<{ slug: string; display_name: string; icon_url: string | null; member_count: number }[]>([])
-
-  useEffect(() => {
-    getCommunities({ sort: "members", page: 1 }).then((d: { communities?: typeof popularCommunities }) => {
-      setPopularCommunities((d.communities ?? []).slice(0, 5))
-    }).catch(() => {})
-  }, [])
 
   const load = useCallback(
     async (p: number, type: string, s: string, replace: boolean) => {
@@ -1052,36 +1046,12 @@ export default function CommunityPage({ onNavigate, onNavigateToPost, onNavigate
               <Bot className="w-3.5 h-3.5" />
               Join Discord
             </a>
-            {popularCommunities.length > 0 && onNavigateToCommunity && (
-              <div>
-                <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest mb-1.5 px-3">
-                  Popular Communities
-                </p>
-                <div className="space-y-0.5">
-                  {popularCommunities.map(c => (
-                    <button
-                      key={c.slug}
-                      type="button"
-                      onClick={() => onNavigateToCommunity!(c.slug)}
-                      className="w-full flex items-center gap-2 px-3 py-2 rounded-lg text-sm text-muted-foreground hover:bg-muted/50 hover:text-foreground transition-colors cursor-pointer bg-transparent border-0 text-left"
-                    >
-                      {c.icon_url
-                        ? <img src={c.icon_url} alt="" className="w-5 h-5 rounded-full object-cover shrink-0" />
-                        : <div className="w-5 h-5 rounded-full bg-muted flex items-center justify-center text-[10px] font-bold text-muted-foreground shrink-0">{c.display_name[0]?.toUpperCase()}</div>
-                      }
-                      <span className="truncate flex-1">{c.display_name}</span>
-                      <span className="text-[10px] text-muted-foreground/50 shrink-0">{c.member_count.toLocaleString()}</span>
-                    </button>
-                  ))}
-                </div>
-                <button
-                  type="button"
-                  onClick={() => onNavigate("communities")}
-                  className="flex items-center gap-1 text-[10px] text-muted-foreground/60 hover:text-muted-foreground px-3 mt-1 cursor-pointer bg-transparent border-0 transition-colors"
-                >
-                  Browse all communities <ArrowRight className="w-2.5 h-2.5" />
-                </button>
-              </div>
+            {onNavigateToCommunity && (
+              <CommunitySidebar
+                currentSlug={null}
+                onNavigate={onNavigate}
+                onNavigateToCommunity={onNavigateToCommunity}
+              />
             )}
           </div>
         </aside>

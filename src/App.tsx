@@ -22,6 +22,7 @@ import CommunityPostPage from "@/pages/CommunityPostPage"
 import CommunitiesPage from "@/pages/CommunitiesPage"
 import SubCommunityPage from "@/pages/SubCommunityPage"
 import SubCommunityModPage from "@/pages/SubCommunityModPage"
+import CommunityAdminPage from "@/pages/CommunityAdminPage"
 import BotLegalPage from "@/pages/BotLegalPage"
 import KofiLegalPage from "@/pages/KofiLegalPage"
 import CommunityBlogPage from "@/pages/CommunityBlogPage"
@@ -41,7 +42,7 @@ export type Route =
   | "education" | "products" | "help" | "widgets" | "edu-tools" | "community"
   | "bot-terms" | "bot-privacy" | "community-blog" | "sponsor" | "stock-info"
   | "kofi-terms" | "kofi-privacy" | "community-post"
-  | "communities" | "sub-community" | "sub-community-mod"
+  | "communities" | "sub-community" | "sub-community-mod" | "community-admin"
   | "sign-in" | "sign-up" | "dashboard" | "portfolio" | "account" | "admin"
 
 const HASH_MAP: Record<string, Route> = {
@@ -72,6 +73,7 @@ const HASH_MAP: Record<string, Route> = {
   "/dashboard": "dashboard",
   "/account": "account",
   "/admin": "admin",
+  "/community-admin": "community-admin",
 }
 
 const ROUTE_HASH: Record<Route, string> = {
@@ -105,6 +107,7 @@ const ROUTE_HASH: Record<Route, string> = {
   portfolio: "/dashboard",
   account: "/account",
   admin: "/admin",
+  "community-admin": "/community-admin",
 }
 
 function parseHash(): { route: Route; params: Record<string, string> } {
@@ -229,7 +232,6 @@ const NAV_LINKS: [Route, string][] = [
   ["products", "Products"],
   ["education", "Education"],
   ["community", "Community"],
-  ["communities", "Sub-Communities"],
   ["help", "Help"],
   ["dashboard", "Paper Trading"],
 ]
@@ -706,6 +708,7 @@ export default function App() {
           {route === "communities"       && <CommunitiesPage     onNavigate={go} onNavigateToCommunity={goToSubCommunity} />}
           {route === "sub-community"     && <SubCommunityPage    slug={routeParams.slug ?? ""} onNavigate={go} onNavigateToCommunity={goToSubCommunity} onNavigateToMod={goToSubCommunityMod} onNavigateToPost={goToCommunityPost} />}
           {route === "sub-community-mod" && <SubCommunityModPage slug={routeParams.slug ?? ""} onNavigate={go} onNavigateToCommunity={goToSubCommunity} />}
+          {route === "community-admin"   && <CommunityAdminPage onNavigate={go} onNavigateToCommunity={goToSubCommunity} />}
           {route === "bot-terms"      && <BotLegalPage     type="bot-terms"   onNavigate={go} />}
           {route === "bot-privacy"    && <BotLegalPage     type="bot-privacy" onNavigate={go} />}
           {route === "kofi-privacy"   && <KofiLegalPage    type="kofi-privacy" onNavigate={go} />}

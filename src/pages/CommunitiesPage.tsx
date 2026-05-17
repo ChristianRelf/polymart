@@ -9,6 +9,7 @@ import {
   Users, Search, Plus, Loader2, AlertCircle, ArrowRight, Shield, X,
 } from "lucide-react"
 import { useAccount } from "@/hooks/useAccount"
+import { VerificationBadge } from "@/components/VerificationBadge"
 import type { Route } from "@/App"
 
 interface Community {
@@ -23,6 +24,7 @@ interface Community {
   owner_clerk_id: string
   created_at: string
   role?: string
+  verification_type?: string | null
 }
 
 interface Props {
@@ -166,8 +168,9 @@ function CommunityCard({
           <div className="flex-1 min-w-0">
             <div className="flex items-start justify-between gap-2">
               <div className="min-w-0">
-                <p className="text-sm font-semibold text-foreground truncate group-hover:text-foreground/80 transition-colors">
+                <p className="text-sm font-semibold text-foreground truncate group-hover:text-foreground/80 transition-colors flex items-center gap-1">
                   {community.display_name}
+                  <VerificationBadge type={community.verification_type as "none" | "verified" | "official" | null} size="xs" />
                 </p>
                 <p className="text-xs text-muted-foreground/60 font-mono">c/{community.slug}</p>
               </div>

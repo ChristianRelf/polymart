@@ -272,6 +272,18 @@ async function applyMigrations() {
     console.log("[polymart] Migration: added is_removed to community_posts");
   }
 
+  // Add verification_type to communities if missing
+  const [[{ verifCnt }]] = await pool.query(
+    `SELECT COUNT(*) AS verifCnt FROM INFORMATION_SCHEMA.COLUMNS
+     WHERE TABLE_SCHEMA = DATABASE()
+       AND TABLE_NAME   = 'communities'
+       AND COLUMN_NAME  = 'verification_type'`
+  );
+  if (!verifCnt) {
+    await pool.query(`ALTER TABLE communities ADD COLUMN verification_type ENUM('none','verified','official') NOT NULL DEFAULT 'none'`);
+    console.log("[polymart] Migration: added verification_type to communities");
+  }
+
   // Create communities table if not present (schema.sql handles fresh installs;
   // this guard covers existing deployments before the table was in schema.sql).
   const [[{ commTableCnt }]] = await pool.query(

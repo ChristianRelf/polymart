@@ -12,6 +12,8 @@ import {
 import { useAccount } from "@/hooks/useAccount"
 import { MarkdownBody } from "@/components/MarkdownBody"
 import { MarkdownEditor } from "@/components/MarkdownEditor"
+import { CommunitySidebar } from "@/components/CommunitySidebar"
+import { VerificationBadge } from "@/components/VerificationBadge"
 import type { Route } from "@/App"
 
 interface Community {
@@ -28,6 +30,7 @@ interface Community {
   is_member: boolean
   user_role: "member" | "moderator" | "owner" | null
   is_banned: boolean
+  verification_type: "none" | "verified" | "official" | null
   rules: { id: number; title: string; description: string | null }[]
   moderators: { clerk_id: string; role: string; display_name: string; avatar_url: string | null }[]
 }
@@ -443,6 +446,7 @@ export default function SubCommunityPage({ slug, onNavigate, onNavigateToMod, on
             <div className="flex-1 min-w-0 pt-0.5">
               <div className="flex items-center gap-2 flex-wrap">
                 <h1 className="text-lg font-bold text-foreground">{community.display_name}</h1>
+                <VerificationBadge type={community.verification_type} size="sm" />
                 {community.user_role === "owner" && (
                   <Badge variant="outline" className="text-[10px] border-amber-500/30 text-amber-500 bg-amber-500/5"><Shield className="w-2.5 h-2.5 mr-1" />Owner</Badge>
                 )}
@@ -478,14 +482,23 @@ export default function SubCommunityPage({ slug, onNavigate, onNavigateToMod, on
         </div>
       </div>
 
-      {/* Body: feed + sidebar */}
+      {/* Body: left nav + feed + right sidebar */}
       <div className="max-w-6xl mx-auto px-4 sm:px-6 py-6 flex gap-6">
+
+        {/* Left: communities navigation */}
+        <aside className="hidden xl:block w-48 shrink-0 sticky top-4 self-start">
+          <CommunitySidebar
+            currentSlug={slug}
+            onNavigate={onNavigate}
+            onNavigateToCommunity={onNavigateToCommunity}
+          />
+        </aside>
 
         {/* Feed */}
         <div className="flex-1 min-w-0 space-y-4">
-          {/* Back link */}
-          <button onClick={() => onNavigate("communities")} className="flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground cursor-pointer bg-transparent border-0 transition-colors">
-            <ChevronLeft className="w-3.5 h-3.5" />All Communities
+          {/* Back link (mobile only — xl has sidebar) */}
+          <button onClick={() => onNavigate("community")} className="xl:hidden flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground cursor-pointer bg-transparent border-0 transition-colors">
+            <ChevronLeft className="w-3.5 h-3.5" />Community
           </button>
 
           {/* Compose */}
