@@ -19,7 +19,7 @@ function fearGreedColor(score: number) {
 }
 
 export default function SignInPage() {
-  const { overview } = useSimulation()
+  const { market } = useSimulation()
 
   return (
     <div className="flex min-h-[calc(100vh-4rem)]">
@@ -54,26 +54,26 @@ export default function SignInPage() {
         </div>
 
         {/* Live stats strip */}
-        {overview && (
+        {market && (
           <div className="border-t border-background/10 pt-6 grid grid-cols-3 gap-4">
             <div>
               <p className="text-[11px] text-background/40 uppercase tracking-wide mb-1">Index</p>
               <p className="text-sm font-semibold">
-                {overview.index.toLocaleString("en-US", { maximumFractionDigits: 0 })}
-                <span className={`ml-1.5 text-xs ${overview.indexChangePct >= 0 ? "text-emerald-400" : "text-red-400"}`}>
-                  {overview.indexChangePct >= 0 ? "+" : ""}{overview.indexChangePct.toFixed(2)}%
+                {market.index.toLocaleString("en-US", { maximumFractionDigits: 0 })}
+                <span className={`ml-1.5 text-xs ${market.indexChangePct >= 0 ? "text-emerald-400" : "text-red-400"}`}>
+                  {market.indexChangePct >= 0 ? "+" : ""}{market.indexChangePct.toFixed(2)}%
                 </span>
               </p>
             </div>
             <div>
               <p className="text-[11px] text-background/40 uppercase tracking-wide mb-1">Fear &amp; Greed</p>
-              <p className={`text-sm font-semibold ${fearGreedColor(overview.fearGreed)}`}>
-                {overview.fearGreed} <span className="text-xs font-normal">{overview.fearGreedLabel}</span>
+              <p className={`text-sm font-semibold ${fearGreedColor(market.fearGreed)}`}>
+                {market.fearGreed} <span className="text-xs font-normal">{market.fearGreedLabel}</span>
               </p>
             </div>
             <div>
               <p className="text-[11px] text-background/40 uppercase tracking-wide mb-1">VIX</p>
-              <p className="text-sm font-semibold">{overview.vix.toFixed(1)}</p>
+              <p className="text-sm font-semibold">{market.vix.toFixed(1)}</p>
             </div>
           </div>
         )}

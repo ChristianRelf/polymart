@@ -287,7 +287,7 @@ function PortfolioChart({ portfolioId, currentValue }: { portfolioId: number; cu
                 width={40}
               />
               <Tooltip
-                formatter={(v: number) => [fmt(v), "Value"]}
+                formatter={(v) => [fmt(v as number), "Value"]}
                 contentStyle={{ fontSize: 11, borderRadius: 8 }}
               />
               <Area

@@ -197,16 +197,6 @@ function PortfolioCard({
   onOpen: () => void
   onDelete: () => void
 }) {
-  const { stocks, forexPairs } = useSimulation()
-
-  // Estimated total from positions_preview symbols (may be partial)
-  const positionEstimate = (p.position_symbols ?? []).reduce((sum, pos) => {
-    const price = pos.asset_type === "stock"
-      ? (stocks[pos.symbol]?.price ?? 0)
-      : (forexPairs[pos.symbol]?.price ?? 0)
-    return sum + price
-  }, 0)
-
   const hasPositions = p.position_count > 0
 
   return (
