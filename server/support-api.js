@@ -1,5 +1,5 @@
 import { Router } from 'express';
-import { requireAuth, getAuth } from '@clerk/express';
+import { getAuth } from '@clerk/express';
 import pool from './db.js';
 
 const router = Router();
@@ -22,9 +22,16 @@ function ticketRateLimit(req, res, next) {
   next();
 }
 
+// ── All routes require authentication ─────────────────────────────────────────
+router.use((req, res, next) => {
+  const { userId } = getAuth(req);
+  if (!userId) return res.status(401).json({ error: 'Authentication required' });
+  next();
+});
+
 // ── POST /support/ticket ──────────────────────────────────────────────────────
 // Email address is taken from the verified Clerk user profile, never from the body.
-router.post('/ticket', requireAuth(), ticketRateLimit, async (req, res) => {
+router.post('/ticket', ticketRateLimit, async (req, res) => {
   const { userId } = getAuth(req);
   const { subject, message } = req.body;
 
@@ -80,7 +87,7 @@ router.post('/ticket', requireAuth(), ticketRateLimit, async (req, res) => {
 });
 
 // ── GET /support/tickets (own tickets only) ───────────────────────────────────
-router.get('/tickets', requireAuth(), async (req, res) => {
+router.get('/tickets', async (req, res) => {
   const { userId } = getAuth(req);
   try {
     const [tickets] = await pool.query(
