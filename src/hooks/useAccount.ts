@@ -160,6 +160,32 @@ export function useAccount() {
     [withToken]
   )
 
+  const getCommunityPosts = useCallback(
+    (params?: { page?: number; type?: string }) => {
+      const qs = new URLSearchParams()
+      if (params?.page) qs.set("page", String(params.page))
+      if (params?.type) qs.set("type", params.type)
+      return fetch(`${API}/community/posts?${qs}`).then(r => r.json())
+    },
+    []
+  )
+
+  const createCommunityPost = useCallback(
+    (body: { title: string; body: string; post_type: string }) =>
+      withToken(t => apiFetch("/community/posts", t, { method: "POST", body: JSON.stringify(body) })),
+    [withToken]
+  )
+
+  const likePost = useCallback(
+    (id: number) => withToken(t => apiFetch(`/community/posts/${id}/like`, t, { method: "POST", body: "{}" })),
+    [withToken]
+  )
+
+  const deletePost = useCallback(
+    (id: number) => withToken(t => apiFetch(`/community/posts/${id}`, t, { method: "DELETE" })),
+    [withToken]
+  )
+
   return {
     getMe,
     updateMe,
@@ -180,5 +206,9 @@ export function useAccount() {
     getStats,
     getRecentOrders,
     getSupportTickets,
+    getCommunityPosts,
+    createCommunityPost,
+    likePost,
+    deletePost,
   }
 }

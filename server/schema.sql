@@ -314,6 +314,24 @@ CREATE TABLE IF NOT EXISTS ticket_notes (
   CONSTRAINT fk_ticket_notes FOREIGN KEY (ticket_id) REFERENCES support_tickets(id) ON DELETE CASCADE
 ) ENGINE=InnoDB;
 
+-- ── community_posts ──────────────────────────────────────────────────────────
+-- User-generated posts on the community feed.
+-- display_name/avatar_url are denormalised from user_profiles at post time.
+CREATE TABLE IF NOT EXISTS community_posts (
+  id            INT           NOT NULL AUTO_INCREMENT,
+  clerk_id      VARCHAR(64)   NOT NULL,
+  display_name  VARCHAR(128)  DEFAULT NULL,
+  avatar_url    TEXT          DEFAULT NULL,
+  title         VARCHAR(280)  NOT NULL,
+  body          TEXT          NOT NULL,
+  post_type     ENUM('general','trade','analysis','question') NOT NULL DEFAULT 'general',
+  likes         INT           NOT NULL DEFAULT 0,
+  created_at    DATETIME      NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (id),
+  KEY idx_posts_clerk   (clerk_id),
+  KEY idx_posts_created (created_at)
+) ENGINE=InnoDB;
+
 -- ── admin_audit_log ───────────────────────────────────────────────────────────
 -- Append-only. Records every admin action for accountability.
 CREATE TABLE IF NOT EXISTS admin_audit_log (

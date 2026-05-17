@@ -5,7 +5,10 @@ import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Input } from "@/components/ui/input"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog"
-import { Plus, TrendingUp, TrendingDown, Wallet, Star, Loader2, AlertCircle, Eye, Trash2 } from "lucide-react"
+import {
+  Plus, TrendingUp, TrendingDown, Wallet, Loader2, AlertCircle, Eye, Trash2,
+  Trophy, Zap, Target, Flame, DollarSign, BarChart2, Users,
+} from "lucide-react"
 import { useAccount } from "@/hooks/useAccount"
 import { useSimulation } from "@/lib/SimulationContext"
 import type { Route } from "@/App"
@@ -19,6 +22,7 @@ interface Portfolio {
   cash_balance: number
   position_count: number
   position_symbols: PositionSymbol[]
+  total_value: number | null
   created_at: string
 }
 
@@ -30,6 +34,16 @@ interface UserProfile {
   email: string | null
   tier: "basic" | "premium"
   tierLimits: { label: string; maxPortfolios: number; maxPositions: number; startingCash: number }
+  created_at: string
+}
+
+interface AccountStats {
+  total_value: number
+  total_cash: number
+  position_value: number
+  unrealised_pnl: number
+  total_orders: number
+  created_at: string
 }
 
 interface Props {
@@ -39,6 +53,13 @@ interface Props {
 
 function fmt(n: number) {
   return n.toLocaleString("en-US", { style: "currency", currency: "USD", maximumFractionDigits: 2 })
+}
+
+function fmtCompact(n: number) {
+  const abs = Math.abs(n)
+  if (abs >= 1_000_000) return `${(n / 1_000_000).toFixed(2)}M`
+  if (abs >= 1_000) return `${(n / 1_000).toFixed(1)}k`
+  return n.toFixed(2)
 }
 
 function fearGreedColor(score: number) {
@@ -51,31 +72,88 @@ function fearGreedColor(score: number) {
 
 function sessionBadge(session: string) {
   switch (session?.toLowerCase()) {
-    case "open":      return { label: "Open", cls: "bg-emerald-500/10 text-emerald-600 border-emerald-500/20" }
-    case "pre":       return { label: "Pre-market", cls: "bg-yellow-500/10 text-yellow-600 border-yellow-500/20" }
-    case "after":     return { label: "After-hours", cls: "bg-orange-500/10 text-orange-600 border-orange-500/20" }
-    default:          return { label: "Closed", cls: "bg-muted text-muted-foreground border-border" }
+    case "open":  return { label: "Open",        cls: "bg-emerald-500/10 text-emerald-600 border-emerald-500/20" }
+    case "pre":   return { label: "Pre-market",  cls: "bg-yellow-500/10 text-yellow-600 border-yellow-500/20" }
+    case "after": return { label: "After-hours", cls: "bg-orange-500/10 text-orange-600 border-orange-500/20" }
+    default:      return { label: "Closed",      cls: "bg-muted text-muted-foreground border-border" }
   }
 }
+
+// ── Achievement definitions ───────────────────────────────────────────────────
+interface Achievement {
+  id: string
+  icon: React.ReactNode
+  label: string
+  desc: string
+  earned: (stats: AccountStats) => boolean
+  color: string
+}
+
+const ACHIEVEMENTS: Achievement[] = [
+  {
+    id: "first_trade",
+    icon: <Target className="w-3.5 h-3.5" />,
+    label: "First Trade",
+    desc: "Executed your first trade",
+    earned: s => s.total_orders >= 1,
+    color: "text-emerald-500 bg-emerald-500/10 border-emerald-500/20",
+  },
+  {
+    id: "active_trader",
+    icon: <Zap className="w-3.5 h-3.5" />,
+    label: "Active Trader",
+    desc: "10 trades placed",
+    earned: s => s.total_orders >= 10,
+    color: "text-blue-400 bg-blue-500/10 border-blue-500/20",
+  },
+  {
+    id: "power_trader",
+    icon: <Flame className="w-3.5 h-3.5" />,
+    label: "Power Trader",
+    desc: "50 trades placed",
+    earned: s => s.total_orders >= 50,
+    color: "text-orange-400 bg-orange-500/10 border-orange-500/20",
+  },
+  {
+    id: "veteran",
+    icon: <Trophy className="w-3.5 h-3.5" />,
+    label: "Market Veteran",
+    desc: "100 trades placed",
+    earned: s => s.total_orders >= 100,
+    color: "text-amber-400 bg-amber-500/10 border-amber-500/20",
+  },
+  {
+    id: "in_profit",
+    icon: <DollarSign className="w-3.5 h-3.5" />,
+    label: "In the Green",
+    desc: "Positive unrealised P&L",
+    earned: s => s.unrealised_pnl > 0,
+    color: "text-emerald-500 bg-emerald-500/10 border-emerald-500/20",
+  },
+  {
+    id: "diversified",
+    icon: <BarChart2 className="w-3.5 h-3.5" />,
+    label: "Diversified",
+    desc: "Total portfolio value over starting cash 2x",
+    earned: s => s.total_value > 0 && s.total_orders >= 5,
+    color: "text-purple-400 bg-purple-500/10 border-purple-500/20",
+  },
+]
 
 // ── Market Pulse Bar ──────────────────────────────────────────────────────────
 function MarketPulseBar() {
   const { market } = useSimulation()
   if (!market) return null
-
   const badge = sessionBadge(market.marketSession)
   const idxUp = market.indexChangePct >= 0
   const fgColor = fearGreedColor(market.fearGreed)
 
   return (
     <div className="bg-card border border-border rounded-xl px-4 py-3 flex flex-wrap items-center gap-x-6 gap-y-2 text-sm">
-      {/* Session */}
       <span className={`inline-flex items-center gap-1.5 text-xs font-medium px-2 py-0.5 rounded-full border ${badge.cls}`}>
         <span className="w-1.5 h-1.5 rounded-full bg-current" />
         {badge.label}
       </span>
-
-      {/* Index */}
       <div className="flex items-center gap-1.5">
         <span className="text-muted-foreground text-xs">Index</span>
         <span className="font-semibold">{market.index.toLocaleString("en-US", { maximumFractionDigits: 0 })}</span>
@@ -83,21 +161,15 @@ function MarketPulseBar() {
           {idxUp ? "+" : ""}{market.indexChangePct.toFixed(2)}%
         </span>
       </div>
-
-      {/* Fear & Greed */}
       <div className="flex items-center gap-1.5">
         <span className="text-muted-foreground text-xs">Fear &amp; Greed</span>
         <span className={`font-semibold ${fgColor}`}>{market.fearGreed}</span>
         <span className="text-xs text-muted-foreground">{market.fearGreedLabel}</span>
       </div>
-
-      {/* VIX */}
       <div className="flex items-center gap-1.5">
         <span className="text-muted-foreground text-xs">VIX</span>
         <span className="font-semibold">{market.vix.toFixed(1)}</span>
       </div>
-
-      {/* Top gainer */}
       {market.topGainer && (
         <div className="flex items-center gap-1.5">
           <TrendingUp className="w-3.5 h-3.5 text-emerald-500 shrink-0" />
@@ -105,8 +177,6 @@ function MarketPulseBar() {
           <span className="text-xs text-emerald-600">+{market.topGainer.pct.toFixed(2)}%</span>
         </div>
       )}
-
-      {/* Top loser */}
       {market.topLoser && (
         <div className="flex items-center gap-1.5">
           <TrendingDown className="w-3.5 h-3.5 text-red-500 shrink-0" />
@@ -114,13 +184,104 @@ function MarketPulseBar() {
           <span className="text-xs text-red-500">{market.topLoser.pct.toFixed(2)}%</span>
         </div>
       )}
-
-      {/* Advancers / decliners */}
       <div className="ml-auto flex items-center gap-1.5 text-xs text-muted-foreground">
         <span className="text-emerald-600 font-medium">{market.gainers} up</span>
         <span>/</span>
         <span className="text-red-500 font-medium">{market.losers} down</span>
       </div>
+    </div>
+  )
+}
+
+// ── Achievements strip ────────────────────────────────────────────────────────
+function AchievementsStrip({ stats }: { stats: AccountStats }) {
+  const earned = ACHIEVEMENTS.filter(a => a.earned(stats))
+  const locked = ACHIEVEMENTS.filter(a => !a.earned(stats))
+  if (earned.length === 0 && stats.total_orders === 0) return null
+
+  return (
+    <div>
+      <h2 className="text-sm font-semibold text-foreground mb-3 flex items-center gap-2">
+        <Trophy className="w-4 h-4 text-amber-400" />
+        Achievements
+        <span className="text-xs text-muted-foreground font-normal">
+          {earned.length}/{ACHIEVEMENTS.length} unlocked
+        </span>
+      </h2>
+      <div className="flex flex-wrap gap-2">
+        {earned.map(a => (
+          <div
+            key={a.id}
+            title={a.desc}
+            className={`flex items-center gap-1.5 text-xs font-medium px-2.5 py-1.5 rounded-full border ${a.color}`}
+          >
+            {a.icon}
+            {a.label}
+          </div>
+        ))}
+        {locked.map(a => (
+          <div
+            key={a.id}
+            title={`Locked: ${a.desc}`}
+            className="flex items-center gap-1.5 text-xs font-medium px-2.5 py-1.5 rounded-full border border-border text-muted-foreground/40 opacity-40 select-none"
+          >
+            {a.icon}
+            {a.label}
+          </div>
+        ))}
+      </div>
+    </div>
+  )
+}
+
+// ── Overall stats strip ───────────────────────────────────────────────────────
+function StatsStrip({ stats, startingCash }: { stats: AccountStats; startingCash: number }) {
+  const totalPnl = stats.total_value - startingCash
+  const pnlPct = startingCash > 0 ? (totalPnl / startingCash) * 100 : 0
+  const pnlUp = totalPnl >= 0
+
+  return (
+    <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+      <Card className="bg-card border-border">
+        <CardContent className="pt-4 pb-3">
+          <p className="text-xs text-muted-foreground mb-1">Total Portfolio Value</p>
+          <p className="text-xl font-bold text-foreground tabular-nums">${fmtCompact(stats.total_value)}</p>
+          <p className="text-xs text-muted-foreground mt-0.5">
+            Cash: ${fmtCompact(stats.total_cash)} · Positions: ${fmtCompact(stats.position_value)}
+          </p>
+        </CardContent>
+      </Card>
+
+      <Card className="bg-card border-border">
+        <CardContent className="pt-4 pb-3">
+          <p className="text-xs text-muted-foreground mb-1">Total P&amp;L</p>
+          <p className={`text-xl font-bold tabular-nums flex items-center gap-1 ${pnlUp ? "text-emerald-500" : "text-red-500"}`}>
+            {pnlUp ? <TrendingUp className="w-4 h-4" /> : <TrendingDown className="w-4 h-4" />}
+            {pnlUp ? "+" : ""}{fmt(totalPnl)}
+          </p>
+          <p className={`text-xs mt-0.5 ${pnlUp ? "text-emerald-600" : "text-red-500"}`}>
+            {pnlUp ? "+" : ""}{pnlPct.toFixed(2)}% vs starting cash
+          </p>
+        </CardContent>
+      </Card>
+
+      <Card className="bg-card border-border">
+        <CardContent className="pt-4 pb-3">
+          <p className="text-xs text-muted-foreground mb-1">Trades Placed</p>
+          <p className="text-xl font-bold text-foreground">{stats.total_orders.toLocaleString()}</p>
+          <p className="text-xs text-muted-foreground mt-0.5">Lifetime order count</p>
+        </CardContent>
+      </Card>
+
+      <Card className="bg-card border-border">
+        <CardContent className="pt-4 pb-3">
+          <p className="text-xs text-muted-foreground mb-1">Unrealised P&amp;L</p>
+          <p className={`text-xl font-bold tabular-nums ${stats.unrealised_pnl >= 0 ? "text-emerald-500" : "text-red-500"}`}>
+            {stats.unrealised_pnl >= 0 ? "+" : ""}{fmt(stats.unrealised_pnl)}
+          </p>
+          <p className="text-xs text-muted-foreground mt-0.5">Open positions</p>
+        </CardContent>
+      </Card>
     </div>
   )
 }
@@ -191,13 +352,19 @@ function WatchlistWidget() {
 
 // ── Portfolio card ─────────────────────────────────────────────────────────────
 function PortfolioCard({
-  p, onOpen, onDelete,
+  p, onOpen, onDelete, startingCash,
 }: {
   p: Portfolio
   onOpen: () => void
   onDelete: () => void
+  startingCash: number
 }) {
   const hasPositions = p.position_count > 0
+  const totalValue = p.total_value !== null ? Number(p.total_value) : p.cash_balance
+  const hasSnapshot = p.total_value !== null
+  const pnl = totalValue - startingCash
+  const pnlPct = startingCash > 0 ? (pnl / startingCash) * 100 : 0
+  const pnlUp = pnl >= 0
 
   return (
     <Card
@@ -216,10 +383,28 @@ function PortfolioCard({
         )}
       </CardHeader>
       <CardContent className="pt-0">
-        <div className="mb-3">
-          <p className="text-2xl font-bold text-foreground tabular-nums">{fmt(p.cash_balance)}</p>
-          <p className="text-xs text-muted-foreground mt-0.5">Available cash</p>
+        {/* Total value */}
+        <div className="mb-2">
+          <p className="text-2xl font-bold text-foreground tabular-nums">{fmt(totalValue)}</p>
+          <p className="text-xs text-muted-foreground mt-0.5">
+            {hasSnapshot ? "Total value" : "Starting cash"}
+          </p>
         </div>
+
+        {/* P&L vs starting cash */}
+        {hasSnapshot && (
+          <div className={`flex items-center gap-1 text-xs font-medium mb-3 ${pnlUp ? "text-emerald-500" : "text-red-500"}`}>
+            {pnlUp ? <TrendingUp className="w-3 h-3" /> : <TrendingDown className="w-3 h-3" />}
+            {pnlUp ? "+" : ""}{fmt(pnl)} ({pnlUp ? "+" : ""}{pnlPct.toFixed(2)}%)
+          </div>
+        )}
+
+        {/* Cash available */}
+        {hasSnapshot && (
+          <p className="text-xs text-muted-foreground mb-3">
+            Cash: {fmt(p.cash_balance)}
+          </p>
+        )}
 
         {/* Position symbol badges */}
         {hasPositions && p.position_symbols?.length > 0 && (
@@ -240,9 +425,9 @@ function PortfolioCard({
           </div>
         )}
 
-        {!hasPositions && (
+        {!hasPositions && !hasSnapshot && (
           <p className="text-xs text-muted-foreground mb-3">
-            Start with {fmt(p.cash_balance)} - make your first trade
+            Make your first trade to start tracking P&amp;L
           </p>
         )}
 
@@ -272,10 +457,11 @@ function PortfolioCard({
 // ── Dashboard ─────────────────────────────────────────────────────────────────
 export default function DashboardPage({ onNavigate, onNavigateToPortfolio }: Props) {
   const { user } = useUser()
-  const { getMe, getPortfolios, createPortfolio, deletePortfolio } = useAccount()
+  const { getMe, getPortfolios, createPortfolio, deletePortfolio, getStats } = useAccount()
 
   const [profile, setProfile] = useState<UserProfile | null>(null)
   const [portfolios, setPortfolios] = useState<Portfolio[]>([])
+  const [stats, setStats] = useState<AccountStats | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
 
@@ -290,15 +476,20 @@ export default function DashboardPage({ onNavigate, onNavigateToPortfolio }: Pro
 
   const load = useCallback(async () => {
     try {
-      const [me, plist] = await Promise.all([getMe(), getPortfolios()])
+      const [me, plist, accountStats] = await Promise.all([
+        getMe(),
+        getPortfolios(),
+        getStats().catch(() => null),
+      ])
       setProfile(me)
       setPortfolios(plist)
+      setStats(accountStats)
     } catch (e: unknown) {
       setError(e instanceof Error ? e.message : "Failed to load dashboard")
     } finally {
       setLoading(false)
     }
-  }, [getMe, getPortfolios])
+  }, [getMe, getPortfolios, getStats])
 
   useEffect(() => { load() }, [load])
 
@@ -308,7 +499,7 @@ export default function DashboardPage({ onNavigate, onNavigateToPortfolio }: Pro
     setCreateError(null)
     try {
       const p = await createPortfolio({ name: newName.trim(), description: newDesc.trim() || undefined })
-      setPortfolios(prev => [...prev, { ...p, position_count: 0, position_symbols: [] }])
+      setPortfolios(prev => [...prev, { ...p, position_count: 0, position_symbols: [], total_value: null }])
       setCreateOpen(false)
       setNewName("")
       setNewDesc("")
@@ -335,6 +526,7 @@ export default function DashboardPage({ onNavigate, onNavigateToPortfolio }: Pro
   }
 
   const atLimit = profile ? portfolios.length >= profile.tierLimits.maxPortfolios : false
+  const startingCash = profile?.tierLimits.startingCash ?? 10000
 
   if (loading) {
     return (
@@ -381,30 +573,45 @@ export default function DashboardPage({ onNavigate, onNavigateToPortfolio }: Pro
       {/* Market Pulse Bar */}
       <MarketPulseBar />
 
-      {/* Tier stat strip */}
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-        {[
-          { label: "Portfolios", value: `${portfolios.length} / ${profile?.tierLimits.maxPortfolios ?? 1}`, icon: Wallet },
-          { label: "Starting Cash", value: fmt(profile?.tierLimits.startingCash ?? 10000), icon: TrendingUp },
-          { label: "Max Positions", value: String(profile?.tierLimits.maxPositions ?? 10), icon: Star },
-          { label: "Plan", value: profile?.tierLimits.label ?? "Basic", icon: TrendingDown },
-        ].map(({ label, value, icon: Icon }) => (
-          <Card key={label} className="bg-card border-border">
-            <CardContent className="pt-4 pb-3">
-              <div className="flex items-center gap-2 text-muted-foreground mb-1">
-                <Icon className="w-3.5 h-3.5" />
-                <span className="text-xs">{label}</span>
-              </div>
-              <p className="text-lg font-semibold text-foreground">{value}</p>
-            </CardContent>
-          </Card>
-        ))}
+      {/* Stats strip - only when there's trading activity */}
+      {stats && stats.total_orders > 0 && (
+        <StatsStrip stats={stats} startingCash={startingCash} />
+      )}
+
+      {/* Achievements */}
+      {stats && <AchievementsStrip stats={stats} />}
+
+      {/* Community nudge */}
+      <div
+        className="flex items-center justify-between gap-3 px-4 py-3 rounded-xl border border-border bg-card cursor-pointer hover:border-foreground/20 transition-colors"
+        onClick={() => onNavigate("community")}
+        role="button"
+        tabIndex={0}
+        onKeyDown={e => e.key === "Enter" && onNavigate("community")}
+      >
+        <div className="flex items-center gap-3 min-w-0">
+          <div className="w-7 h-7 rounded-lg bg-blue-500/10 flex items-center justify-center shrink-0">
+            <Users className="w-3.5 h-3.5 text-blue-400" />
+          </div>
+          <div className="min-w-0">
+            <p className="text-sm font-medium text-foreground">Community Feed is live</p>
+            <p className="text-xs text-muted-foreground truncate">Share trades, analysis, and questions with other traders</p>
+          </div>
+        </div>
+        <Button size="sm" variant="outline" className="text-xs h-7 shrink-0" tabIndex={-1}>
+          View Feed
+        </Button>
       </div>
 
       {/* Portfolios */}
       <div>
         <div className="flex items-center justify-between mb-4">
-          <h2 className="text-lg font-semibold text-foreground">Portfolios</h2>
+          <h2 className="text-lg font-semibold text-foreground">
+            Portfolios
+            <span className="ml-2 text-sm font-normal text-muted-foreground">
+              {portfolios.length}/{profile?.tierLimits.maxPortfolios ?? 1}
+            </span>
+          </h2>
           <Button
             size="sm"
             onClick={() => setCreateOpen(true)}
@@ -436,6 +643,7 @@ export default function DashboardPage({ onNavigate, onNavigateToPortfolio }: Pro
                 p={p}
                 onOpen={() => onNavigateToPortfolio(p.id)}
                 onDelete={() => setDeleteTarget(p)}
+                startingCash={startingCash}
               />
             ))}
           </div>

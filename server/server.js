@@ -10,6 +10,7 @@ import accountRouter, { clerkWebhookHandler } from "./account-api.js";
 import billingRouter, { stripeWebhookHandler } from "./billing-api.js";
 import supportRouter from "./support-api.js";
 import adminRouter from "./admin-api.js";
+import communityRouter from "./community-api.js";
 import { startTickLoop } from "./tick.js";
 
 dotenv.config();
@@ -59,6 +60,9 @@ app.use("/api/v1/support", restrictedCors, supportRouter);
 
 // ── Admin API (admin-only guard inside the router) ────────────────────────────
 app.use("/api/v1/admin", restrictedCors, adminRouter);
+
+// ── Community API (GET posts is public; write ops check auth internally) ──────
+app.use("/api/v1/community", restrictedCors, communityRouter);
 
 // ── Global JSON error handler (must be before static/catch-all) ──────────────
 // Catches next(err) from any middleware (e.g. requireAuth, clerkMiddleware)

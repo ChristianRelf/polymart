@@ -186,7 +186,11 @@ router.get('/portfolios', async (req, res) => {
         'SELECT symbol, asset_type FROM positions WHERE portfolio_id = ? LIMIT 5',
         [p.id]
       );
-      return { ...p, position_count: cnt, position_symbols: posRows };
+      const [[snap]] = await pool.query(
+        'SELECT total_value FROM portfolio_snapshots WHERE portfolio_id = ? ORDER BY snapped_at DESC LIMIT 1',
+        [p.id]
+      );
+      return { ...p, position_count: cnt, position_symbols: posRows, total_value: snap?.total_value ?? null };
     }));
 
     res.json(withCounts);
