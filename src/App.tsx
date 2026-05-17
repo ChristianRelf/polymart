@@ -588,6 +588,7 @@ function MarketNudge({
 export default function App() {
   const [route, setRoute] = useState<Route>(getRoute)
   const [routeParams, setRouteParams] = useState<Record<string, string>>(() => parseHash().params)
+  const { isSignedIn, isLoaded } = useAuth()
 
   useEffect(() => {
     const handler = () => {
@@ -598,6 +599,15 @@ export default function App() {
     window.addEventListener("hashchange", handler)
     return () => window.removeEventListener("hashchange", handler)
   }, [])
+
+  // If a signed-in user lands on the auth pages, send them to the dashboard.
+  // This breaks the redirect loop: ProtectedRoute → sign-in → dashboard.
+  useEffect(() => {
+    if (isLoaded && isSignedIn && (route === "sign-in" || route === "sign-up")) {
+      navigate("dashboard")
+      setRoute("dashboard")
+    }
+  }, [isLoaded, isSignedIn, route])
 
   const go = (r: Route) => { navigate(r); setRoute(r); setRouteParams({}) }
   const goToInfo = (ticker: string) => {

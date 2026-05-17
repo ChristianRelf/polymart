@@ -25,7 +25,12 @@ export function useAccount() {
   const { getToken } = useAuth()
 
   const withToken = useCallback(async <T>(fn: (token: string) => Promise<T>): Promise<T> => {
-    const token = await getToken()
+    let token = await getToken()
+    if (!token) {
+      // Clerk sometimes needs one tick after a fresh sign-in to issue the token.
+      await new Promise(r => setTimeout(r, 300))
+      token = await getToken()
+    }
     if (!token) throw new Error("Not authenticated")
     return fn(token)
   }, [getToken])
