@@ -370,7 +370,7 @@
         s.textContent = `
           .pm-market-wrap {
             background: var(--pm-surface); border: 1px solid var(--pm-border);
-            border-radius: var(--pm-radius); overflow: hidden; max-width: 480px;
+            border-radius: var(--pm-radius); overflow: hidden; width: 100%; max-width: 480px;
             font-family: var(--pm-sans);
           }
           .pm-market-body { padding: 20px; }
@@ -487,7 +487,7 @@
         s.textContent = `
           .pm-lb-wrap {
             background: var(--pm-surface); border: 1px solid var(--pm-border);
-            border-radius: var(--pm-radius); overflow: hidden; max-width: 520px;
+            border-radius: var(--pm-radius); overflow: hidden; width: 100%; max-width: 520px;
             font-family: var(--pm-sans);
           }
           .pm-lb-header { padding: 16px 16px 12px; border-bottom: 1px solid var(--pm-border); }
@@ -694,7 +694,7 @@
         s.textContent = `
           .pm-sec-wrap {
             background: var(--pm-surface); border: 1px solid var(--pm-border);
-            border-radius: var(--pm-radius); overflow: hidden; max-width: 400px;
+            border-radius: var(--pm-radius); overflow: hidden; width: 100%; max-width: 400px;
             font-family: var(--pm-sans);
           }
           .pm-sec-header { padding: 16px; border-bottom: 1px solid var(--pm-border); }
@@ -774,7 +774,7 @@
         s.textContent = `
           .pm-ev-wrap {
             background: var(--pm-surface); border: 1px solid var(--pm-border);
-            border-radius: var(--pm-radius); overflow: hidden; max-width: 480px;
+            border-radius: var(--pm-radius); overflow: hidden; width: 100%; max-width: 480px;
             font-family: var(--pm-sans);
           }
           .pm-ev-header { padding: 14px 16px; font-size: 14px; font-weight: 700; border-bottom: 1px solid var(--pm-border); }

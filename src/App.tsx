@@ -368,58 +368,65 @@ function Footer({ setRoute }: { setRoute: (r: Route) => void }) {
 
   return (
     <footer className="border-t border-border mt-auto">
-      <div className="max-w-[1600px] mx-auto px-4 sm:px-8 pt-12 pb-8">
+      <div className="max-w-[1600px] mx-auto px-4 sm:px-8 pt-12">
 
-        {/* Nav columns */}
-        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-x-8 gap-y-10 mb-12">
+        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-x-8 gap-y-10 mb-12">
 
           <NavCol title="Platform">
             <FLink label="Home"          route="home" />
             <FLink label="Market"        route="market" />
+            <FLink label="Forex"         route="forex" />
             <FLink label="Paper Trading" route="dashboard" />
             <FLink label="Products"      route="products" />
             <FLink label="Widgets"       route="widgets" />
             <FLink label="Sponsor"       route="sponsor" />
-            <FExt  label="Demo Site"     href="/demo/index.html" />
           </NavCol>
 
-          <NavCol title="Learn">
-            <FLink label="Education"    route="education" />
+          <NavCol title="Resources">
+            <FLink label="Education"     route="education" />
             <FLink label="Student Tools" route="edu-tools" />
-            <FLink label="Changelog"    route="changelog" />
+            <FLink label="Changelog"     route="changelog" />
+            <FExt  label="Demo Site"     href="/demo/index.html" />
           </NavCol>
 
           <NavCol title="Community">
             <FLink label="Community Hub" route="community" />
-            <FExt  label="Discord" href="https://discord.com/oauth2/authorize?client_id=1503197938027860102" />
+            <FLink label="Blog"          route="community-blog" />
+            <FExt  label="Discord"       href="https://discord.com/oauth2/authorize?client_id=1503197938027860102" />
           </NavCol>
 
           <NavCol title="Developers">
             <FLink label="API Reference" route="api" />
             <FLink label="Help Center"   route="help" />
             <FExt  label="AI Docs"       href="/llms.txt" />
+            <FExt  label="Status"        href="https://status.polymart.co" />
           </NavCol>
 
           <NavCol title="Legal">
             <FLink label="Terms of Service" route="terms" />
             <FLink label="Privacy Policy"   route="privacy" />
+            <FLink label="Bot Terms"        route="bot-terms" />
+            <FLink label="Bot Privacy"      route="bot-privacy" />
+            <FLink label="Ko-fi Terms"      route="kofi-terms" />
           </NavCol>
+
         </div>
 
-        {/* Bottom bar */}
+        <div className="border-t border-border/50" />
 
-      {/* Large logo strip - full bleed */}
-      <div
-        className="overflow-hidden pointer-events-none select-none"
-        style={{ width: "100vw", marginLeft: "calc(50% - 50vw)" }}
-      >
-        <img
-          src="/polymartlogobottom2.png"
-          alt=""
-          aria-hidden="true"
-          className="w-full block"
-        />
-      </div>
+        {/* Large logo strip - full bleed */}
+        <div
+          className="overflow-hidden pointer-events-none select-none"
+          style={{ width: "100vw", marginLeft: "calc(50% - 50vw)" }}
+        >
+          <img
+            src="/polymartlogobottom2.png"
+            alt=""
+            aria-hidden="true"
+            className="w-full block"
+          />
+        </div>
+
       </div>
     </footer>
   )
