@@ -6,7 +6,7 @@ import { Textarea } from "@/components/ui/textarea"
 import { Badge } from "@/components/ui/badge"
 import {
   Loader2, AlertCircle, Shield, Trash2, Plus, ChevronLeft,
-  Users, Settings, Flag, FileText, UserX, Clock, CheckCircle,
+  Settings, Flag, FileText, UserX, Clock, CheckCircle,
   RotateCcw, EyeOff, Camera,
 } from "lucide-react"
 import { useAccount } from "@/hooks/useAccount"
@@ -46,7 +46,7 @@ export default function SubCommunityModPage({ slug, onNavigate, onNavigateToComm
     getCommunity, getModQueue, getCommunityBans, getModLog,
     removePost, restorePost, unbanUser, banUser,
     updateCommunity, deleteCommunity,
-    getCommunityRules, createCommunityRule, updateCommunityRule, deleteCommunityRule,
+    getCommunityRules, createCommunityRule, deleteCommunityRule,
     addModerator, removeModerator,
     uploadCommunityIcon, uploadCommunityBanner,
   } = useAccount()

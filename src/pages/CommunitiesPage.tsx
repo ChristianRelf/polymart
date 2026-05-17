@@ -211,7 +211,7 @@ function CommunityCard({
   )
 }
 
-export default function CommunitiesPage({ onNavigate, onNavigateToCommunity }: Props) {
+export default function CommunitiesPage({ onNavigateToCommunity }: Props) {
   const { isSignedIn } = useAuth()
   const { getCommunities, getMyJoinedCommunities, joinCommunity, leaveCommunity } = useAccount()
 
@@ -223,7 +223,6 @@ export default function CommunitiesPage({ onNavigate, onNavigateToCommunity }: P
   const [q, setQ] = useState("")
   const [sort, setSort] = useState<"members" | "new">("members")
   const [loading, setLoading] = useState(true)
-  const [loadingMine, setLoadingMine] = useState(false)
   const [error, setError] = useState("")
   const [showCreate, setShowCreate] = useState(false)
   const [joiningSlug, setJoiningSlug] = useState<string | null>(null)
@@ -246,14 +245,11 @@ export default function CommunitiesPage({ onNavigate, onNavigateToCommunity }: P
 
   const fetchMine = useCallback(async () => {
     if (!isSignedIn) return
-    setLoadingMine(true)
     try {
       const data = await getMyJoinedCommunities()
       setMyCommunities(data.communities ?? [])
     } catch {
       // silent
-    } finally {
-      setLoadingMine(false)
     }
   }, [isSignedIn, getMyJoinedCommunities])
 

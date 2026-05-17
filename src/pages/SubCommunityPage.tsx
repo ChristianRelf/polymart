@@ -3,7 +3,6 @@ import { useAuth } from "@clerk/clerk-react"
 import { Card, CardContent } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
-import { Textarea } from "@/components/ui/textarea"
 import { Input } from "@/components/ui/input"
 import {
   Users, Loader2, AlertCircle, Heart, Trash2, MessageCircle, Pencil,
@@ -89,12 +88,11 @@ function CommunityIcon({ icon_url, display_name, size = "md" }: { icon_url: stri
 }
 
 function PostCard({
-  post, userId, isMod, communitySlug, onDelete, onLike, onReport, onPin, onUnpin, onRemove, onRestore, onNavigateToPost, uploadImage,
+  post, userId, isMod, onDelete, onLike, onReport, onPin, onUnpin, onRemove, onRestore, onNavigateToPost, uploadImage,
 }: {
   post: Post
   userId: string | null | undefined
   isMod: boolean
-  communitySlug: string
   onDelete: (id: number) => void
   onLike: (id: number) => void
   onReport: (id: number, reason: string) => void
@@ -282,9 +280,8 @@ function PostCard({
   )
 }
 
-function ComposeForm({ communityId, communitySlug, onPost, uploadImage }: {
+function ComposeForm({ communityId, onPost, uploadImage }: {
   communityId: number
-  communitySlug: string
   onPost: (post: Post) => void
   uploadImage: (file: File) => Promise<string>
 }) {
@@ -336,7 +333,7 @@ function ComposeForm({ communityId, communitySlug, onPost, uploadImage }: {
   )
 }
 
-export default function SubCommunityPage({ slug, onNavigate, onNavigateToCommunity, onNavigateToMod, onNavigateToPost }: Props) {
+export default function SubCommunityPage({ slug, onNavigate, onNavigateToMod, onNavigateToPost }: Props) {
   const { isSignedIn, userId } = useAuth()
   const {
     getCommunity, joinCommunity, leaveCommunity,
@@ -409,7 +406,7 @@ export default function SubCommunityPage({ slug, onNavigate, onNavigateToCommuni
     fetchPosts(1, s)
   }
 
-  const uploadImage = (file: File) => uploadCommunityImage("community", file)
+  const uploadImage = (file: File) => uploadCommunityImage(file)
 
   if (loading) return (
     <div className="flex justify-center items-center py-24">
@@ -495,7 +492,6 @@ export default function SubCommunityPage({ slug, onNavigate, onNavigateToCommuni
           {community.is_member && !community.is_banned && (
             <ComposeForm
               communityId={community.id}
-              communitySlug={slug}
               onPost={post => setPosts(prev => [post, ...prev])}
               uploadImage={uploadImage}
             />
@@ -549,7 +545,6 @@ export default function SubCommunityPage({ slug, onNavigate, onNavigateToCommuni
                   post={p}
                   userId={userId}
                   isMod={isMod}
-                  communitySlug={slug}
                   onDelete={async id => { if (await deletePost(id).then(() => true).catch(() => false)) setPosts(prev => prev.filter(x => x.id !== id)) }}
                   onLike={id => likePost(id)}
                   onReport={(id, reason) => reportPost(id, reason)}
