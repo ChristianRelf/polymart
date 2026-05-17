@@ -31,7 +31,7 @@ function checkoutRateLimit(req, res, next) {
 }
 
 // ── Stripe webhook handler (exported and mounted separately in server.js) ─────
-// Requires express.raw() body parser — must be mounted BEFORE express.json().
+// Requires express.raw() body parser - must be mounted BEFORE express.json().
 export async function stripeWebhookHandler(req, res) {
   const sig = req.headers['stripe-signature'];
   const secret = process.env.STRIPE_WEBHOOK_SECRET;

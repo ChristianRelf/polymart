@@ -168,7 +168,7 @@ export default function AccountPage({ onNavigate }: Props) {
               </label>
             </div>
             <div>
-              <p className="text-sm font-medium">{user?.fullName || "—"}</p>
+              <p className="text-sm font-medium">{user?.fullName || "-"}</p>
               <p className="text-xs text-muted-foreground">Click the camera to change your photo</p>
             </div>
           </div>

@@ -13,7 +13,7 @@ function getStripe() {
 }
 
 // ── Admin auth middleware ──────────────────────────────────────────────────────
-// publicMetadata is not in the JWT by default — fetch it from Clerk's API directly.
+// publicMetadata is not in the JWT by default - fetch it from Clerk's API directly.
 // To grant admin: set publicMetadata = { role: 'admin' } in the Clerk dashboard.
 async function requireAdmin(req, res, next) {
   const { userId } = getAuth(req);

@@ -38,7 +38,7 @@ function restrictedCors(req, res, next) {
 // ── Clerk middleware (processes JWT on every request) ─────────────────────────
 app.use(clerkMiddleware());
 
-// ── Webhook routes (raw body — must come BEFORE express.json()) ───────────────
+// ── Webhook routes (raw body - must come BEFORE express.json()) ───────────────
 app.post("/api/v1/account/webhook", express.raw({ type: "application/json" }), clerkWebhookHandler);
 app.post("/api/v1/webhooks/stripe", express.raw({ type: "application/json" }), stripeWebhookHandler);
 

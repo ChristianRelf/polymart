@@ -11,7 +11,7 @@ interface Props {
 export default function ProtectedRoute({ children, onRedirect }: Props) {
   const { isSignedIn, isLoaded } = useAuth()
 
-  // Redirect in an effect, never during render — prevents loops caused by
+  // Redirect in an effect, never during render - prevents loops caused by
   // Clerk's brief isSignedIn=false window during auth transitions.
   useEffect(() => {
     if (isLoaded && !isSignedIn) {

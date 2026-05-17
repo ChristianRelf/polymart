@@ -74,7 +74,7 @@ router.post('/ticket', ticketRateLimit, async (req, res) => {
           ].join('\n'),
         });
       } catch (emailErr) {
-        // Don't fail the request if email send fails — ticket is already stored
+        // Don't fail the request if email send fails - ticket is already stored
         console.error('[support-api] Email send failed:', emailErr.message);
       }
     }

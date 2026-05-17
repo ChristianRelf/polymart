@@ -573,7 +573,7 @@ const ARTICLES: Article[] = [
   {
     category: "Accounts",
     q: "What is paper trading?",
-    a: "Paper trading lets you practice buying and selling assets using simulated money — no real funds involved. You create a portfolio, place buy and sell orders against the live Polymart prices, and track your performance over time. It is designed for learning market mechanics and testing strategies without any financial risk.",
+    a: "Paper trading lets you practice buying and selling assets using simulated money - no real funds involved. You create a portfolio, place buy and sell orders against the live Polymart prices, and track your performance over time. It is designed for learning market mechanics and testing strategies without any financial risk.",
     search: "paper trading what is simulated money virtual portfolio",
   },
   {
@@ -619,7 +619,7 @@ const ARTICLES: Article[] = [
   {
     category: "Accounts",
     q: "How do prices work when I place an order?",
-    a: "When you place an order the server fetches the current simulated price at that moment. You submit the asset type, symbol, side (buy/sell), and quantity — the price is always resolved server-side, never from your browser. This prevents any manipulation of execution prices.",
+    a: "When you place an order the server fetches the current simulated price at that moment. You submit the asset type, symbol, side (buy/sell), and quantity - the price is always resolved server-side, never from your browser. This prevents any manipulation of execution prices.",
     search: "price order execution buy sell how price fetched server",
   },
   {
@@ -637,7 +637,7 @@ const ARTICLES: Article[] = [
   {
     category: "Accounts",
     q: "How do I change my profile picture?",
-    a: "On the Account Settings page, click the camera icon on your avatar to upload a new photo. Polymart uses Clerk to store profile images — supported formats include JPEG, PNG, and WebP.",
+    a: "On the Account Settings page, click the camera icon on your avatar to upload a new photo. Polymart uses Clerk to store profile images - supported formats include JPEG, PNG, and WebP.",
     search: "profile picture avatar photo upload change camera",
   },
   {
@@ -947,7 +947,7 @@ export default function HelpCenterPage({ onNavigate }: Props) {
           supportResult === "sent" ? (
             <div className="flex items-center gap-2 text-emerald-400 text-sm">
               <CheckCircle2 className="w-4 h-4" />
-              <span>Message sent — we'll be in touch soon.</span>
+              <span>Message sent - we'll be in touch soon.</span>
             </div>
           ) : (
             <form onSubmit={handleSupportSubmit} className="space-y-3">
@@ -975,7 +975,7 @@ export default function HelpCenterPage({ onNavigate }: Props) {
                 />
               </div>
               {supportResult === "error" && (
-                <p className="text-xs text-destructive">Failed to send — please try again.</p>
+                <p className="text-xs text-destructive">Failed to send - please try again.</p>
               )}
               <Button
                 type="submit"

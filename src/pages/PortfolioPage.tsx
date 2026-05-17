@@ -235,7 +235,7 @@ export default function PortfolioPage({ portfolioId, onNavigate }: Props) {
                               <span className="text-xs text-muted-foreground shrink-0">{pos.quantity} @ {fmt(pos.avg_cost)}</span>
                             </div>
                             <div className="text-right shrink-0">
-                              <p className="text-sm font-semibold">{currentPrice ? fmt(currentPrice) : "—"}</p>
+                              <p className="text-sm font-semibold">{currentPrice ? fmt(currentPrice) : "-"}</p>
                               <p className={`text-xs ${pnl >= 0 ? "text-emerald-400" : "text-red-400"}`}>
                                 {pnl >= 0 ? <TrendingUp className="inline w-3 h-3 mr-0.5" /> : <TrendingDown className="inline w-3 h-3 mr-0.5" />}
                                 {fmt(pnl)} ({pct(pnlPct)})

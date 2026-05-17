@@ -210,7 +210,7 @@ function CatBadge({ cat }: { cat: string }) {
   )
 }
 
-// ── Pair flags (CDN images — emoji fonts are unreliable on Windows) ───────────
+// ── Pair flags (CDN images - emoji fonts are unreliable on Windows) ───────────
 function PairFlags({ baseCountry, quoteCountry, size = "sm" }: { baseCountry: string; quoteCountry: string; size?: "sm" | "lg" }) {
   const w = size === "lg" ? 28 : 20
   const h = size === "lg" ? 21 : 15

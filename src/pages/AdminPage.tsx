@@ -230,7 +230,7 @@ export default function AdminPage({ onNavigate }: Props) {
                 <CardContent className="py-3 px-4 flex items-center justify-between gap-4">
                   <div className="flex items-center gap-3 min-w-0">
                     <div className="min-w-0">
-                      <p className="text-sm font-medium truncate">{u.display_name ?? "—"}</p>
+                      <p className="text-sm font-medium truncate">{u.display_name ?? "-"}</p>
                       <p className="text-xs text-muted-foreground truncate">{u.email ?? "no email"}</p>
                     </div>
                   </div>
@@ -267,7 +267,7 @@ export default function AdminPage({ onNavigate }: Props) {
               <Card key={t.id} className="bg-card border-border cursor-pointer hover:border-foreground/20 transition-colors" onClick={() => openTicketDetail(t)}>
                 <CardContent className="py-3 px-4 flex items-center justify-between gap-4">
                   <div className="min-w-0">
-                    <p className="text-sm font-medium truncate">#{t.id} — {t.subject}</p>
+                    <p className="text-sm font-medium truncate">#{t.id} - {t.subject}</p>
                     <p className="text-xs text-muted-foreground">{t.display_name ?? t.email}</p>
                   </div>
                   <div className="flex items-center gap-2 shrink-0">

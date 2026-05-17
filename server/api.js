@@ -455,7 +455,7 @@ function formatPairRow(p, def) {
     pipSize,
     decimals: def?.decimals ?? 4,
     updatedAt: p.updated_at,
-    // Computed from existing fields — no extra DB columns needed
+    // Computed from existing fields - no extra DB columns needed
     pivotP:  +((+p.hi_session + +p.lo_session + +p.price) / 3).toFixed(6),
     pivotR1: +(2 * (+p.hi_session + +p.lo_session + +p.price) / 3 - +p.lo_session).toFixed(6),
     pivotR2: +((+p.hi_session + +p.lo_session + +p.price) / 3 + (+p.hi_session - +p.lo_session)).toFixed(6),

@@ -65,7 +65,7 @@ async function getOwnedPortfolio(portfolioId, userId) {
 }
 
 // ── Clerk webhook handler (exported and mounted separately in server.js) ──────
-// Requires express.raw() body parser — must be mounted BEFORE express.json().
+// Requires express.raw() body parser - must be mounted BEFORE express.json().
 export async function clerkWebhookHandler(req, res) {
   const secret = process.env.CLERK_WEBHOOK_SECRET;
   if (!secret) return res.status(500).json({ error: 'Webhook secret not configured' });

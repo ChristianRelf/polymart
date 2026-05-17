@@ -3,7 +3,7 @@
 //
 // assets: keys must match asset_type values used in orders/positions.
 //         true = tier can trade this asset class; false = blocked (upgrade prompt shown).
-//         Add new product keys here when they launch — no schema changes needed.
+//         Add new product keys here when they launch - no schema changes needed.
 
 const TIER_CONFIG = {
   basic: {
