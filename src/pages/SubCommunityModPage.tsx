@@ -52,7 +52,7 @@ export default function SubCommunityModPage({ slug, onNavigate, onNavigateToComm
   } = useAccount()
 
   const [tab, setTab] = useState<Tab>("queue")
-  const [community, setCommunity] = useState<{ id: number; display_name: string; description: string | null; icon_url: string | null; banner_url: string | null; user_role: string | null; owner_clerk_id: string } | null>(null)
+  const [community, setCommunity] = useState<{ id: number; display_name: string; description: string | null; icon_url: string | null; banner_url: string | null; user_role: string | null; owner_clerk_id: string; verification_type: string | null } | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState("")
 
@@ -463,10 +463,18 @@ export default function SubCommunityModPage({ slug, onNavigate, onNavigateToComm
             <CardContent className="p-4 space-y-4">
               <p className="text-xs font-semibold text-muted-foreground/60 uppercase tracking-wider">Community Info</p>
 
-              <div>
-                <label className="text-xs text-muted-foreground mb-1 block">Display Name</label>
-                <Input value={editName} onChange={e => setEditName(e.target.value)} maxLength={128} className="h-9 text-sm" />
-              </div>
+              {community.verification_type === "verified" || community.verification_type === "official" ? (
+                <div>
+                  <label className="text-xs text-muted-foreground mb-1 block">Display Name</label>
+                  <p className="text-sm text-foreground">{community.display_name}</p>
+                  <p className="text-[11px] text-muted-foreground/60 mt-1">Community name can only be changed by Polymart staff for verified communities.</p>
+                </div>
+              ) : (
+                <div>
+                  <label className="text-xs text-muted-foreground mb-1 block">Display Name</label>
+                  <Input value={editName} onChange={e => setEditName(e.target.value)} maxLength={128} className="h-9 text-sm" />
+                </div>
+              )}
               <div>
                 <label className="text-xs text-muted-foreground mb-1 block">Description</label>
                 <Textarea value={editDesc} onChange={e => setEditDesc(e.target.value)} maxLength={500} rows={3} className="text-sm resize-none" />

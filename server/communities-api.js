@@ -1,5 +1,5 @@
 import { Router }        from 'express';
-import { getAuth }       from '@clerk/express';
+import { getAuth, clerkClient } from '@clerk/express';
 import { randomBytes }   from 'crypto';
 import { fileURLToPath } from 'url';
 import path              from 'path';
@@ -251,6 +251,7 @@ router.get('/:slug', async (req, res) => {
 
 // ── PUT /communities/:slug ────────────────────────────────────────────────────
 // Mod/Owner. Update display_name or description.
+// Verified/official communities: display_name can only be changed by Polymart staff (admin role).
 router.put('/:slug', async (req, res) => {
   const community = await getCommunityBySlug(req.params.slug);
   if (!community) return res.status(404).json({ error: 'Community not found' });
@@ -260,11 +261,26 @@ router.put('/:slug', async (req, res) => {
 
   const { display_name, description } = req.body;
   const updates = [], vals = [];
+
   if (display_name != null) {
     if (typeof display_name !== 'string' || !display_name.trim() || display_name.length > 128)
       return res.status(400).json({ error: 'display_name must be 1-128 chars' });
+
+    const isVerified = community.verification_type === 'verified' || community.verification_type === 'official';
+    if (isVerified) {
+      try {
+        const user = await clerkClient.users.getUser(mod.userId);
+        if (user.publicMetadata?.role !== 'admin') {
+          return res.status(403).json({ error: 'Community name can only be changed by Polymart staff for verified communities' });
+        }
+      } catch {
+        return res.status(403).json({ error: 'Unable to verify permissions' });
+      }
+    }
+
     updates.push('display_name = ?'); vals.push(display_name.trim());
   }
+
   if (description != null) { updates.push('description = ?'); vals.push(String(description).trim()); }
 
   if (!updates.length) return res.status(400).json({ error: 'Nothing to update' });
