@@ -3,27 +3,27 @@ import { getAuth }       from '@clerk/express';
 import { randomBytes }   from 'crypto';
 import { fileURLToPath } from 'url';
 import path              from 'path';
-import fs                from 'fs';
+import fs                from 'fs/promises';
+import { mkdirSync }     from 'fs';
 import multer            from 'multer';
+import sharp             from 'sharp';
 import pool              from './db.js';
 
 const __dirname   = path.dirname(fileURLToPath(import.meta.url));
 const UPLOADS_DIR = path.join(__dirname, 'uploads', 'communities');
-fs.mkdirSync(UPLOADS_DIR, { recursive: true });
+mkdirSync(UPLOADS_DIR, { recursive: true });
 
-const MIME_TO_EXT = { 'image/jpeg': '.jpg', 'image/png': '.png', 'image/gif': '.gif', 'image/webp': '.webp' };
-
-const imgStorage = multer.diskStorage({
-  destination: (_req, _file, cb) => cb(null, UPLOADS_DIR),
-  filename:    (_req, file,  cb) => {
-    const ext = MIME_TO_EXT[file.mimetype] || '.jpg';
-    cb(null, randomBytes(16).toString('hex') + ext);
-  },
-});
-const uploadIcon   = multer({ storage: imgStorage, limits: { fileSize: 1 * 1024 * 1024 },
+const memStorage = multer.memoryStorage();
+const uploadIcon   = multer({ storage: memStorage, limits: { fileSize: 5 * 1024 * 1024 },
   fileFilter: (_req, f, cb) => cb(null, ['image/jpeg','image/png','image/webp'].includes(f.mimetype)) });
-const uploadBanner = multer({ storage: imgStorage, limits: { fileSize: 3 * 1024 * 1024 },
+const uploadBanner = multer({ storage: memStorage, limits: { fileSize: 10 * 1024 * 1024 },
   fileFilter: (_req, f, cb) => cb(null, ['image/jpeg','image/png','image/webp','image/gif'].includes(f.mimetype)) });
+
+async function processAndSave(buffer, filename, sharpPipeline) {
+  const filepath = path.join(UPLOADS_DIR, filename);
+  await sharpPipeline(sharp(buffer)).toFile(filepath);
+  return `/uploads/communities/${filename}`;
+}
 
 const VALID_SLUG    = /^[a-z0-9-]{3,64}$/;
 const VALID_REASONS = new Set(['Spam', 'Misinformation', 'Inappropriate', 'Off-topic', 'Hate speech']);
@@ -429,11 +429,19 @@ router.post('/:slug/upload/icon', async (req, res, next) => {
   if (!mod) return;
 
   uploadIcon.single('image')(req, res, async err => {
-    if (err) return res.status(400).json({ error: err.code === 'LIMIT_FILE_SIZE' ? 'Max 1 MB' : (err.message || 'Upload error') });
-    if (!req.file) return res.status(400).json({ error: 'No valid image (jpeg/png/webp, max 1 MB)' });
-    const url = `/uploads/communities/${req.file.filename}`;
-    await pool.query('UPDATE communities SET icon_url = ? WHERE id = ?', [url, community.id]);
-    res.json({ url });
+    if (err) return res.status(400).json({ error: err.code === 'LIMIT_FILE_SIZE' ? 'Max 5 MB' : (err.message || 'Upload error') });
+    if (!req.file) return res.status(400).json({ error: 'No valid image (jpeg/png/webp, max 5 MB)' });
+    try {
+      const filename = randomBytes(16).toString('hex') + '.webp';
+      const url = await processAndSave(req.file.buffer, filename, s =>
+        s.resize(256, 256, { fit: 'cover', withoutEnlargement: true }).webp({ quality: 85 })
+      );
+      await pool.query('UPDATE communities SET icon_url = ? WHERE id = ?', [url, community.id]);
+      res.json({ url });
+    } catch (e) {
+      console.error('[communities-api] icon sharp:', e.message);
+      res.status(500).json({ error: 'Image processing failed' });
+    }
   });
 });
 
@@ -445,11 +453,19 @@ router.post('/:slug/upload/banner', async (req, res, next) => {
   if (!mod) return;
 
   uploadBanner.single('image')(req, res, async err => {
-    if (err) return res.status(400).json({ error: err.code === 'LIMIT_FILE_SIZE' ? 'Max 3 MB' : (err.message || 'Upload error') });
-    if (!req.file) return res.status(400).json({ error: 'No valid image (jpeg/png/webp/gif, max 3 MB)' });
-    const url = `/uploads/communities/${req.file.filename}`;
-    await pool.query('UPDATE communities SET banner_url = ? WHERE id = ?', [url, community.id]);
-    res.json({ url });
+    if (err) return res.status(400).json({ error: err.code === 'LIMIT_FILE_SIZE' ? 'Max 10 MB' : (err.message || 'Upload error') });
+    if (!req.file) return res.status(400).json({ error: 'No valid image (jpeg/png/webp/gif, max 10 MB)' });
+    try {
+      const filename = randomBytes(16).toString('hex') + '.webp';
+      const url = await processAndSave(req.file.buffer, filename, s =>
+        s.resize(1200, 400, { fit: 'cover', withoutEnlargement: true }).webp({ quality: 85 })
+      );
+      await pool.query('UPDATE communities SET banner_url = ? WHERE id = ?', [url, community.id]);
+      res.json({ url });
+    } catch (e) {
+      console.error('[communities-api] banner sharp:', e.message);
+      res.status(500).json({ error: 'Image processing failed' });
+    }
   });
 });
 

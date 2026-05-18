@@ -53,7 +53,7 @@ export function CommunitySidebar({ currentSlug, onNavigate, onNavigateToCommunit
         }`}
       >
         {c.icon_url ? (
-          <img src={c.icon_url} alt="" className="w-5 h-5 rounded-full object-cover shrink-0" />
+          <img src={c.icon_url} alt="" loading="lazy" decoding="async" className="w-5 h-5 rounded-full object-cover shrink-0" />
         ) : (
           <div className="w-5 h-5 rounded-full bg-primary/20 flex items-center justify-center text-[9px] font-bold text-primary shrink-0">
             {c.display_name[0]?.toUpperCase()}

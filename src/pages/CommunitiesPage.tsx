@@ -34,7 +34,7 @@ interface Props {
 
 function CommunityAvatar({ icon_url, display_name, size = "md" }: { icon_url: string | null; display_name: string; size?: "sm" | "md" | "lg" }) {
   const sz = size === "sm" ? "w-8 h-8 text-sm" : size === "lg" ? "w-14 h-14 text-xl" : "w-10 h-10 text-base"
-  if (icon_url) return <img src={icon_url} alt={display_name} className={`${sz} rounded-full object-cover shrink-0 border border-border`} />
+  if (icon_url) return <img src={icon_url} alt={display_name} loading="lazy" decoding="async" className={`${sz} rounded-full object-cover shrink-0 border border-border`} />
   return (
     <div className={`${sz} rounded-full bg-muted flex items-center justify-center shrink-0 border border-border font-bold text-muted-foreground`}>
       {display_name[0]?.toUpperCase() ?? "C"}

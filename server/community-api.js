@@ -3,27 +3,18 @@ import { getAuth }         from '@clerk/express';
 import { randomBytes }     from 'crypto';
 import { fileURLToPath }   from 'url';
 import path                from 'path';
-import fs                  from 'fs';
+import { mkdirSync }       from 'fs';
 import multer              from 'multer';
+import sharp               from 'sharp';
 import pool                from './db.js';
 
 const __dirname    = path.dirname(fileURLToPath(import.meta.url));
 const UPLOADS_DIR  = path.join(__dirname, 'uploads', 'community');
-fs.mkdirSync(UPLOADS_DIR, { recursive: true });
-
-const MIME_TO_EXT = { 'image/jpeg': '.jpg', 'image/png': '.png', 'image/gif': '.gif', 'image/webp': '.webp' };
-
-const storage = multer.diskStorage({
-  destination: (_req, _file, cb) => cb(null, UPLOADS_DIR),
-  filename:    (_req, file,  cb) => {
-    const ext = MIME_TO_EXT[file.mimetype] || '.jpg';
-    cb(null, randomBytes(16).toString('hex') + ext);
-  },
-});
+mkdirSync(UPLOADS_DIR, { recursive: true });
 
 const upload = multer({
-  storage,
-  limits: { fileSize: 3 * 1024 * 1024 },
+  storage: multer.memoryStorage(),
+  limits: { fileSize: 10 * 1024 * 1024 },
   fileFilter: (_req, file, cb) => {
     const allowed = new Set(['image/jpeg', 'image/png', 'image/gif', 'image/webp']);
     cb(null, allowed.has(file.mimetype));
@@ -78,22 +69,33 @@ function commentRateLimit(req, res, next) {
 }
 
 // ── POST /community/upload ────────────────────────────────────────────────────
-// Auth required. Accepts a single image file ≤ 3 MB. Returns { url }.
+// Auth required. Accepts a single image file ≤ 10 MB. Returns { url }.
 router.post('/upload', (req, res, next) => {
   const { userId } = getAuth(req);
   if (!userId) return res.status(401).json({ error: 'Authentication required' });
   upload.single('image')(req, res, err => {
     if (err) {
       const msg = err.code === 'LIMIT_FILE_SIZE'
-        ? 'File too large — maximum 3 MB'
+        ? 'File too large — maximum 10 MB'
         : (err.message || 'Upload error');
       return res.status(400).json({ error: msg });
     }
     next();
   });
-}, (req, res) => {
-  if (!req.file) return res.status(400).json({ error: 'No valid image provided (jpeg/png/gif/webp, max 3 MB)' });
-  res.json({ url: `/uploads/community/${req.file.filename}` });
+}, async (req, res) => {
+  if (!req.file) return res.status(400).json({ error: 'No valid image provided (jpeg/png/gif/webp, max 10 MB)' });
+  try {
+    const filename = randomBytes(16).toString('hex') + '.webp';
+    const filepath = path.join(UPLOADS_DIR, filename);
+    await sharp(req.file.buffer)
+      .resize(1920, 1920, { fit: 'inside', withoutEnlargement: true })
+      .webp({ quality: 85 })
+      .toFile(filepath);
+    res.json({ url: `/uploads/community/${filename}` });
+  } catch (e) {
+    console.error('[community-api] image sharp:', e.message);
+    res.status(500).json({ error: 'Image processing failed' });
+  }
 });
 
 // ── GET /community/my-reports ─────────────────────────────────────────────────

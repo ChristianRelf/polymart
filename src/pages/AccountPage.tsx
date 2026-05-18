@@ -297,7 +297,7 @@ function CommunitySection({
                   className="flex items-center gap-2 rounded-md border border-border bg-muted/30 px-2.5 py-1.5 text-sm hover:bg-muted/60 transition-colors cursor-pointer"
                 >
                   {c.icon_url ? (
-                    <img src={c.icon_url} alt="" className="w-5 h-5 rounded-full object-cover" />
+                    <img src={c.icon_url} alt="" loading="lazy" decoding="async" className="w-5 h-5 rounded-full object-cover" />
                   ) : (
                     <div className="w-5 h-5 rounded-full bg-primary/20 flex items-center justify-center text-[9px] font-bold text-primary">
                       {c.display_name.charAt(0).toUpperCase()}

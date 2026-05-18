@@ -148,7 +148,11 @@ app.use((err, req, res, _next) => {
 
 // ── Community image uploads ───────────────────────────────────────────────────
 // Persistent storage outside dist/ so rebuilds don't wipe uploads.
-app.use("/uploads", express.static(path.join(__dirname, "uploads")));
+// Filenames are random hex — content never changes, so cache aggressively.
+app.use("/uploads", express.static(path.join(__dirname, "uploads"), {
+  maxAge: "1y",
+  immutable: true,
+}));
 
 // ── Serve built frontend ──────────────────────────────────────────────────────
 const distPath = path.join(__dirname, "..", "dist");

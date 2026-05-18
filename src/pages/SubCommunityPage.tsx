@@ -82,7 +82,7 @@ function timeAgo(iso: string) {
 
 function CommunityIcon({ icon_url, display_name, size = "md" }: { icon_url: string | null; display_name: string; size?: "sm" | "md" | "lg" }) {
   const sz = size === "sm" ? "w-8 h-8" : size === "lg" ? "w-12 h-12 text-xl" : "w-10 h-10"
-  if (icon_url) return <img src={icon_url} alt={display_name} className={`${sz} rounded-full object-cover border-2 border-background shrink-0`} />
+  if (icon_url) return <img src={icon_url} alt={display_name} loading="lazy" decoding="async" className={`${sz} rounded-full object-cover border-2 border-background shrink-0`} />
   return (
     <div className={`${sz} rounded-full bg-muted flex items-center justify-center border-2 border-background font-bold text-muted-foreground shrink-0 text-lg`}>
       {display_name[0]?.toUpperCase() ?? "C"}
@@ -164,7 +164,7 @@ function PostCard({
         {/* Header */}
         <div className="flex items-start gap-2 mb-2">
           {post.avatar_url
-            ? <img src={post.avatar_url} alt="" className="w-7 h-7 rounded-full object-cover shrink-0 mt-0.5" />
+            ? <img src={post.avatar_url} alt="" loading="lazy" decoding="async" className="w-7 h-7 rounded-full object-cover shrink-0 mt-0.5" />
             : <div className="w-7 h-7 rounded-full bg-muted flex items-center justify-center shrink-0 mt-0.5 text-xs font-bold text-muted-foreground">{post.display_name?.[0]?.toUpperCase() ?? "?"}</div>
           }
           <div className="flex-1 min-w-0">
@@ -432,7 +432,7 @@ export default function SubCommunityPage({ slug, onNavigate, onNavigateToCommuni
       {/* Banner */}
       {community.banner_url && (
         <div className="w-full h-32 sm:h-48 overflow-hidden">
-          <img src={community.banner_url} alt="" className="w-full h-full object-cover" />
+          <img src={community.banner_url} alt="" decoding="async" className="w-full h-full object-cover" />
         </div>
       )}
 
@@ -625,7 +625,7 @@ export default function SubCommunityPage({ slug, onNavigate, onNavigateToCommuni
                   {community.moderators.map(m => (
                     <div key={m.clerk_id} className="flex items-center gap-2">
                       {m.avatar_url
-                        ? <img src={m.avatar_url} alt="" className="w-6 h-6 rounded-full object-cover" />
+                        ? <img src={m.avatar_url} alt="" loading="lazy" decoding="async" className="w-6 h-6 rounded-full object-cover" />
                         : <div className="w-6 h-6 rounded-full bg-muted flex items-center justify-center text-xs font-bold text-muted-foreground">{m.display_name[0]?.toUpperCase()}</div>
                       }
                       <span className="text-xs text-muted-foreground">{m.display_name}</span>

@@ -17,6 +17,10 @@ export default defineConfig({
         target: `http://localhost:${process.env.PORT || 4000}`,
         changeOrigin: true,
       },
+      "/uploads": {
+        target: `http://localhost:${process.env.PORT || 4000}`,
+        changeOrigin: true,
+      },
     },
   },
 })

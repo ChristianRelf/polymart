@@ -437,7 +437,7 @@ export default function SubCommunityModPage({ slug, onNavigate, onNavigateToComm
                 <CardContent className="p-3 flex items-center justify-between gap-3">
                   <div className="flex items-center gap-2.5">
                     {m.avatar_url
-                      ? <img src={m.avatar_url} alt="" className="w-8 h-8 rounded-full object-cover" />
+                      ? <img src={m.avatar_url} alt="" loading="lazy" decoding="async" className="w-8 h-8 rounded-full object-cover" />
                       : <div className="w-8 h-8 rounded-full bg-muted flex items-center justify-center text-xs font-bold text-muted-foreground">{m.display_name[0]?.toUpperCase()}</div>
                     }
                     <div>
