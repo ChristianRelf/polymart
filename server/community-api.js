@@ -11,10 +11,12 @@ const __dirname    = path.dirname(fileURLToPath(import.meta.url));
 const UPLOADS_DIR  = path.join(__dirname, 'uploads', 'community');
 fs.mkdirSync(UPLOADS_DIR, { recursive: true });
 
+const MIME_TO_EXT = { 'image/jpeg': '.jpg', 'image/png': '.png', 'image/gif': '.gif', 'image/webp': '.webp' };
+
 const storage = multer.diskStorage({
   destination: (_req, _file, cb) => cb(null, UPLOADS_DIR),
   filename:    (_req, file,  cb) => {
-    const ext = path.extname(file.originalname).toLowerCase().replace(/[^.a-z]/g, '') || '.jpg';
+    const ext = MIME_TO_EXT[file.mimetype] || '.jpg';
     cb(null, randomBytes(16).toString('hex') + ext);
   },
 });
@@ -52,6 +54,24 @@ function postRateLimit(req, res, next) {
   }
   if (entry.count >= 5) {
     return res.status(429).json({ error: 'You can post a maximum of 5 times per hour.' });
+  }
+  entry.count++;
+  next();
+}
+
+// Rate limit: 30 comments per hour per user
+const commentRateMap = new Map();
+function commentRateLimit(req, res, next) {
+  const { userId } = getAuth(req);
+  if (!userId) return next();
+  const now   = Date.now();
+  const entry = commentRateMap.get(userId);
+  if (!entry || now - entry.resetAt > 3_600_000) {
+    commentRateMap.set(userId, { count: 1, resetAt: now });
+    return next();
+  }
+  if (entry.count >= 30) {
+    return res.status(429).json({ error: 'You can post a maximum of 30 comments per hour.' });
   }
   entry.count++;
   next();
@@ -196,15 +216,17 @@ router.post('/posts', postRateLimit, async (req, res) => {
     }
   }
 
+  const [[profile]] = await pool.query(
+    'SELECT display_name, avatar_url FROM user_profiles WHERE clerk_id = ?',
+    [userId]
+  );
+
+  const shareId = generateShareId();
+  const conn = await pool.getConnection();
   try {
-    const [[profile]] = await pool.query(
-      'SELECT display_name, avatar_url FROM user_profiles WHERE clerk_id = ?',
-      [userId]
-    );
+    await conn.beginTransaction();
 
-    const shareId = generateShareId();
-
-    const [result] = await pool.query(
+    const [result] = await conn.query(
       `INSERT INTO community_posts (community_id, share_id, clerk_id, display_name, avatar_url, title, body, post_type)
        VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
       [resolvedCommunityId, shareId, userId, profile?.display_name ?? null, profile?.avatar_url ?? null,
@@ -212,8 +234,10 @@ router.post('/posts', postRateLimit, async (req, res) => {
     );
 
     if (resolvedCommunityId) {
-      await pool.query('UPDATE communities SET post_count = post_count + 1 WHERE id = ?', [resolvedCommunityId]);
+      await conn.query('UPDATE communities SET post_count = post_count + 1 WHERE id = ?', [resolvedCommunityId]);
     }
+
+    await conn.commit();
 
     res.status(201).json({
       id:            result.insertId,
@@ -232,8 +256,11 @@ router.post('/posts', postRateLimit, async (req, res) => {
       created_at:    new Date().toISOString(),
     });
   } catch (err) {
+    await conn.rollback();
     console.error('[community-api] POST /posts:', err.message);
     res.status(500).json({ error: 'Internal server error' });
+  } finally {
+    conn.release();
   }
 });
 
@@ -305,15 +332,32 @@ router.post('/posts/:id/like', async (req, res) => {
   const postId = parseInt(req.params.id);
   if (!postId) return res.status(400).json({ error: 'Invalid post id' });
 
+  const conn = await pool.getConnection();
   try {
-    const [result] = await pool.query(
+    await conn.beginTransaction();
+    const [ins] = await conn.query(
+      'INSERT IGNORE INTO community_likes (post_id, clerk_id) VALUES (?, ?)',
+      [postId, userId]
+    );
+    if (ins.affectedRows === 0) {
+      await conn.rollback();
+      return res.json({ success: true, already_liked: true });
+    }
+    const [upd] = await conn.query(
       'UPDATE community_posts SET likes = likes + 1 WHERE id = ?', [postId]
     );
-    if (result.affectedRows === 0) return res.status(404).json({ error: 'Post not found' });
+    if (upd.affectedRows === 0) {
+      await conn.rollback();
+      return res.status(404).json({ error: 'Post not found' });
+    }
+    await conn.commit();
     res.json({ success: true });
   } catch (err) {
+    await conn.rollback();
     console.error('[community-api] POST /posts/:id/like:', err.message);
     res.status(500).json({ error: 'Internal server error' });
+  } finally {
+    conn.release();
   }
 });
 
@@ -349,7 +393,8 @@ router.get('/posts/:id/comments', async (req, res) => {
       `SELECT id, post_id, parent_id, clerk_id, display_name, avatar_url, body, created_at
        FROM community_comments
        WHERE post_id = ?
-       ORDER BY created_at ASC`,
+       ORDER BY created_at ASC
+       LIMIT 1000`,
       [postId]
     );
     res.json({ comments: rows });
@@ -360,7 +405,7 @@ router.get('/posts/:id/comments', async (req, res) => {
 });
 
 // ── POST /community/posts/:id/comments ───────────────────────────────────────
-router.post('/posts/:id/comments', async (req, res) => {
+router.post('/posts/:id/comments', commentRateLimit, async (req, res) => {
   const { userId } = getAuth(req);
   if (!userId) return res.status(401).json({ error: 'Authentication required' });
 

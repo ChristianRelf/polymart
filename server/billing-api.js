@@ -35,7 +35,7 @@ function checkoutRateLimit(req, res, next) {
 export async function stripeWebhookHandler(req, res) {
   const sig = req.headers['stripe-signature'];
   const secret = process.env.STRIPE_WEBHOOK_SECRET;
-  if (!secret) return res.status(500).json({ error: 'Stripe webhook secret not configured' });
+  if (!secret) return res.status(400).json({ error: 'Webhook not configured' });
 
   let event;
   try {

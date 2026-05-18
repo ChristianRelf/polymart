@@ -1,4 +1,5 @@
 import express from "express";
+import compression from "compression";
 import path from "path";
 import fs from "fs";
 import { fileURLToPath } from "url";
@@ -36,6 +37,9 @@ function restrictedCors(req, res, next) {
   if (req.method === "OPTIONS") return res.sendStatus(204);
   next();
 }
+
+// ── HTTP compression (gzip/brotli for API responses and static assets) ────────
+app.use(compression());
 
 // ── Clerk middleware (processes JWT on every request) ─────────────────────────
 app.use(clerkMiddleware());
@@ -270,6 +274,38 @@ async function applyMigrations() {
   if (!removedCnt) {
     await pool.query(`ALTER TABLE community_posts ADD COLUMN is_removed TINYINT NOT NULL DEFAULT 0 AFTER is_pinned`);
     console.log("[polymart] Migration: added is_removed to community_posts");
+  }
+
+  // Create community_likes table for deduplicating post likes.
+  const [[{ likesTableCnt }]] = await pool.query(
+    `SELECT COUNT(*) AS likesTableCnt FROM INFORMATION_SCHEMA.TABLES
+     WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'community_likes'`
+  );
+  if (!likesTableCnt) {
+    await pool.query(`
+      CREATE TABLE community_likes (
+        id         INT          NOT NULL AUTO_INCREMENT,
+        post_id    INT          NOT NULL,
+        clerk_id   VARCHAR(64)  NOT NULL,
+        created_at DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP,
+        PRIMARY KEY (id),
+        UNIQUE KEY uk_like (post_id, clerk_id),
+        KEY idx_likes_post (post_id),
+        CONSTRAINT fk_like_post FOREIGN KEY (post_id) REFERENCES community_posts(id) ON DELETE CASCADE
+      ) ENGINE=InnoDB`);
+    console.log("[polymart] Migration: created community_likes table");
+  }
+
+  // Add index on community_posts(post_type) for filtered feed queries.
+  const [[{ postTypeIdxCnt }]] = await pool.query(
+    `SELECT COUNT(*) AS postTypeIdxCnt FROM INFORMATION_SCHEMA.STATISTICS
+     WHERE TABLE_SCHEMA = DATABASE()
+       AND TABLE_NAME   = 'community_posts'
+       AND INDEX_NAME   = 'idx_posts_type'`
+  );
+  if (!postTypeIdxCnt) {
+    await pool.query(`ALTER TABLE community_posts ADD KEY idx_posts_type (post_type)`);
+    console.log("[polymart] Migration: added idx_posts_type to community_posts");
   }
 
   // Add verification_type to communities if missing

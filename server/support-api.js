@@ -66,7 +66,7 @@ router.post('/ticket', ticketRateLimit, async (req, res) => {
           to: supportEmail,
           subject: `[Support #${result.insertId}] ${subject.trim()}`,
           text: [
-            `From: ${user.display_name || 'Unknown'} <${user.email || 'no-email'}>`,
+            `From: ${(user.display_name || 'Unknown').replace(/[\r\n]/g, ' ')} <${user.email || 'no-email'}>`,
             `User ID: ${userId}`,
             `Ticket ID: ${result.insertId}`,
             '',

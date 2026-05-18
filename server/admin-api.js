@@ -351,22 +351,31 @@ router.get('/community-reports', async (req, res) => {
 
 // ── GET /admin/communities ────────────────────────────────────────────────────
 router.get('/communities', async (req, res) => {
-  const q = req.query.q?.trim() || '';
+  const q      = req.query.q?.trim() || '';
+  const page   = Math.max(1, parseInt(req.query.page) || 1);
+  const limit  = Math.min(100, parseInt(req.query.limit) || 50);
+  const offset = (page - 1) * limit;
   try {
     const where  = q ? 'WHERE c.slug LIKE ? OR c.display_name LIKE ?' : '';
     const params = q ? [`%${q}%`, `%${q}%`] : [];
     const [rows] = await pool.query(
       `SELECT c.id, c.slug, c.display_name, c.icon_url,
               c.member_count, c.post_count, c.owner_clerk_id, c.created_at, c.verification_type,
-              (SELECT COUNT(*) FROM community_reports cr
-               JOIN community_posts cp ON cp.id = cr.post_id
-               WHERE cp.community_id = c.id AND cp.is_removed = 0) AS open_reports
+              COUNT(cr.id) AS open_reports
        FROM communities c
+       LEFT JOIN community_posts cp ON cp.community_id = c.id AND cp.is_removed = 0
+       LEFT JOIN community_reports cr ON cr.post_id = cp.id
        ${where}
-       ORDER BY open_reports DESC, c.member_count DESC`,
+       GROUP BY c.id
+       ORDER BY open_reports DESC, c.member_count DESC
+       LIMIT ? OFFSET ?`,
+      [...params, limit, offset]
+    );
+    const [[{ total }]] = await pool.query(
+      `SELECT COUNT(*) AS total FROM communities c ${where}`,
       params
     );
-    res.json({ communities: rows });
+    res.json({ communities: rows, total, page, pages: Math.ceil(total / limit) });
   } catch (err) {
     console.error('[admin-api] GET /communities:', err.message);
     res.status(500).json({ error: 'Internal server error' });
@@ -397,21 +406,28 @@ router.put('/communities/:slug/verification', async (req, res) => {
 router.delete('/communities/:slug', async (req, res) => {
   const { slug } = req.params;
   const { userId } = getAuth(req);
+  const [[c]] = await pool.query('SELECT id, display_name FROM communities WHERE slug = ?', [slug]);
+  if (!c) return res.status(404).json({ error: 'Community not found' });
+
+  const conn = await pool.getConnection();
   try {
-    const [[c]] = await pool.query('SELECT id, display_name FROM communities WHERE slug = ?', [slug]);
-    if (!c) return res.status(404).json({ error: 'Community not found' });
-    await pool.query('DELETE FROM community_bans          WHERE community_id = ?', [c.id]);
-    await pool.query('DELETE FROM community_memberships   WHERE community_id = ?', [c.id]);
-    await pool.query('DELETE FROM community_rules         WHERE community_id = ?', [c.id]);
-    await pool.query('DELETE FROM community_mod_log       WHERE community_id = ?', [c.id]);
-    await pool.query('DELETE FROM community_community_reports WHERE community_id = ?', [c.id]);
-    await pool.query('UPDATE community_posts SET community_id = NULL WHERE community_id = ?', [c.id]);
-    await pool.query('DELETE FROM communities WHERE id = ?', [c.id]);
+    await conn.beginTransaction();
+    await conn.query('DELETE FROM community_bans              WHERE community_id = ?', [c.id]);
+    await conn.query('DELETE FROM community_memberships       WHERE community_id = ?', [c.id]);
+    await conn.query('DELETE FROM community_rules             WHERE community_id = ?', [c.id]);
+    await conn.query('DELETE FROM community_mod_log           WHERE community_id = ?', [c.id]);
+    await conn.query('DELETE FROM community_community_reports WHERE community_id = ?', [c.id]);
+    await conn.query('UPDATE community_posts SET community_id = NULL WHERE community_id = ?', [c.id]);
+    await conn.query('DELETE FROM communities WHERE id = ?', [c.id]);
+    await conn.commit();
     await auditLog(userId, 'delete_community', null, JSON.stringify({ slug, display_name: c.display_name }));
     res.json({ ok: true });
   } catch (err) {
+    await conn.rollback();
     console.error('[admin-api] DELETE /communities/:slug:', err.message);
     res.status(500).json({ error: 'Internal server error' });
+  } finally {
+    conn.release();
   }
 });
 

@@ -10,7 +10,8 @@ const pool = mysql.createPool({
   database: process.env.DB_NAME     || "polymart",
   waitForConnections: true,
   connectionLimit: 20,
-  queueLimit: 0,
+  queueLimit: 100,
+  connectTimeout: 10000,
   // Return JSON columns as parsed JS objects/arrays
   typeCast(field, next) {
     if (field.type === "JSON") return JSON.parse(field.string());

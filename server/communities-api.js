@@ -11,10 +11,12 @@ const __dirname   = path.dirname(fileURLToPath(import.meta.url));
 const UPLOADS_DIR = path.join(__dirname, 'uploads', 'communities');
 fs.mkdirSync(UPLOADS_DIR, { recursive: true });
 
+const MIME_TO_EXT = { 'image/jpeg': '.jpg', 'image/png': '.png', 'image/gif': '.gif', 'image/webp': '.webp' };
+
 const imgStorage = multer.diskStorage({
   destination: (_req, _file, cb) => cb(null, UPLOADS_DIR),
   filename:    (_req, file,  cb) => {
-    const ext = path.extname(file.originalname).toLowerCase().replace(/[^.a-z]/g, '') || '.jpg';
+    const ext = MIME_TO_EXT[file.mimetype] || '.jpg';
     cb(null, randomBytes(16).toString('hex') + ext);
   },
 });
@@ -151,7 +153,8 @@ router.get('/mine', async (req, res) => {
               c.member_count, c.post_count, c.owner_clerk_id, c.created_at, c.verification_type, m.role
        FROM communities c
        JOIN community_memberships m ON m.community_id = c.id AND m.clerk_id = ?
-       ORDER BY m.joined_at DESC`,
+       ORDER BY m.joined_at DESC
+       LIMIT 200`,
       [userId]
     );
     res.json({ communities: rows });
@@ -163,7 +166,6 @@ router.get('/mine', async (req, res) => {
 
 // ── POST /communities ─────────────────────────────────────────────────────────
 // Auth required. Create a new community. Owner is auto-joined as 'owner'.
-const createRateMap = new Map();
 router.post('/', async (req, res) => {
   const { userId } = getAuth(req);
   if (!userId) return res.status(401).json({ error: 'Authentication required' });
@@ -285,18 +287,24 @@ router.delete('/:slug', async (req, res) => {
   const ownerId = await requireOwner(req, res, community.id);
   if (!ownerId) return;
 
+  const conn = await pool.getConnection();
   try {
-    await pool.query('DELETE FROM community_memberships WHERE community_id = ?', [community.id]);
-    await pool.query('DELETE FROM community_bans WHERE community_id = ?', [community.id]);
-    await pool.query('DELETE FROM community_rules WHERE community_id = ?', [community.id]);
-    await pool.query('DELETE FROM community_mod_log WHERE community_id = ?', [community.id]);
-    await pool.query('DELETE FROM community_community_reports WHERE community_id = ?', [community.id]);
-    await pool.query('UPDATE community_posts SET community_id = NULL WHERE community_id = ?', [community.id]);
-    await pool.query('DELETE FROM communities WHERE id = ?', [community.id]);
+    await conn.beginTransaction();
+    await conn.query('DELETE FROM community_memberships       WHERE community_id = ?', [community.id]);
+    await conn.query('DELETE FROM community_bans              WHERE community_id = ?', [community.id]);
+    await conn.query('DELETE FROM community_rules             WHERE community_id = ?', [community.id]);
+    await conn.query('DELETE FROM community_mod_log           WHERE community_id = ?', [community.id]);
+    await conn.query('DELETE FROM community_community_reports WHERE community_id = ?', [community.id]);
+    await conn.query('UPDATE community_posts SET community_id = NULL WHERE community_id = ?', [community.id]);
+    await conn.query('DELETE FROM communities WHERE id = ?', [community.id]);
+    await conn.commit();
     res.json({ success: true });
   } catch (err) {
+    await conn.rollback();
     console.error('[communities-api] DELETE /:slug:', err.message);
     res.status(500).json({ error: 'Internal server error' });
+  } finally {
+    conn.release();
   }
 });
 
@@ -334,18 +342,24 @@ router.post('/:slug/join', async (req, res) => {
   if (await isBanned(community.id, userId))
     return res.status(403).json({ error: 'You are banned from this community' });
 
+  const conn = await pool.getConnection();
   try {
-    const [result] = await pool.query(
+    await conn.beginTransaction();
+    const [result] = await conn.query(
       `INSERT IGNORE INTO community_memberships (community_id, clerk_id, role) VALUES (?, ?, 'member')`,
       [community.id, userId]
     );
     if (result.affectedRows > 0) {
-      await pool.query('UPDATE communities SET member_count = member_count + 1 WHERE id = ?', [community.id]);
+      await conn.query('UPDATE communities SET member_count = member_count + 1 WHERE id = ?', [community.id]);
     }
+    await conn.commit();
     res.json({ success: true });
   } catch (err) {
+    await conn.rollback();
     console.error('[communities-api] POST /:slug/join:', err.message);
     res.status(500).json({ error: 'Internal server error' });
+  } finally {
+    conn.release();
   }
 });
 
@@ -361,16 +375,22 @@ router.post('/:slug/leave', async (req, res) => {
   if (!m) return res.status(400).json({ error: 'You are not a member' });
   if (m.role === 'owner') return res.status(400).json({ error: 'Owners cannot leave — delete the community instead' });
 
+  const conn = await pool.getConnection();
   try {
-    await pool.query(
+    await conn.beginTransaction();
+    await conn.query(
       'DELETE FROM community_memberships WHERE community_id = ? AND clerk_id = ?',
       [community.id, userId]
     );
-    await pool.query('UPDATE communities SET member_count = GREATEST(0, member_count - 1) WHERE id = ?', [community.id]);
+    await conn.query('UPDATE communities SET member_count = GREATEST(0, member_count - 1) WHERE id = ?', [community.id]);
+    await conn.commit();
     res.json({ success: true });
   } catch (err) {
+    await conn.rollback();
     console.error('[communities-api] POST /:slug/leave:', err.message);
     res.status(500).json({ error: 'Internal server error' });
+  } finally {
+    conn.release();
   }
 });
 
@@ -639,6 +659,8 @@ router.post('/:slug/mod/bans', async (req, res) => {
   const { clerk_id, reason = '' } = req.body;
   if (!clerk_id || typeof clerk_id !== 'string')
     return res.status(400).json({ error: 'clerk_id required' });
+  if (typeof reason === 'string' && reason.length > 500)
+    return res.status(400).json({ error: 'Reason too long (max 500 characters)' });
 
   // Mods cannot ban owners or other mods (unless they are the owner).
   const target = await getMembership(community.id, clerk_id);
@@ -646,26 +668,31 @@ router.post('/:slug/mod/bans', async (req, res) => {
   if (target && target.role === 'moderator' && mod.role !== 'owner')
     return res.status(403).json({ error: 'Only the owner can ban moderators' });
 
+  const conn = await pool.getConnection();
   try {
-    await pool.query(
+    await conn.beginTransaction();
+    await conn.query(
       `INSERT INTO community_bans (community_id, clerk_id, banned_by, reason)
        VALUES (?, ?, ?, ?)
        ON DUPLICATE KEY UPDATE banned_by = VALUES(banned_by), reason = VALUES(reason), banned_at = NOW()`,
       [community.id, clerk_id, mod.userId, reason.trim()]
     );
-    // Remove from membership.
-    const [del] = await pool.query(
+    const [del] = await conn.query(
       'DELETE FROM community_memberships WHERE community_id = ? AND clerk_id = ?',
       [community.id, clerk_id]
     );
     if (del.affectedRows > 0) {
-      await pool.query('UPDATE communities SET member_count = GREATEST(0, member_count - 1) WHERE id = ?', [community.id]);
+      await conn.query('UPDATE communities SET member_count = GREATEST(0, member_count - 1) WHERE id = ?', [community.id]);
     }
+    await conn.commit();
     await logModAction(community.id, mod.userId, 'ban', { targetClerkId: clerk_id, details: reason.trim() || null });
     res.json({ success: true });
   } catch (err) {
+    await conn.rollback();
     console.error('[communities-api] POST /:slug/mod/bans:', err.message);
     res.status(500).json({ error: 'Internal server error' });
+  } finally {
+    conn.release();
   }
 });
 

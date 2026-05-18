@@ -229,12 +229,12 @@ function PostCard({
           )}
           <div className="ml-auto flex items-center gap-1.5">
             {isOwn && !editing && (
-              <button onClick={() => setEditing(true)} className="text-muted-foreground hover:text-foreground cursor-pointer bg-transparent border-0 transition-colors">
+              <button type="button" title="Edit post" onClick={() => setEditing(true)} className="text-muted-foreground hover:text-foreground cursor-pointer bg-transparent border-0 transition-colors">
                 <Pencil className="w-3.5 h-3.5" />
               </button>
             )}
             {isOwn && (
-              <button onClick={() => window.confirm("Delete this post?") && onDelete(post.id)} className="text-muted-foreground hover:text-red-400 cursor-pointer bg-transparent border-0 transition-colors">
+              <button type="button" title="Delete post" onClick={() => window.confirm("Delete this post?") && onDelete(post.id)} className="text-muted-foreground hover:text-red-400 cursor-pointer bg-transparent border-0 transition-colors">
                 <Trash2 className="w-3.5 h-3.5" />
               </button>
             )}
@@ -262,7 +262,7 @@ function PostCard({
             )}
             {!isOwn && userId && (
               <div className="relative">
-                <button onClick={() => setShowReport(v => !v)} className="text-muted-foreground hover:text-foreground cursor-pointer bg-transparent border-0 transition-colors">
+                <button type="button" title="Report post" onClick={() => setShowReport(v => !v)} className="text-muted-foreground hover:text-foreground cursor-pointer bg-transparent border-0 transition-colors">
                   <Flag className="w-3.5 h-3.5" />
                 </button>
                 {showReport && (
@@ -336,7 +336,7 @@ function ComposeForm({ communityId, onPost, uploadImage }: {
   )
 }
 
-export default function SubCommunityPage({ slug, onNavigate, onNavigateToMod, onNavigateToPost }: Props) {
+export default function SubCommunityPage({ slug, onNavigate, onNavigateToCommunity, onNavigateToMod, onNavigateToPost }: Props) {
   const { isSignedIn, userId } = useAuth()
   const {
     getCommunity, joinCommunity, leaveCommunity,

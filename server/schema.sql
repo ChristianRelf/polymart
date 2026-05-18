@@ -329,9 +329,10 @@ CREATE TABLE IF NOT EXISTS community_posts (
   likes         INT           NOT NULL DEFAULT 0,
   created_at    DATETIME      NOT NULL DEFAULT CURRENT_TIMESTAMP,
   PRIMARY KEY (id),
-  UNIQUE KEY idx_posts_share   (share_id),
-  KEY idx_posts_clerk   (clerk_id),
-  KEY idx_posts_created (created_at)
+  UNIQUE KEY idx_posts_share     (share_id),
+  KEY idx_posts_clerk    (clerk_id),
+  KEY idx_posts_created  (created_at),
+  KEY idx_posts_type     (post_type)
 ) ENGINE=InnoDB;
 
 -- ── community_comments ───────────────────────────────────────────────────────
@@ -350,6 +351,19 @@ CREATE TABLE IF NOT EXISTS community_comments (
   KEY idx_comments_parent (parent_id),
   KEY idx_comments_clerk  (clerk_id),
   CONSTRAINT fk_comment_post FOREIGN KEY (post_id) REFERENCES community_posts(id) ON DELETE CASCADE
+) ENGINE=InnoDB;
+
+-- ── community_likes ──────────────────────────────────────────────────────────
+-- One like per user per post. UNIQUE prevents duplicate likes.
+CREATE TABLE IF NOT EXISTS community_likes (
+  id         INT          NOT NULL AUTO_INCREMENT,
+  post_id    INT          NOT NULL,
+  clerk_id   VARCHAR(64)  NOT NULL,
+  created_at DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (id),
+  UNIQUE KEY uk_like (post_id, clerk_id),
+  KEY idx_likes_post (post_id),
+  CONSTRAINT fk_like_post FOREIGN KEY (post_id) REFERENCES community_posts(id) ON DELETE CASCADE
 ) ENGINE=InnoDB;
 
 -- ── community_reports ────────────────────────────────────────────────────────

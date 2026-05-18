@@ -325,17 +325,18 @@ router.delete('/portfolios/:id', async (req, res) => {
 // ── POST /portfolios/:id/orders ───────────────────────────────────────────────
 router.post('/portfolios/:id/orders', orderRateLimit, async (req, res) => {
   const { userId } = getAuth(req);
-  const portfolioId = parseInt(req.params.id);
+  const portfolioId = parseInt(req.params.id, 10);
   const { asset_type, symbol, side, quantity: rawQty, notes } = req.body;
 
   // Input validation
-  if (!portfolioId) return res.status(400).json({ error: 'Invalid portfolio ID' });
+  if (!Number.isInteger(portfolioId) || portfolioId <= 0) return res.status(400).json({ error: 'Invalid portfolio ID' });
   if (!isValidAssetType(asset_type)) return res.status(400).json({ error: `Invalid asset_type: ${asset_type}` });
   if (!isValidSymbol(symbol)) return res.status(400).json({ error: 'Invalid symbol' });
   if (side !== 'buy' && side !== 'sell') return res.status(400).json({ error: 'side must be "buy" or "sell"' });
 
   const quantity = parseFloat(rawQty);
   if (!isFinite(quantity) || quantity <= 0) return res.status(400).json({ error: 'quantity must be a positive number' });
+  if (quantity > 1_000_000) return res.status(400).json({ error: 'quantity too large (max 1,000,000)' });
   if (notes && typeof notes === 'string' && notes.length > 1000) return res.status(400).json({ error: 'notes too long' });
 
   try {
