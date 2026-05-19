@@ -13,6 +13,7 @@ import supportRouter from "./support-api.js";
 import adminRouter from "./admin-api.js";
 import communityRouter from "./community-api.js";
 import communitiesRouter from "./communities-api.js";
+import botFeedbackRouter from "./bot-feedback-api.js";
 import { startTickLoop } from "./tick.js";
 
 dotenv.config();
@@ -71,6 +72,9 @@ app.use("/api/v1/community", restrictedCors, communityRouter);
 
 // ── Communities API (sub-communities, memberships, mod tools) ─────────────────
 app.use("/api/v1/communities", restrictedCors, communitiesRouter);
+
+// ── Bot feedback (bug reports & suggestions) ──────────────────────────────────
+app.use("/api/v1/bot-feedback", botFeedbackRouter);
 
 // ── Share embed route ─────────────────────────────────────────────────────────
 // Serves an OG-tagged HTML page for /s/:shareId so Discord/Slack/etc can unfurl

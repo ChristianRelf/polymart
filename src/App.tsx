@@ -24,6 +24,8 @@ import SubCommunityPage from "@/pages/SubCommunityPage"
 import SubCommunityModPage from "@/pages/SubCommunityModPage"
 import CommunityAdminPage from "@/pages/CommunityAdminPage"
 import BotLegalPage from "@/pages/BotLegalPage"
+import BotBugReportPage from "@/pages/BotBugReportPage"
+import BotSuggestionPage from "@/pages/BotSuggestionPage"
 import KofiLegalPage from "@/pages/KofiLegalPage"
 import CommunityBlogPage from "@/pages/CommunityBlogPage"
 import SponsorPage from "@/pages/SponsorPage"
@@ -44,6 +46,7 @@ export type Route =
   | "kofi-terms" | "kofi-privacy" | "community-post"
   | "communities" | "sub-community" | "sub-community-mod" | "community-admin"
   | "sign-in" | "sign-up" | "dashboard" | "portfolio" | "account" | "admin"
+  | "bug-report" | "suggestion"
 
 const HASH_MAP: Record<string, Route> = {
   "": "home",
@@ -62,6 +65,8 @@ const HASH_MAP: Record<string, Route> = {
   "/edu-tools": "edu-tools",
   "/community": "community",
   "/communities": "communities",
+  "/bot/bug-report": "bug-report",
+  "/bot/suggestion": "suggestion",
   "/docs/bots/terms": "bot-terms",
   "/docs/bots/privacy": "bot-privacy",
   "/docs/kofi-terms": "kofi-terms",
@@ -108,6 +113,8 @@ const ROUTE_HASH: Record<Route, string> = {
   account: "/account",
   admin: "/admin",
   "community-admin": "/community-admin",
+  "bug-report": "/bot/bug-report",
+  "suggestion": "/bot/suggestion",
 }
 
 function parseHash(): { route: Route; params: Record<string, string> } {
@@ -427,6 +434,8 @@ function Footer({ setRoute }: { setRoute: (r: Route) => void }) {
             <FLink label="Community Hub" route="community" />
             <FLink label="Blog"          route="community-blog" />
             <FExt  label="Discord"       href="https://discord.com/oauth2/authorize?client_id=1503197938027860102" />
+            <FLink label="Bug Report"    route="bug-report" />
+            <FLink label="Suggestions"   route="suggestion" />
           </NavCol>
 
           <NavCol title="Developers">
@@ -709,6 +718,8 @@ export default function App() {
           {route === "sub-community"     && <SubCommunityPage    slug={routeParams.slug ?? ""} onNavigate={go} onNavigateToCommunity={goToSubCommunity} onNavigateToMod={goToSubCommunityMod} onNavigateToPost={goToCommunityPost} />}
           {route === "sub-community-mod" && <SubCommunityModPage slug={routeParams.slug ?? ""} onNavigate={go} onNavigateToCommunity={goToSubCommunity} />}
           {route === "community-admin"   && <CommunityAdminPage onNavigate={go} onNavigateToCommunity={goToSubCommunity} />}
+          {route === "bug-report"     && <BotBugReportPage  onNavigate={go} />}
+          {route === "suggestion"     && <BotSuggestionPage onNavigate={go} />}
           {route === "bot-terms"      && <BotLegalPage     type="bot-terms"   onNavigate={go} />}
           {route === "bot-privacy"    && <BotLegalPage     type="bot-privacy" onNavigate={go} />}
           {route === "kofi-privacy"   && <KofiLegalPage    type="kofi-privacy" onNavigate={go} />}
