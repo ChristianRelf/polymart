@@ -17,6 +17,7 @@ CREATE TABLE IF NOT EXISTS user_profiles (
   tier                  ENUM('basic','premium') NOT NULL DEFAULT 'basic',
   avatar_url            TEXT          DEFAULT NULL,
   bio                   TEXT          DEFAULT NULL,
+  is_verified           TINYINT(1)    NOT NULL DEFAULT 0,
   stripe_customer_id    VARCHAR(64)   DEFAULT NULL,
   stripe_subscription_id VARCHAR(64)  DEFAULT NULL,
   tier_expires_at       DATETIME      DEFAULT NULL,
@@ -196,21 +197,34 @@ CREATE TABLE IF NOT EXISTS community_reports (
 
 -- ── communities ──────────────────────────────────────────────────────────────
 CREATE TABLE IF NOT EXISTS communities (
-  id              INT           NOT NULL AUTO_INCREMENT,
-  slug            VARCHAR(64)   NOT NULL,
-  display_name    VARCHAR(128)  NOT NULL,
-  description     TEXT,
-  icon_url        TEXT,
-  banner_url      TEXT,
-  owner_clerk_id     VARCHAR(64)   NOT NULL,
-  member_count       INT           NOT NULL DEFAULT 0,
-  post_count         INT           NOT NULL DEFAULT 0,
-  verification_type  ENUM('none','verified','official') NOT NULL DEFAULT 'none',
-  created_at         DATETIME      NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  id                INT           NOT NULL AUTO_INCREMENT,
+  slug              VARCHAR(64)   NOT NULL,
+  display_name      VARCHAR(128)  NOT NULL,
+  description       TEXT,
+  icon_url          TEXT,
+  banner_url        TEXT,
+  owner_clerk_id    VARCHAR(64)   NOT NULL,
+  member_count      INT           NOT NULL DEFAULT 0,
+  post_count        INT           NOT NULL DEFAULT 0,
+  verification_type ENUM('none','verified','official') NOT NULL DEFAULT 'none',
+  post_permission   ENUM('everyone','members','chosen') NOT NULL DEFAULT 'members',
+  post_tags         JSON          DEFAULT NULL,
+  created_at        DATETIME      NOT NULL DEFAULT CURRENT_TIMESTAMP,
   PRIMARY KEY (id),
   UNIQUE KEY uk_communities_slug (slug),
   KEY idx_communities_owner   (owner_clerk_id),
   KEY idx_communities_created (created_at)
+) ENGINE=InnoDB;
+
+-- ── community_post_allowlist (for post_permission='chosen') ───────────────────
+CREATE TABLE IF NOT EXISTS community_post_allowlist (
+  id           INT          NOT NULL AUTO_INCREMENT,
+  community_id INT          NOT NULL,
+  clerk_id     VARCHAR(64)  NOT NULL,
+  added_at     DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (id),
+  UNIQUE KEY uk_allowlist (community_id, clerk_id),
+  KEY idx_allowlist_community (community_id)
 ) ENGINE=InnoDB;
 
 -- ── community_memberships ─────────────────────────────────────────────────────

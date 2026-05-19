@@ -280,7 +280,12 @@ export function useAccount() {
   )
 
   const updateCommunity = useCallback(
-    (slug: string, body: { display_name?: string; description?: string }) =>
+    (slug: string, body: {
+      display_name?: string
+      description?: string
+      post_permission?: "everyone" | "members" | "chosen"
+      post_tags?: { key: string; label: string; color: string }[] | null
+    }) =>
       withToken(t => apiFetch(`/communities/${slug}`, t, { method: "PUT", body: JSON.stringify(body) })),
     [withToken]
   )
@@ -460,6 +465,29 @@ export function useAccount() {
     [withToken]
   )
 
+  const getAllowlist = useCallback(
+    (slug: string) => withToken(t => apiFetch(`/communities/${slug}/mod/allowlist`, t)),
+    [withToken]
+  )
+
+  const addToAllowlist = useCallback(
+    (slug: string, clerk_id: string) =>
+      withToken(t => apiFetch(`/communities/${slug}/mod/allowlist`, t, { method: "POST", body: JSON.stringify({ clerk_id }) })),
+    [withToken]
+  )
+
+  const removeFromAllowlist = useCallback(
+    (slug: string, clerkId: string) =>
+      withToken(t => apiFetch(`/communities/${slug}/mod/allowlist/${clerkId}`, t, { method: "DELETE" })),
+    [withToken]
+  )
+
+  const verifyUser = useCallback(
+    (clerkId: string, is_verified: boolean) =>
+      withToken(t => apiFetch(`/admin/users/${clerkId}/verify`, t, { method: "PUT", body: JSON.stringify({ is_verified }) })),
+    [withToken]
+  )
+
   return {
     getMe,
     updateMe,
@@ -522,5 +550,9 @@ export function useAccount() {
     getMyReports,
     getModActionsAgainstMe,
     createCommunityPostScoped,
+    getAllowlist,
+    addToAllowlist,
+    removeFromAllowlist,
+    verifyUser,
   }
 }

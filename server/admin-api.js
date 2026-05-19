@@ -50,7 +50,7 @@ router.get('/users', async (req, res) => {
   const { search, tier } = req.query;
 
   try {
-    let sql = 'SELECT clerk_id, display_name, email, tier, created_at, stripe_subscription_id FROM user_profiles WHERE 1=1';
+    let sql = 'SELECT clerk_id, display_name, email, tier, is_verified, created_at, stripe_subscription_id FROM user_profiles WHERE 1=1';
     const params = [];
 
     if (search) {
@@ -97,6 +97,29 @@ router.get('/users/:clerkId', async (req, res) => {
     res.json({ ...user, tierLimits, portfolios, tickets });
   } catch (err) {
     console.error('[admin-api] GET /users/:clerkId:', err.message);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+// ── PUT /admin/users/:clerkId/verify ─────────────────────────────────────────
+router.put('/users/:clerkId/verify', async (req, res) => {
+  const { userId: adminId } = getAuth(req);
+  const { clerkId } = req.params;
+  const { is_verified } = req.body;
+
+  if (typeof is_verified !== 'boolean' && is_verified !== 0 && is_verified !== 1)
+    return res.status(400).json({ error: 'is_verified must be a boolean' });
+
+  const value = is_verified ? 1 : 0;
+  try {
+    const [[user]] = await pool.query('SELECT clerk_id FROM user_profiles WHERE clerk_id = ?', [clerkId]);
+    if (!user) return res.status(404).json({ error: 'User not found' });
+
+    await pool.query('UPDATE user_profiles SET is_verified = ? WHERE clerk_id = ?', [value, clerkId]);
+    await auditLog(adminId, value ? 'verify_user' : 'unverify_user', clerkId);
+    res.json({ success: true, is_verified: value });
+  } catch (err) {
+    console.error('[admin-api] PUT /users/:clerkId/verify:', err.message);
     res.status(500).json({ error: 'Internal server error' });
   }
 });

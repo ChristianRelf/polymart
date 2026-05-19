@@ -14,6 +14,8 @@ import { useAccount } from "@/hooks/useAccount"
 import { MarkdownBody } from "@/components/MarkdownBody"
 import { MarkdownEditor } from "@/components/MarkdownEditor"
 import { CommunitySidebar } from "@/components/CommunitySidebar"
+import { UserVerifiedBadge } from "@/components/VerificationBadge"
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
 import type { Route } from "@/App"
 
 const KOFI_URL = "https://ko-fi.com/polymartco"
@@ -49,6 +51,7 @@ interface Post {
   clerk_id: string
   display_name: string | null
   avatar_url: string | null
+  author_verified?: number
   title: string
   body: string
   post_type: string
@@ -606,6 +609,7 @@ function PostCard({
             <span className="text-sm font-semibold text-foreground truncate">
               {post.display_name ?? "Anonymous"}
             </span>
+            {!!post.author_verified && <UserVerifiedBadge size="xs" />}
             <span className="text-xs text-muted-foreground">{timeAgo(post.created_at)}</span>
             <Badge
               variant="outline"
@@ -661,59 +665,91 @@ function PostCard({
         {/* Action bar */}
         {!editing && (
           <div className="flex items-center gap-4 mt-4">
-            <button
-              type="button"
-              onClick={handleLike}
-              className={`flex items-center gap-1.5 text-xs transition-colors cursor-pointer bg-transparent border-0 p-0 ${
-                liked ? "text-rose-500" : "text-muted-foreground hover:text-rose-500"
-              }`}
-              title={liked ? "Liked" : "Like"}
-            >
-              <Heart className={`w-3.5 h-3.5 ${liked ? "fill-rose-500" : ""}`} />
-              <span>{likes}</span>
-            </button>
+            <TooltipProvider>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <button
+                    type="button"
+                    onClick={handleLike}
+                    className={`flex items-center gap-1.5 text-xs transition-colors cursor-pointer bg-transparent border-0 p-0 ${
+                      liked ? "text-rose-500" : "text-muted-foreground hover:text-rose-500"
+                    }`}
+                  >
+                    <Heart className={`w-3.5 h-3.5 ${liked ? "fill-rose-500" : ""}`} />
+                    <span>{likes}</span>
+                  </button>
+                </TooltipTrigger>
+                <TooltipContent side="top">{liked ? "Liked" : "Like"}</TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
 
-            <button
-              type="button"
-              onClick={() => setCommentsOpen(o => !o)}
-              className={`flex items-center gap-1.5 text-xs transition-colors cursor-pointer bg-transparent border-0 p-0 ${
-                commentsOpen ? "text-foreground" : "text-muted-foreground hover:text-foreground"
-              }`}
-              title="View replies"
-            >
-              <MessageCircle className="w-3.5 h-3.5" />
-              <span>{commentCount}</span>
-            </button>
+            <TooltipProvider>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <button
+                    type="button"
+                    onClick={() => setCommentsOpen(o => !o)}
+                    className={`flex items-center gap-1.5 text-xs transition-colors cursor-pointer bg-transparent border-0 p-0 ${
+                      commentsOpen ? "text-foreground" : "text-muted-foreground hover:text-foreground"
+                    }`}
+                  >
+                    <MessageCircle className="w-3.5 h-3.5" />
+                    <span>{commentCount}</span>
+                  </button>
+                </TooltipTrigger>
+                <TooltipContent side="top">Replies</TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
 
             <div className="ml-auto flex items-center gap-3">
-              <button
-                type="button"
-                onClick={handleShare}
-                className={`flex items-center gap-1 text-xs transition-colors cursor-pointer bg-transparent border-0 p-0 ${
-                  copied ? "text-emerald-500" : "text-muted-foreground hover:text-foreground"
-                }`}
-                title="Copy share link"
-              >
-                {copied ? <Check className="w-3.5 h-3.5" /> : <Link className="w-3.5 h-3.5" />}
-              </button>
+              <TooltipProvider>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <button
+                      type="button"
+                      onClick={handleShare}
+                      className={`flex items-center gap-1 text-xs transition-colors cursor-pointer bg-transparent border-0 p-0 ${
+                        copied ? "text-emerald-500" : "text-muted-foreground hover:text-foreground"
+                      }`}
+                    >
+                      {copied ? <Check className="w-3.5 h-3.5" /> : <Link className="w-3.5 h-3.5" />}
+                    </button>
+                  </TooltipTrigger>
+                  <TooltipContent side="top">{copied ? "Copied!" : "Copy share link"}</TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
               {isOwn ? (
                 <>
-                  <button
-                    type="button"
-                    onClick={() => setEditing(true)}
-                    className="text-muted-foreground hover:text-foreground transition-colors cursor-pointer bg-transparent border-0 p-0"
-                    title="Edit post"
-                  >
-                    <Pencil className="w-3.5 h-3.5" />
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => { if (window.confirm("Delete this post? This cannot be undone.")) onDelete(post.id) }}
-                    className="text-muted-foreground hover:text-destructive transition-colors cursor-pointer bg-transparent border-0 p-0"
-                    title="Delete post"
-                  >
-                    <Trash2 className="w-3.5 h-3.5" />
-                  </button>
+                  <TooltipProvider>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <button
+                          type="button"
+                          aria-label="Edit post"
+                          onClick={() => setEditing(true)}
+                          className="text-muted-foreground hover:text-foreground transition-colors cursor-pointer bg-transparent border-0 p-0"
+                        >
+                          <Pencil className="w-3.5 h-3.5" />
+                        </button>
+                      </TooltipTrigger>
+                      <TooltipContent side="top">Edit post</TooltipContent>
+                    </Tooltip>
+                  </TooltipProvider>
+                  <TooltipProvider>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <button
+                          type="button"
+                          aria-label="Delete post"
+                          onClick={() => { if (window.confirm("Delete this post? This cannot be undone.")) onDelete(post.id) }}
+                          className="text-muted-foreground hover:text-destructive transition-colors cursor-pointer bg-transparent border-0 p-0"
+                        >
+                          <Trash2 className="w-3.5 h-3.5" />
+                        </button>
+                      </TooltipTrigger>
+                      <TooltipContent side="top">Delete post</TooltipContent>
+                    </Tooltip>
+                  </TooltipProvider>
                 </>
               ) : (
                 isSignedIn && <ReportButton postId={post.id} onReport={onReport} />

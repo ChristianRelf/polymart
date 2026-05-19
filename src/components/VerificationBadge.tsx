@@ -1,12 +1,13 @@
 import { BadgeCheck, Star } from "lucide-react"
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
 
-type VerificationType = "none" | "verified" | "official" | null | undefined
+type CommunityVerification = "none" | "verified" | "official" | null | undefined
 
 export function VerificationBadge({
   type,
   size = "sm",
 }: {
-  type: VerificationType
+  type: CommunityVerification
   size?: "xs" | "sm" | "md"
 }) {
   if (!type || type === "none") return null
@@ -20,23 +21,48 @@ export function VerificationBadge({
 
   if (type === "official") {
     return (
-      <span
-        title="Official Polymart Community"
-        className={`inline-flex items-center gap-0.5 shrink-0 rounded-full border border-amber-500/30 bg-amber-500/10 text-amber-400 font-medium ${paddingCls}`}
-      >
-        <span className={textCls}>Official</span>
-        <Star className={`${iconCls} fill-amber-400`} />
-      </span>
+      <TooltipProvider>
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <span className={`inline-flex items-center gap-0.5 shrink-0 rounded-full border border-amber-500/30 bg-amber-500/10 text-amber-400 font-medium ${paddingCls}`}>
+              <span className={textCls}>Official</span>
+              <Star className={`${iconCls} fill-amber-400`} />
+            </span>
+          </TooltipTrigger>
+          <TooltipContent side="top">Official Polymart Community</TooltipContent>
+        </Tooltip>
+      </TooltipProvider>
     )
   }
 
   return (
-    <span
-      title="Verified Community"
-      className={`inline-flex items-center gap-0.5 shrink-0 rounded-full border border-emerald-500/30 bg-emerald-500/10 text-emerald-500 font-medium ${paddingCls}`}
-    >
-      <span className={textCls}>Verified</span>
-      <BadgeCheck className={iconCls} />
-    </span>
+    <TooltipProvider>
+      <Tooltip>
+        <TooltipTrigger asChild>
+          <span className={`inline-flex items-center gap-0.5 shrink-0 rounded-full border border-emerald-500/30 bg-emerald-500/10 text-emerald-500 font-medium ${paddingCls}`}>
+            <span className={textCls}>Verified</span>
+            <BadgeCheck className={iconCls} />
+          </span>
+        </TooltipTrigger>
+        <TooltipContent side="top">Verified Community</TooltipContent>
+      </Tooltip>
+    </TooltipProvider>
+  )
+}
+
+export function UserVerifiedBadge({ size = "sm" }: { size?: "xs" | "sm" | "md" }) {
+  const iconCls = size === "xs" ? "w-3 h-3" : size === "md" ? "w-4 h-4" : "w-3.5 h-3.5"
+
+  return (
+    <TooltipProvider>
+      <Tooltip>
+        <TooltipTrigger asChild>
+          <span className="inline-flex items-center shrink-0">
+            <BadgeCheck className={`${iconCls} text-sky-400`} />
+          </span>
+        </TooltipTrigger>
+        <TooltipContent side="top">Verified user</TooltipContent>
+      </Tooltip>
+    </TooltipProvider>
   )
 }

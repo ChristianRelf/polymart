@@ -8,12 +8,12 @@ import {
   Loader2, AlertCircle, Shield, Trash2, Flag, Search,
   BadgeCheck, Star, ChevronLeft, EyeOff,
 } from "lucide-react"
-import { VerificationBadge } from "@/components/VerificationBadge"
+import { VerificationBadge, UserVerifiedBadge } from "@/components/VerificationBadge"
 import type { Route } from "@/App"
 
 const API = import.meta.env.VITE_API_URL ?? ""
 
-type Tab = "reports" | "communities"
+type Tab = "reports" | "communities" | "users"
 
 interface Report {
   id: number
@@ -38,6 +38,15 @@ interface AdminCommunity {
   created_at: string
   verification_type: "none" | "verified" | "official"
   open_reports: number
+}
+
+interface AdminUser {
+  clerk_id: string
+  display_name: string | null
+  email: string | null
+  tier: string
+  is_verified: number
+  created_at: string
 }
 
 interface Props {
@@ -85,6 +94,12 @@ export default function CommunityAdminPage({ onNavigate, onNavigateToCommunity }
   const [verifying, setVerifying] = useState<string | null>(null)
   const [deleting, setDeleting] = useState<string | null>(null)
 
+  // Users state
+  const [users, setUsers] = useState<AdminUser[]>([])
+  const [loadingUsers, setLoadingUsers] = useState(false)
+  const [usersSearch, setUsersSearch] = useState("")
+  const [verifyingUser, setVerifyingUser] = useState<string | null>(null)
+
   const [error, setError] = useState("")
 
   useEffect(() => {
@@ -119,8 +134,22 @@ export default function CommunityAdminPage({ onNavigate, onNavigateToCommunity }
     }
   }, [adminFetch])
 
+  const loadUsers = useCallback(async (search = "") => {
+    setLoadingUsers(true)
+    setError("")
+    try {
+      const data = await adminFetch(`${API}/api/v1/admin/users?search=${encodeURIComponent(search)}&limit=50`)
+      setUsers(data.users ?? [])
+    } catch (e: unknown) {
+      setError(e instanceof Error ? e.message : "Failed to load users")
+    } finally {
+      setLoadingUsers(false)
+    }
+  }, [adminFetch])
+
   useEffect(() => { if (isAdmin) loadReports(1) }, [isAdmin, loadReports])
   useEffect(() => { if (isAdmin && tab === "communities") loadCommunities("") }, [isAdmin, tab, loadCommunities])
+  useEffect(() => { if (isAdmin && tab === "users") loadUsers("") }, [isAdmin, tab, loadUsers])
 
   async function handleRemovePost(postId: number) {
     if (!window.confirm("Remove this post? It will be hidden from the community.")) return
@@ -150,6 +179,21 @@ export default function CommunityAdminPage({ onNavigate, onNavigateToCommunity }
     }
   }
 
+  async function handleVerifyUser(clerkId: string, is_verified: boolean) {
+    setVerifyingUser(clerkId)
+    try {
+      await adminFetch(`${API}/api/v1/admin/users/${clerkId}/verify`, {
+        method: "PUT",
+        body: JSON.stringify({ is_verified }),
+      })
+      setUsers(prev => prev.map(u => u.clerk_id === clerkId ? { ...u, is_verified: is_verified ? 1 : 0 } : u))
+    } catch (e: unknown) {
+      alert(e instanceof Error ? e.message : "Failed to update verification")
+    } finally {
+      setVerifyingUser(null)
+    }
+  }
+
   async function handleDeleteCommunity(slug: string, name: string) {
     if (!window.confirm(`Permanently delete "${name}"? This cannot be undone.`)) return
     setDeleting(slug)
@@ -174,6 +218,7 @@ export default function CommunityAdminPage({ onNavigate, onNavigateToCommunity }
   const TABS: [Tab, string][] = [
     ["reports", "Reports"],
     ["communities", "Communities"],
+    ["users", "Users"],
   ]
 
   return (
@@ -412,6 +457,68 @@ export default function CommunityAdminPage({ onNavigate, onNavigateToCommunity }
                           {deleting === c.slug ? <Loader2 className="w-3 h-3 animate-spin" /> : <Trash2 className="w-3 h-3" />}
                         </Button>
                       </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        </div>
+      )}
+
+      {/* ── Users ── */}
+      {tab === "users" && (
+        <div className="space-y-4">
+          <div className="flex items-center gap-3">
+            <div className="relative flex-1 max-w-sm">
+              <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground pointer-events-none" />
+              <Input
+                value={usersSearch}
+                onChange={e => setUsersSearch(e.target.value)}
+                onKeyDown={e => e.key === "Enter" && loadUsers(usersSearch)}
+                placeholder="Search by name or email..."
+                className="pl-8 h-8 text-sm"
+              />
+            </div>
+            <Button size="sm" onClick={() => loadUsers(usersSearch)} disabled={loadingUsers}>
+              {loadingUsers ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : "Search"}
+            </Button>
+          </div>
+
+          <Card className="bg-card border-border">
+            <CardContent className="p-0">
+              {loadingUsers ? (
+                <div className="flex justify-center py-10"><Loader2 className="w-5 h-5 animate-spin text-muted-foreground" /></div>
+              ) : users.length === 0 ? (
+                <p className="text-center py-8 text-sm text-muted-foreground">No users found</p>
+              ) : (
+                <div className="divide-y divide-border">
+                  {users.map(u => (
+                    <div key={u.clerk_id} className="px-4 py-3 flex items-center gap-3">
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-1.5">
+                          <span className="text-sm font-medium text-foreground">{u.display_name ?? u.clerk_id}</span>
+                          {!!u.is_verified && <UserVerifiedBadge size="xs" />}
+                          {u.tier === "premium" && (
+                            <Badge variant="outline" className="text-[9px] border-amber-500/30 text-amber-500 bg-amber-500/5">Premium</Badge>
+                          )}
+                        </div>
+                        {u.email && <p className="text-xs text-muted-foreground">{u.email}</p>}
+                      </div>
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        className={`text-[10px] h-7 gap-1 shrink-0 ${u.is_verified ? "border-sky-500/30 text-sky-400 hover:bg-sky-500/10" : "border-border text-muted-foreground hover:text-foreground"}`}
+                        onClick={() => handleVerifyUser(u.clerk_id, !u.is_verified)}
+                        disabled={verifyingUser === u.clerk_id}
+                      >
+                        {verifyingUser === u.clerk_id
+                          ? <Loader2 className="w-3 h-3 animate-spin" />
+                          : u.is_verified
+                            ? <><BadgeCheck className="w-3 h-3" />Verified</>
+                            : "Verify user"
+                        }
+                      </Button>
                     </div>
                   ))}
                 </div>

@@ -10,6 +10,7 @@ import {
 } from "lucide-react"
 import { useAccount } from "@/hooks/useAccount"
 import { MarkdownBody } from "@/components/MarkdownBody"
+import { UserVerifiedBadge } from "@/components/VerificationBadge"
 import type { Route } from "@/App"
 
 const TYPE_LABELS: Record<string, string> = {
@@ -32,6 +33,7 @@ interface Post {
   clerk_id: string
   display_name: string | null
   avatar_url: string | null
+  author_verified?: number
   title: string
   body: string
   post_type: string
@@ -401,9 +403,12 @@ export default function CommunityPostPage({
           <div className="flex items-center gap-3 mb-5">
             <Avatar name={post.display_name} url={post.avatar_url} size={10} />
             <div className="flex-1 min-w-0">
-              <p className="text-sm font-semibold text-foreground">
-                {post.display_name ?? "Anonymous"}
-              </p>
+              <div className="flex items-center gap-1.5">
+                <p className="text-sm font-semibold text-foreground">
+                  {post.display_name ?? "Anonymous"}
+                </p>
+                {!!post.author_verified && <UserVerifiedBadge size="sm" />}
+              </div>
               <p className="text-xs text-muted-foreground">{timeAgo(post.created_at)}</p>
             </div>
             <Badge

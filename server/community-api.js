@@ -161,10 +161,12 @@ router.get('/posts', async (req, res) => {
               cp.title, cp.body, cp.post_type, cp.likes, cp.created_at,
               cp.is_pinned, cp.is_removed, cp.community_id,
               c.slug AS community_slug, c.display_name AS community_display_name,
-              COUNT(cc.id) AS comment_count
+              COUNT(cc.id) AS comment_count,
+              COALESCE(up.is_verified, 0) AS author_verified
        FROM community_posts cp
        LEFT JOIN community_comments cc ON cc.post_id = cp.id
        LEFT JOIN communities c ON c.id = cp.community_id
+       LEFT JOIN user_profiles up ON up.clerk_id = cp.clerk_id
        ${where}
        GROUP BY cp.id
        ORDER BY ${sort}
@@ -195,27 +197,59 @@ router.post('/posts', postRateLimit, async (req, res) => {
     return res.status(400).json({ error: 'title is required and must be under 280 characters' });
   if (!body || typeof body !== 'string' || !body.trim() || body.length > 10000)
     return res.status(400).json({ error: 'body is required and must be under 10000 characters' });
-  if (!VALID_TYPES.has(post_type))
-    return res.status(400).json({ error: 'Invalid post_type' });
-
   let resolvedCommunityId = null;
   if (community_id) {
     resolvedCommunityId = parseInt(community_id) || null;
     if (resolvedCommunityId) {
-      // Verify membership and no ban.
-      const [[membership]] = await pool.query(
-        'SELECT role FROM community_memberships WHERE community_id = ? AND clerk_id = ?',
-        [resolvedCommunityId, userId]
+      const [[comm]] = await pool.query(
+        'SELECT id, post_permission, post_tags FROM communities WHERE id = ?',
+        [resolvedCommunityId]
       );
-      if (!membership)
-        return res.status(403).json({ error: 'You must join this community before posting' });
+      if (!comm) return res.status(404).json({ error: 'Community not found' });
+
+      // Validate post_type against community tags (or defaults if no custom tags).
+      const allowedTypes = comm.post_tags
+        ? new Set(comm.post_tags.map(t => t.key))
+        : VALID_TYPES;
+      if (!allowedTypes.has(post_type))
+        return res.status(400).json({ error: 'Invalid post type for this community' });
+
+      // Check ban first.
       const [[ban]] = await pool.query(
         'SELECT id FROM community_bans WHERE community_id = ? AND clerk_id = ?',
         [resolvedCommunityId, userId]
       );
-      if (ban)
-        return res.status(403).json({ error: 'You are banned from posting in this community' });
+      if (ban) return res.status(403).json({ error: 'You are banned from posting in this community' });
+
+      // Enforce post_permission.
+      if (comm.post_permission === 'members') {
+        const [[membership]] = await pool.query(
+          'SELECT role FROM community_memberships WHERE community_id = ? AND clerk_id = ?',
+          [resolvedCommunityId, userId]
+        );
+        if (!membership)
+          return res.status(403).json({ error: 'You must join this community before posting' });
+      } else if (comm.post_permission === 'chosen') {
+        const [[membership]] = await pool.query(
+          'SELECT role FROM community_memberships WHERE community_id = ? AND clerk_id = ?',
+          [resolvedCommunityId, userId]
+        );
+        const isMod = membership?.role === 'moderator' || membership?.role === 'owner';
+        if (!isMod) {
+          const [[allowed]] = await pool.query(
+            'SELECT id FROM community_post_allowlist WHERE community_id = ? AND clerk_id = ?',
+            [resolvedCommunityId, userId]
+          );
+          if (!allowed)
+            return res.status(403).json({ error: 'Posting in this community is restricted to selected members' });
+        }
+      }
+      // post_permission === 'everyone': no further check
     }
+  } else {
+    // General feed post: validate against default types.
+    if (!VALID_TYPES.has(post_type))
+      return res.status(400).json({ error: 'Invalid post_type' });
   }
 
   const [[profile]] = await pool.query(
@@ -274,9 +308,11 @@ router.get('/posts/share/:shareId', async (req, res) => {
     const [[post]] = await pool.query(
       `SELECT cp.id, cp.share_id, cp.clerk_id, cp.display_name, cp.avatar_url,
               cp.title, cp.body, cp.post_type, cp.likes, cp.created_at,
-              COUNT(cc.id) AS comment_count
+              COUNT(cc.id) AS comment_count,
+              COALESCE(up.is_verified, 0) AS author_verified
        FROM community_posts cp
        LEFT JOIN community_comments cc ON cc.post_id = cp.id
+       LEFT JOIN user_profiles up ON up.clerk_id = cp.clerk_id
        WHERE cp.share_id = ?
        GROUP BY cp.id`,
       [shareId]

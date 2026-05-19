@@ -7,7 +7,7 @@ import { Badge } from "@/components/ui/badge"
 import {
   Loader2, AlertCircle, Shield, Trash2, Plus, ChevronLeft,
   Settings, Flag, FileText, UserX, Clock, CheckCircle,
-  RotateCcw, EyeOff, Camera,
+  RotateCcw, EyeOff, Camera, X, Tag, Lock,
 } from "lucide-react"
 import { useAccount } from "@/hooks/useAccount"
 import type { Route } from "@/App"
@@ -49,10 +49,20 @@ export default function SubCommunityModPage({ slug, onNavigate, onNavigateToComm
     getCommunityRules, createCommunityRule, deleteCommunityRule,
     addModerator, removeModerator,
     uploadCommunityIcon, uploadCommunityBanner,
+    getAllowlist, addToAllowlist, removeFromAllowlist,
   } = useAccount()
 
+  type PostTag = { key: string; label: string; color: string }
+
   const [tab, setTab] = useState<Tab>("queue")
-  const [community, setCommunity] = useState<{ id: number; display_name: string; description: string | null; icon_url: string | null; banner_url: string | null; user_role: string | null; owner_clerk_id: string; verification_type: string | null } | null>(null)
+  const [community, setCommunity] = useState<{
+    id: number; display_name: string; description: string | null
+    icon_url: string | null; banner_url: string | null
+    user_role: string | null; owner_clerk_id: string
+    verification_type: string | null
+    post_permission: "everyone" | "members" | "chosen"
+    post_tags: PostTag[] | null
+  } | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState("")
 
@@ -74,8 +84,23 @@ export default function SubCommunityModPage({ slug, onNavigate, onNavigateToComm
   // Settings
   const [editName, setEditName] = useState("")
   const [editDesc, setEditDesc] = useState("")
+  const [postPermission, setPostPermission] = useState<"everyone" | "members" | "chosen">("members")
   const [settingsSaving, setSettingsSaving] = useState(false)
   const [settingsMsg, setSettingsMsg] = useState("")
+
+  // Post tags
+  const [postTags, setPostTags] = useState<PostTag[]>([])
+  const [newTagKey, setNewTagKey] = useState("")
+  const [newTagLabel, setNewTagLabel] = useState("")
+  const [newTagColor, setNewTagColor] = useState("zinc")
+  const [tagsSaving, setTagsSaving] = useState(false)
+  const [tagsMsg, setTagsMsg] = useState("")
+
+  // Allowlist
+  const [allowlist, setAllowlist] = useState<{ clerk_id: string; display_name: string }[]>([])
+  const [allowlistLoading, setAllowlistLoading] = useState(false)
+  const [newAllowlistId, setNewAllowlistId] = useState("")
+  const [allowlistAdding, setAllowlistAdding] = useState(false)
 
   // Rules
   const [rules, setRules] = useState<{ id: number; title: string; description: string | null; display_order: number }[]>([])
@@ -99,6 +124,8 @@ export default function SubCommunityModPage({ slug, onNavigate, onNavigateToComm
       setCommunity(data)
       setEditName(data.display_name)
       setEditDesc(data.description ?? "")
+      setPostPermission(data.post_permission ?? "members")
+      setPostTags(data.post_tags ?? [])
       setMods(data.moderators ?? [])
     }).catch(() => setError("Community not found")).finally(() => setLoading(false))
   }, [slug])
@@ -132,7 +159,12 @@ export default function SubCommunityModPage({ slug, onNavigate, onNavigateToComm
     else if (tab === "bans") fetchBans()
     else if (tab === "log") fetchLog()
     else if (tab === "rules") fetchRules()
+    else if (tab === "settings" && postPermission === "chosen") fetchAllowlist()
   }, [tab, community])
+
+  useEffect(() => {
+    if (tab === "settings" && postPermission === "chosen") fetchAllowlist()
+  }, [postPermission])
 
   async function handleRemovePost(postId: number) {
     if (!window.confirm("Remove this post?")) return
@@ -168,10 +200,50 @@ export default function SubCommunityModPage({ slug, onNavigate, onNavigateToComm
   async function handleSaveSettings() {
     setSettingsSaving(true); setSettingsMsg("")
     try {
-      await updateCommunity(slug, { display_name: editName, description: editDesc })
+      await updateCommunity(slug, { display_name: editName, description: editDesc, post_permission: postPermission })
       setSettingsMsg("Saved!")
       setTimeout(() => setSettingsMsg(""), 2000)
     } catch { setSettingsMsg("Failed to save") } finally { setSettingsSaving(false) }
+  }
+
+  const fetchAllowlist = useCallback(async () => {
+    setAllowlistLoading(true)
+    try { const d = await getAllowlist(slug); setAllowlist(d.users ?? []) } catch { /* silent */ } finally { setAllowlistLoading(false) }
+  }, [slug])
+
+  async function handleAddToAllowlist() {
+    if (!newAllowlistId.trim()) return
+    setAllowlistAdding(true)
+    try {
+      await addToAllowlist(slug, newAllowlistId.trim())
+      setNewAllowlistId("")
+      fetchAllowlist()
+    } catch (e: unknown) {
+      alert(e instanceof Error ? e.message : "Failed to add user")
+    } finally { setAllowlistAdding(false) }
+  }
+
+  async function handleRemoveFromAllowlist(clerkId: string) {
+    await removeFromAllowlist(slug, clerkId)
+    setAllowlist(prev => prev.filter(u => u.clerk_id !== clerkId))
+  }
+
+  function handleAddTag() {
+    const key = newTagKey.trim().toLowerCase().replace(/[^a-z0-9-]/g, "-")
+    if (!key || !newTagLabel.trim()) return
+    if (postTags.length >= 8) { alert("Maximum 8 tags allowed"); return }
+    if (postTags.find(t => t.key === key)) { alert("Tag key already exists"); return }
+    setPostTags(prev => [...prev, { key, label: newTagLabel.trim(), color: newTagColor }])
+    setNewTagKey(""); setNewTagLabel(""); setNewTagColor("zinc")
+  }
+
+  async function handleSaveTags() {
+    setTagsSaving(true); setTagsMsg("")
+    try {
+      await updateCommunity(slug, { post_tags: postTags.length > 0 ? postTags : null })
+      setTagsMsg("Saved!")
+      setTimeout(() => setTagsMsg(""), 2000)
+    } catch { setTagsMsg("Failed to save") } finally { setTagsSaving(false) }
   }
 
   async function handleDeleteCommunity() {
@@ -487,6 +559,115 @@ export default function SubCommunityModPage({ slug, onNavigate, onNavigateToComm
               </div>
             </CardContent>
           </Card>
+
+          {isOwner && (
+            <Card className="border-border bg-card">
+              <CardContent className="p-4 space-y-4">
+                <p className="text-xs font-semibold text-muted-foreground/60 uppercase tracking-wider flex items-center gap-1.5"><Lock className="w-3 h-3" />Posting Access</p>
+                <div className="space-y-2">
+                  {(["everyone", "members", "chosen"] as const).map(opt => (
+                    <label key={opt} className="flex items-start gap-2.5 cursor-pointer">
+                      <input type="radio" name="post_permission" value={opt} checked={postPermission === opt} onChange={() => setPostPermission(opt)} className="mt-0.5 accent-foreground" />
+                      <div>
+                        <p className="text-sm text-foreground font-medium">
+                          {opt === "everyone" ? "Everyone" : opt === "members" ? "Members only" : "Approved users only"}
+                        </p>
+                        <p className="text-[11px] text-muted-foreground/60">
+                          {opt === "everyone" ? "Any signed-in user can post"
+                            : opt === "members" ? "Only community members can post"
+                            : "Only users on the allowlist can post (plus mods and owner)"}
+                        </p>
+                      </div>
+                    </label>
+                  ))}
+                </div>
+
+                {postPermission === "chosen" && (
+                  <div className="pt-2 border-t border-border/30 space-y-3">
+                    <p className="text-xs font-medium text-muted-foreground">Posting Allowlist</p>
+                    <div className="flex gap-2">
+                      <Input value={newAllowlistId} onChange={e => setNewAllowlistId(e.target.value)} placeholder="User's Clerk ID" className="h-8 text-xs flex-1" />
+                      <Button size="sm" onClick={handleAddToAllowlist} disabled={allowlistAdding || !newAllowlistId.trim()} className="h-8 gap-1 shrink-0">
+                        {allowlistAdding ? <Loader2 className="w-3 h-3 animate-spin" /> : <><Plus className="w-3 h-3" />Add</>}
+                      </Button>
+                    </div>
+                    {allowlistLoading ? (
+                      <div className="flex justify-center py-3"><Loader2 className="w-3.5 h-3.5 animate-spin text-muted-foreground" /></div>
+                    ) : allowlist.length === 0 ? (
+                      <p className="text-xs text-muted-foreground/50 italic">No users on the allowlist yet.</p>
+                    ) : (
+                      <div className="space-y-1.5">
+                        {allowlist.map(u => (
+                          <div key={u.clerk_id} className="flex items-center justify-between gap-2 text-xs">
+                            <span className="text-foreground/80">{u.display_name}</span>
+                            <button type="button" aria-label={`Remove ${u.display_name} from allowlist`} onClick={() => handleRemoveFromAllowlist(u.clerk_id)} className="text-muted-foreground hover:text-red-400 cursor-pointer bg-transparent border-0 transition-colors">
+                              <X className="w-3.5 h-3.5" />
+                            </button>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          )}
+
+          {isOwner && (
+            <Card className="border-border bg-card">
+              <CardContent className="p-4 space-y-4">
+                <p className="text-xs font-semibold text-muted-foreground/60 uppercase tracking-wider flex items-center gap-1.5"><Tag className="w-3 h-3" />Post Tags</p>
+                <p className="text-[11px] text-muted-foreground/60">Custom tags replace the default General / Trade / Analysis / Question tags for this community. Leave empty to use defaults.</p>
+
+                <div className="space-y-2">
+                  {postTags.map(t => (
+                    <div key={t.key} className="flex items-center gap-2 text-xs">
+                      <span className={`px-1.5 py-0.5 rounded border text-[10px] font-medium ${
+                        t.color === "emerald" ? "bg-emerald-500/10 text-emerald-500 border-emerald-500/20"
+                        : t.color === "blue"    ? "bg-blue-500/10 text-blue-400 border-blue-500/20"
+                        : t.color === "amber"   ? "bg-amber-500/10 text-amber-500 border-amber-500/20"
+                        : t.color === "rose"    ? "bg-rose-500/10 text-rose-400 border-rose-500/20"
+                        : t.color === "violet"  ? "bg-violet-500/10 text-violet-400 border-violet-500/20"
+                        : t.color === "orange"  ? "bg-orange-500/10 text-orange-400 border-orange-500/20"
+                        : t.color === "sky"     ? "bg-sky-500/10 text-sky-400 border-sky-500/20"
+                        : "bg-zinc-500/10 text-zinc-400 border-zinc-500/20"
+                      }`}>{t.label}</span>
+                      <span className="text-muted-foreground/50 font-mono">{t.key}</span>
+                      <button type="button" aria-label={`Remove ${t.label} tag`} onClick={() => setPostTags(prev => prev.filter(x => x.key !== t.key))} className="ml-auto text-muted-foreground hover:text-red-400 cursor-pointer bg-transparent border-0 transition-colors">
+                        <X className="w-3.5 h-3.5" />
+                      </button>
+                    </div>
+                  ))}
+                  {postTags.length === 0 && <p className="text-[11px] text-muted-foreground/50 italic">Using default tags.</p>}
+                </div>
+
+                {postTags.length < 8 && (
+                  <div className="pt-2 border-t border-border/30 space-y-2">
+                    <p className="text-xs text-muted-foreground">Add tag</p>
+                    <div className="flex gap-2 flex-wrap">
+                      <Input value={newTagKey} onChange={e => setNewTagKey(e.target.value)} placeholder="key (e.g. signal)" className="h-8 text-xs w-32" maxLength={32} />
+                      <Input value={newTagLabel} onChange={e => setNewTagLabel(e.target.value)} placeholder="Label" className="h-8 text-xs w-28" maxLength={32} />
+                      <select aria-label="Tag color" value={newTagColor} onChange={e => setNewTagColor(e.target.value)} className="h-8 text-xs rounded-md border border-border bg-background px-2 cursor-pointer">
+                        {["zinc","emerald","blue","amber","rose","violet","orange","sky"].map(c => (
+                          <option key={c} value={c}>{c}</option>
+                        ))}
+                      </select>
+                      <Button size="sm" type="button" onClick={handleAddTag} disabled={!newTagKey.trim() || !newTagLabel.trim()} className="h-8 gap-1 shrink-0">
+                        <Plus className="w-3 h-3" />Add
+                      </Button>
+                    </div>
+                  </div>
+                )}
+
+                <div className="flex items-center gap-2 pt-1">
+                  <Button size="sm" onClick={handleSaveTags} disabled={tagsSaving} className="gap-1">
+                    {tagsSaving ? <Loader2 className="w-3 h-3 animate-spin" /> : "Save Tags"}
+                  </Button>
+                  {tagsMsg && <span className="text-xs text-emerald-400">{tagsMsg}</span>}
+                </div>
+              </CardContent>
+            </Card>
+          )}
 
           <Card className="border-border bg-card">
             <CardContent className="p-4 space-y-3">

@@ -411,6 +411,65 @@ async function applyMigrations() {
       ) ENGINE=InnoDB`);
     console.log("[polymart] Migration: created communities + related tables");
   }
+
+  // Add is_verified to user_profiles.
+  const [[{ verifUserCnt }]] = await dbUser.query(
+    `SELECT COUNT(*) AS verifUserCnt FROM INFORMATION_SCHEMA.COLUMNS
+     WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'user_profiles' AND COLUMN_NAME = 'is_verified'`
+  );
+  if (!verifUserCnt) {
+    await dbUser.query(`ALTER TABLE user_profiles ADD COLUMN is_verified TINYINT(1) NOT NULL DEFAULT 0`);
+    console.log("[polymart] Migration: added is_verified to user_profiles");
+  }
+
+  // Add post_permission to communities.
+  const [[{ permCnt }]] = await dbUser.query(
+    `SELECT COUNT(*) AS permCnt FROM INFORMATION_SCHEMA.COLUMNS
+     WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'communities' AND COLUMN_NAME = 'post_permission'`
+  );
+  if (!permCnt) {
+    await dbUser.query(`ALTER TABLE communities ADD COLUMN post_permission ENUM('everyone','members','chosen') NOT NULL DEFAULT 'members'`);
+    console.log("[polymart] Migration: added post_permission to communities");
+  }
+
+  // Add post_tags to communities.
+  const [[{ tagsCnt }]] = await dbUser.query(
+    `SELECT COUNT(*) AS tagsCnt FROM INFORMATION_SCHEMA.COLUMNS
+     WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'communities' AND COLUMN_NAME = 'post_tags'`
+  );
+  if (!tagsCnt) {
+    await dbUser.query(`ALTER TABLE communities ADD COLUMN post_tags JSON DEFAULT NULL`);
+    console.log("[polymart] Migration: added post_tags to communities");
+  }
+
+  // Widen community_posts.post_type from ENUM to VARCHAR to support custom tags.
+  const [[{ postTypeKind }]] = await dbUser.query(
+    `SELECT DATA_TYPE AS postTypeKind FROM INFORMATION_SCHEMA.COLUMNS
+     WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'community_posts' AND COLUMN_NAME = 'post_type'`
+  );
+  if (postTypeKind && postTypeKind.toLowerCase() === 'enum') {
+    await dbUser.query(`ALTER TABLE community_posts MODIFY COLUMN post_type VARCHAR(32) NOT NULL DEFAULT 'general'`);
+    console.log("[polymart] Migration: widened community_posts.post_type to VARCHAR(32)");
+  }
+
+  // Create community_post_allowlist table.
+  const [[{ allowlistCnt }]] = await dbUser.query(
+    `SELECT COUNT(*) AS allowlistCnt FROM INFORMATION_SCHEMA.TABLES
+     WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'community_post_allowlist'`
+  );
+  if (!allowlistCnt) {
+    await dbUser.query(`
+      CREATE TABLE community_post_allowlist (
+        id           INT          NOT NULL AUTO_INCREMENT,
+        community_id INT          NOT NULL,
+        clerk_id     VARCHAR(64)  NOT NULL,
+        added_at     DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP,
+        PRIMARY KEY (id),
+        UNIQUE KEY uk_allowlist (community_id, clerk_id),
+        KEY idx_allowlist_community (community_id)
+      ) ENGINE=InnoDB`);
+    console.log("[polymart] Migration: created community_post_allowlist table");
+  }
 }
 
 async function waitForDb(retries = 30, delayMs = 2000) {

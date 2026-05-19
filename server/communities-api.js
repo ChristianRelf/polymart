@@ -233,16 +233,33 @@ router.get('/:slug', async (req, res) => {
       [community.id]
     );
 
-    let is_member = false, user_role = null, is_banned = false;
+    let is_member = false, user_role = null, is_banned = false, is_post_allowed = true;
     const { userId } = getAuth(req);
     if (userId) {
       const m = await getMembership(community.id, userId);
       is_member = !!m;
       user_role = m?.role ?? null;
       is_banned = await isBanned(community.id, userId);
+
+      if (community.post_permission === 'everyone') {
+        is_post_allowed = true;
+      } else if (community.post_permission === 'members') {
+        is_post_allowed = is_member;
+      } else if (community.post_permission === 'chosen') {
+        const isMod = user_role === 'moderator' || user_role === 'owner';
+        if (!isMod) {
+          const [[al]] = await pool.query(
+            'SELECT id FROM community_post_allowlist WHERE community_id = ? AND clerk_id = ?',
+            [community.id, userId]
+          );
+          is_post_allowed = !!al;
+        }
+      }
+    } else {
+      is_post_allowed = false;
     }
 
-    res.json({ ...community, rules, moderators: mods, is_member, user_role, is_banned });
+    res.json({ ...community, rules, moderators: mods, is_member, user_role, is_banned, is_post_allowed });
   } catch (err) {
     console.error('[communities-api] GET /:slug:', err.message);
     res.status(500).json({ error: 'Internal server error' });
@@ -259,7 +276,7 @@ router.put('/:slug', async (req, res) => {
   const mod = await requireMod(req, res, community.id);
   if (!mod) return;
 
-  const { display_name, description } = req.body;
+  const { display_name, description, post_permission, post_tags } = req.body;
   const updates = [], vals = [];
 
   if (display_name != null) {
@@ -282,6 +299,34 @@ router.put('/:slug', async (req, res) => {
   }
 
   if (description != null) { updates.push('description = ?'); vals.push(String(description).trim()); }
+
+  // post_permission and post_tags are owner-only settings
+  if (post_permission != null || post_tags !== undefined) {
+    if (mod.role !== 'owner') return res.status(403).json({ error: 'Only the community owner can change post permissions and tags' });
+
+    if (post_permission != null) {
+      if (!['everyone', 'members', 'chosen'].includes(post_permission))
+        return res.status(400).json({ error: 'post_permission must be everyone, members, or chosen' });
+      updates.push('post_permission = ?'); vals.push(post_permission);
+    }
+
+    if (post_tags !== undefined) {
+      if (post_tags === null) {
+        updates.push('post_tags = NULL'); // reset to defaults (no placeholder needed)
+      } else {
+        if (!Array.isArray(post_tags) || post_tags.length > 8)
+          return res.status(400).json({ error: 'post_tags must be an array of up to 8 tags' });
+        const VALID_COLORS = new Set(['zinc','emerald','blue','amber','rose','violet','orange','sky']);
+        const VALID_KEY = /^[a-z0-9-]{1,32}$/;
+        for (const tag of post_tags) {
+          if (!tag.key || !VALID_KEY.test(tag.key)) return res.status(400).json({ error: 'Tag key must be 1-32 lowercase chars, digits, or hyphens' });
+          if (!tag.label || typeof tag.label !== 'string' || tag.label.length > 32) return res.status(400).json({ error: 'Tag label must be 1-32 chars' });
+          if (!VALID_COLORS.has(tag.color)) return res.status(400).json({ error: `Invalid tag color: ${tag.color}` });
+        }
+        updates.push('post_tags = ?'); vals.push(JSON.stringify(post_tags));
+      }
+    }
+  }
 
   if (!updates.length) return res.status(400).json({ error: 'Nothing to update' });
 
@@ -848,6 +893,66 @@ router.get('/:slug/mod/log', async (req, res) => {
     res.json({ log: rows });
   } catch (err) {
     console.error('[communities-api] GET /:slug/mod/log:', err.message);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+// ── GET /communities/:slug/mod/allowlist ─────────────────────────────────────
+router.get('/:slug/mod/allowlist', async (req, res) => {
+  const community = await getCommunityBySlug(req.params.slug);
+  if (!community) return res.status(404).json({ error: 'Community not found' });
+  const mod = await requireMod(req, res, community.id);
+  if (!mod) return;
+  try {
+    const [rows] = await pool.query(
+      `SELECT al.clerk_id, al.added_at, COALESCE(p.display_name, al.clerk_id) AS display_name, p.avatar_url
+       FROM community_post_allowlist al
+       LEFT JOIN user_profiles p ON p.clerk_id = al.clerk_id
+       WHERE al.community_id = ?
+       ORDER BY al.added_at ASC`,
+      [community.id]
+    );
+    res.json({ allowlist: rows });
+  } catch (err) {
+    console.error('[communities-api] GET /:slug/mod/allowlist:', err.message);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+// ── POST /communities/:slug/mod/allowlist ─────────────────────────────────────
+router.post('/:slug/mod/allowlist', async (req, res) => {
+  const community = await getCommunityBySlug(req.params.slug);
+  if (!community) return res.status(404).json({ error: 'Community not found' });
+  const ownerId = await requireOwner(req, res, community.id);
+  if (!ownerId) return;
+  const { clerk_id } = req.body;
+  if (!clerk_id || typeof clerk_id !== 'string') return res.status(400).json({ error: 'clerk_id required' });
+  try {
+    await pool.query(
+      'INSERT IGNORE INTO community_post_allowlist (community_id, clerk_id) VALUES (?, ?)',
+      [community.id, clerk_id.trim()]
+    );
+    res.json({ success: true });
+  } catch (err) {
+    console.error('[communities-api] POST /:slug/mod/allowlist:', err.message);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+// ── DELETE /communities/:slug/mod/allowlist/:clerkId ─────────────────────────
+router.delete('/:slug/mod/allowlist/:clerkId', async (req, res) => {
+  const community = await getCommunityBySlug(req.params.slug);
+  if (!community) return res.status(404).json({ error: 'Community not found' });
+  const ownerId = await requireOwner(req, res, community.id);
+  if (!ownerId) return;
+  try {
+    await pool.query(
+      'DELETE FROM community_post_allowlist WHERE community_id = ? AND clerk_id = ?',
+      [community.id, req.params.clerkId]
+    );
+    res.json({ success: true });
+  } catch (err) {
+    console.error('[communities-api] DELETE /:slug/mod/allowlist/:clerkId:', err.message);
     res.status(500).json({ error: 'Internal server error' });
   }
 });

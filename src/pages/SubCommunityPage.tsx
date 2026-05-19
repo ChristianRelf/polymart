@@ -13,8 +13,11 @@ import { useAccount } from "@/hooks/useAccount"
 import { MarkdownBody } from "@/components/MarkdownBody"
 import { MarkdownEditor } from "@/components/MarkdownEditor"
 import { CommunitySidebar } from "@/components/CommunitySidebar"
-import { VerificationBadge } from "@/components/VerificationBadge"
+import { VerificationBadge, UserVerifiedBadge } from "@/components/VerificationBadge"
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
 import type { Route } from "@/App"
+
+export interface PostTag { key: string; label: string; color: string }
 
 interface Community {
   id: number
@@ -30,7 +33,10 @@ interface Community {
   is_member: boolean
   user_role: "member" | "moderator" | "owner" | null
   is_banned: boolean
+  is_post_allowed: boolean
   verification_type: "none" | "verified" | "official" | null
+  post_permission: "everyone" | "members" | "chosen"
+  post_tags: PostTag[] | null
   rules: { id: number; title: string; description: string | null }[]
   moderators: { clerk_id: string; role: string; display_name: string; avatar_url: string | null }[]
 }
@@ -41,6 +47,7 @@ interface Post {
   clerk_id: string
   display_name: string | null
   avatar_url: string | null
+  author_verified?: number
   title: string
   body: string
   post_type: string
@@ -59,6 +66,33 @@ const TYPE_COLORS: Record<string, string> = {
   question: "bg-amber-500/10 text-amber-500 border-amber-500/20",
 }
 const TYPE_LABELS: Record<string, string> = { general: "General", trade: "Trade", analysis: "Analysis", question: "Question" }
+
+const TAG_COLOR_CLASSES: Record<string, string> = {
+  zinc:    "bg-zinc-500/10 text-zinc-400 border-zinc-500/20",
+  emerald: "bg-emerald-500/10 text-emerald-500 border-emerald-500/20",
+  blue:    "bg-blue-500/10 text-blue-400 border-blue-500/20",
+  amber:   "bg-amber-500/10 text-amber-500 border-amber-500/20",
+  rose:    "bg-rose-500/10 text-rose-400 border-rose-500/20",
+  violet:  "bg-violet-500/10 text-violet-400 border-violet-500/20",
+  orange:  "bg-orange-500/10 text-orange-400 border-orange-500/20",
+  sky:     "bg-sky-500/10 text-sky-400 border-sky-500/20",
+}
+
+function resolveTagClass(postType: string, postTags?: PostTag[] | null) {
+  if (postTags) {
+    const tag = postTags.find(t => t.key === postType)
+    if (tag) return TAG_COLOR_CLASSES[tag.color] ?? TAG_COLOR_CLASSES.zinc
+  }
+  return TYPE_COLORS[postType] ?? TYPE_COLORS.general
+}
+
+function resolveTagLabel(postType: string, postTags?: PostTag[] | null) {
+  if (postTags) {
+    const tag = postTags.find(t => t.key === postType)
+    if (tag) return tag.label
+  }
+  return TYPE_LABELS[postType] ?? postType
+}
 
 const REPORT_REASONS = ["Spam", "Misinformation", "Inappropriate", "Off-topic"] as const
 
@@ -91,11 +125,12 @@ function CommunityIcon({ icon_url, display_name, size = "md" }: { icon_url: stri
 }
 
 function PostCard({
-  post, userId, isMod, onDelete, onLike, onReport, onPin, onUnpin, onRemove, onRestore, onNavigateToPost, uploadImage,
+  post, userId, isMod, postTags, onDelete, onLike, onReport, onPin, onUnpin, onRemove, onRestore, onNavigateToPost, uploadImage,
 }: {
   post: Post
   userId: string | null | undefined
   isMod: boolean
+  postTags?: PostTag[] | null
   onDelete: (id: number) => void
   onLike: (id: number) => void
   onReport: (id: number, reason: string) => void
@@ -170,10 +205,11 @@ function PostCard({
           <div className="flex-1 min-w-0">
             <div className="flex flex-wrap items-center gap-1.5 text-xs text-muted-foreground">
               <span className="font-medium text-foreground">{post.display_name ?? "Anonymous"}</span>
+              {!!post.author_verified && <UserVerifiedBadge size="xs" />}
               <span className="text-muted-foreground/40">·</span>
               <span>{timeAgo(post.created_at)}</span>
-              <Badge variant="outline" className={`text-[10px] px-1.5 py-0 border ${TYPE_COLORS[post.post_type] ?? TYPE_COLORS.general}`}>
-                {TYPE_LABELS[post.post_type] ?? post.post_type}
+              <Badge variant="outline" className={`text-[10px] px-1.5 py-0 border ${resolveTagClass(post.post_type, postTags)}`}>
+                {resolveTagLabel(post.post_type, postTags)}
               </Badge>
             </div>
           </div>
@@ -185,9 +221,14 @@ function PostCard({
             <Input value={editTitle} onChange={e => setEditTitle(e.target.value)} maxLength={280} className="text-sm font-semibold h-9" />
             <MarkdownEditor value={editBody} onChange={setEditBody} rows={6} onUploadImage={uploadImage} />
             <div className="flex gap-1.5 pt-1">
-              {(["general","trade","analysis","question"] as const).map(t => (
-                <button key={t} onClick={() => setEditType(t)} className={`text-[10px] px-2 py-1 rounded border cursor-pointer transition-colors ${editType === t ? "border-foreground text-foreground bg-muted" : "border-border text-muted-foreground bg-transparent hover:text-foreground"}`}>
-                  {TYPE_LABELS[t]}
+              {(postTags ?? [
+                { key: "general", label: "General", color: "zinc" },
+                { key: "trade", label: "Trade", color: "emerald" },
+                { key: "analysis", label: "Analysis", color: "blue" },
+                { key: "question", label: "Question", color: "amber" },
+              ]).map(t => (
+                <button key={t.key} type="button" onClick={() => setEditType(t.key)} className={`text-[10px] px-2 py-1 rounded border cursor-pointer transition-colors ${editType === t.key ? "border-foreground text-foreground bg-muted" : "border-border text-muted-foreground bg-transparent hover:text-foreground"}`}>
+                  {t.label}
                 </button>
               ))}
             </div>
@@ -205,7 +246,7 @@ function PostCard({
               <MarkdownBody content={post.body} />
             </div>
             {isLong && !expanded && (
-              <button onClick={() => setExpanded(true)} className="text-xs text-muted-foreground hover:text-foreground mt-1 cursor-pointer bg-transparent border-0 p-0">
+              <button type="button" onClick={() => setExpanded(true)} className="text-xs text-muted-foreground hover:text-foreground mt-1 cursor-pointer bg-transparent border-0 p-0">
                 Read more
               </button>
             )}
@@ -214,61 +255,90 @@ function PostCard({
 
         {/* Actions row */}
         <div className="flex items-center gap-3 mt-3 pt-2 border-t border-border/30">
-          <button onClick={handleLike} className={`flex items-center gap-1 text-xs cursor-pointer bg-transparent border-0 transition-colors ${liked ? "text-red-400" : "text-muted-foreground hover:text-red-400"}`}>
+          <button type="button" onClick={handleLike} className={`flex items-center gap-1 text-xs cursor-pointer bg-transparent border-0 transition-colors ${liked ? "text-red-400" : "text-muted-foreground hover:text-red-400"}`}>
             <Heart className={`w-3.5 h-3.5 ${liked ? "fill-red-400" : ""}`} />{likeCt}
           </button>
           {post.share_id && (
-            <button onClick={() => post.share_id && onNavigateToPost(post.share_id)} className="flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground cursor-pointer bg-transparent border-0 transition-colors">
+            <button type="button" onClick={() => post.share_id && onNavigateToPost(post.share_id)} className="flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground cursor-pointer bg-transparent border-0 transition-colors">
               <MessageCircle className="w-3.5 h-3.5" />{post.comment_count}
             </button>
           )}
           {post.share_id && (
-            <button onClick={handleCopy} className={`flex items-center gap-1 text-xs cursor-pointer bg-transparent border-0 transition-colors ${copied ? "text-emerald-400" : "text-muted-foreground hover:text-foreground"}`}>
+            <button type="button" onClick={handleCopy} className={`flex items-center gap-1 text-xs cursor-pointer bg-transparent border-0 transition-colors ${copied ? "text-emerald-400" : "text-muted-foreground hover:text-foreground"}`}>
               {copied ? <Check className="w-3.5 h-3.5" /> : <Link className="w-3.5 h-3.5" />}
             </button>
           )}
           <div className="ml-auto flex items-center gap-1.5">
-            {isOwn && !editing && (
-              <button type="button" title="Edit post" onClick={() => setEditing(true)} className="text-muted-foreground hover:text-foreground cursor-pointer bg-transparent border-0 transition-colors">
-                <Pencil className="w-3.5 h-3.5" />
-              </button>
-            )}
-            {isOwn && (
-              <button type="button" title="Delete post" onClick={() => window.confirm("Delete this post?") && onDelete(post.id)} className="text-muted-foreground hover:text-red-400 cursor-pointer bg-transparent border-0 transition-colors">
-                <Trash2 className="w-3.5 h-3.5" />
-              </button>
-            )}
-            {isMod && (
-              <>
-                {post.is_pinned ? (
-                  <button onClick={() => onUnpin(post.id)} title="Unpin" className="text-amber-500 hover:text-muted-foreground cursor-pointer bg-transparent border-0 transition-colors">
-                    <Pin className="w-3.5 h-3.5" />
-                  </button>
-                ) : (
-                  <button onClick={() => onPin(post.id)} title="Pin" className="text-muted-foreground hover:text-amber-500 cursor-pointer bg-transparent border-0 transition-colors">
-                    <Pin className="w-3.5 h-3.5" />
-                  </button>
-                )}
-                {post.is_removed ? (
-                  <button onClick={() => onRestore(post.id)} title="Restore" className="text-muted-foreground hover:text-emerald-400 cursor-pointer bg-transparent border-0 transition-colors">
-                    <EyeOff className="w-3.5 h-3.5" />
-                  </button>
-                ) : (
-                  <button onClick={() => window.confirm("Remove this post?") && onRemove(post.id)} title="Remove" className="text-muted-foreground hover:text-red-400 cursor-pointer bg-transparent border-0 transition-colors">
-                    <EyeOff className="w-3.5 h-3.5" />
-                  </button>
-                )}
-              </>
-            )}
+            <TooltipProvider>
+              {isOwn && !editing && (
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <button type="button" aria-label="Edit post" onClick={() => setEditing(true)} className="text-muted-foreground hover:text-foreground cursor-pointer bg-transparent border-0 transition-colors">
+                      <Pencil className="w-3.5 h-3.5" />
+                    </button>
+                  </TooltipTrigger>
+                  <TooltipContent side="top">Edit post</TooltipContent>
+                </Tooltip>
+              )}
+              {isOwn && (
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <button type="button" aria-label="Delete post" onClick={() => window.confirm("Delete this post?") && onDelete(post.id)} className="text-muted-foreground hover:text-red-400 cursor-pointer bg-transparent border-0 transition-colors">
+                      <Trash2 className="w-3.5 h-3.5" />
+                    </button>
+                  </TooltipTrigger>
+                  <TooltipContent side="top">Delete post</TooltipContent>
+                </Tooltip>
+              )}
+              {isMod && (
+                <>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      {post.is_pinned ? (
+                        <button type="button" aria-label="Unpin post" onClick={() => onUnpin(post.id)} className="text-amber-500 hover:text-muted-foreground cursor-pointer bg-transparent border-0 transition-colors">
+                          <Pin className="w-3.5 h-3.5" />
+                        </button>
+                      ) : (
+                        <button type="button" aria-label="Pin post" onClick={() => onPin(post.id)} className="text-muted-foreground hover:text-amber-500 cursor-pointer bg-transparent border-0 transition-colors">
+                          <Pin className="w-3.5 h-3.5" />
+                        </button>
+                      )}
+                    </TooltipTrigger>
+                    <TooltipContent side="top">{post.is_pinned ? "Unpin" : "Pin"}</TooltipContent>
+                  </Tooltip>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      {post.is_removed ? (
+                        <button type="button" aria-label="Restore post" onClick={() => onRestore(post.id)} className="text-muted-foreground hover:text-emerald-400 cursor-pointer bg-transparent border-0 transition-colors">
+                          <EyeOff className="w-3.5 h-3.5" />
+                        </button>
+                      ) : (
+                        <button type="button" aria-label="Remove post" onClick={() => window.confirm("Remove this post?") && onRemove(post.id)} className="text-muted-foreground hover:text-red-400 cursor-pointer bg-transparent border-0 transition-colors">
+                          <EyeOff className="w-3.5 h-3.5" />
+                        </button>
+                      )}
+                    </TooltipTrigger>
+                    <TooltipContent side="top">{post.is_removed ? "Restore" : "Remove"}</TooltipContent>
+                  </Tooltip>
+                </>
+              )}
+            </TooltipProvider>
             {!isOwn && userId && (
               <div className="relative">
-                <button type="button" title="Report post" onClick={() => setShowReport(v => !v)} className="text-muted-foreground hover:text-foreground cursor-pointer bg-transparent border-0 transition-colors">
-                  <Flag className="w-3.5 h-3.5" />
-                </button>
+                <TooltipProvider>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <button type="button" aria-label="Report post" onClick={() => setShowReport(v => !v)} className="text-muted-foreground hover:text-foreground cursor-pointer bg-transparent border-0 transition-colors">
+                        <Flag className="w-3.5 h-3.5" />
+                      </button>
+                    </TooltipTrigger>
+                    <TooltipContent side="top">Report post</TooltipContent>
+                  </Tooltip>
+                </TooltipProvider>
                 {showReport && (
                   <div className="absolute right-0 top-5 z-20 bg-card border border-border rounded-lg shadow-lg p-2 w-44">
                     {REPORT_REASONS.map(r => (
-                      <button key={r} onClick={() => { if (window.confirm(`Report as "${r}"?`)) { onReport(post.id, r); setShowReport(false) } }} className="block w-full text-left text-xs text-muted-foreground hover:text-foreground px-2 py-1.5 rounded cursor-pointer bg-transparent border-0 hover:bg-muted transition-colors">
+                      <button key={r} type="button" onClick={() => { if (window.confirm(`Report as "${r}"?`)) { onReport(post.id, r); setShowReport(false) } }} className="block w-full text-left text-xs text-muted-foreground hover:text-foreground px-2 py-1.5 rounded cursor-pointer bg-transparent border-0 hover:bg-muted transition-colors">
                         {r}
                       </button>
                     ))}
@@ -283,14 +353,23 @@ function PostCard({
   )
 }
 
-function ComposeForm({ communityId, onPost, uploadImage }: {
+const DEFAULT_TAGS: PostTag[] = [
+  { key: "general", label: "General", color: "zinc" },
+  { key: "trade", label: "Trade", color: "emerald" },
+  { key: "analysis", label: "Analysis", color: "blue" },
+  { key: "question", label: "Question", color: "amber" },
+]
+
+function ComposeForm({ communityId, postTags, onPost, uploadImage }: {
   communityId: number
+  postTags?: PostTag[] | null
   onPost: (post: Post) => void
   uploadImage: (file: File) => Promise<string>
 }) {
+  const tags = postTags ?? DEFAULT_TAGS
   const [title, setTitle] = useState("")
   const [body, setBody] = useState("")
-  const [postType, setPostType] = useState("general")
+  const [postType, setPostType] = useState(tags[0]?.key ?? "general")
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState("")
   const { createCommunityPostScoped } = useAccount()
@@ -302,7 +381,7 @@ function ComposeForm({ communityId, onPost, uploadImage }: {
     setLoading(true); setError("")
     try {
       const post = await createCommunityPostScoped({ title: title.trim(), body: body.trim(), post_type: postType, community_id: communityId })
-      setTitle(""); setBody(""); setPostType("general")
+      setTitle(""); setBody(""); setPostType(tags[0]?.key ?? "general")
       onPost(post)
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : "Failed to post")
@@ -318,14 +397,14 @@ function ComposeForm({ communityId, onPost, uploadImage }: {
           <Input value={title} onChange={e => setTitle(e.target.value)} placeholder="Post title..." maxLength={280} className="text-sm font-medium h-9" />
           <MarkdownEditor value={body} onChange={setBody} rows={4} placeholder="Share your thoughts..." onUploadImage={uploadImage} />
           <div className="flex items-center justify-between gap-2">
-            <div className="flex items-center gap-1">
-              {(["general","trade","analysis","question"] as const).map(t => (
-                <button key={t} type="button" onClick={() => setPostType(t)} className={`text-[10px] px-2 py-1 rounded border cursor-pointer transition-colors ${postType === t ? "border-foreground text-foreground bg-muted" : "border-border text-muted-foreground bg-transparent hover:text-foreground"}`}>
-                  {TYPE_LABELS[t]}
+            <div className="flex items-center gap-1 flex-wrap">
+              {tags.map(t => (
+                <button key={t.key} type="button" onClick={() => setPostType(t.key)} className={`text-[10px] px-2 py-1 rounded border cursor-pointer transition-colors ${postType === t.key ? "border-foreground text-foreground bg-muted" : "border-border text-muted-foreground bg-transparent hover:text-foreground"}`}>
+                  {t.label}
                 </button>
               ))}
             </div>
-            <Button size="sm" type="submit" disabled={loading} className="gap-1.5">
+            <Button size="sm" type="submit" disabled={loading} className="gap-1.5 shrink-0">
               {loading ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <><Send className="w-3.5 h-3.5" />Post</>}
             </Button>
           </div>
@@ -497,14 +576,15 @@ export default function SubCommunityPage({ slug, onNavigate, onNavigateToCommuni
         {/* Feed */}
         <div className="flex-1 min-w-0 space-y-4">
           {/* Back link (mobile only — xl has sidebar) */}
-          <button onClick={() => onNavigate("community")} className="xl:hidden flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground cursor-pointer bg-transparent border-0 transition-colors">
+          <button type="button" onClick={() => onNavigate("community")} className="xl:hidden flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground cursor-pointer bg-transparent border-0 transition-colors">
             <ChevronLeft className="w-3.5 h-3.5" />Community
           </button>
 
           {/* Compose */}
-          {community.is_member && !community.is_banned && (
+          {isSignedIn && community.is_post_allowed && !community.is_banned && (
             <ComposeForm
               communityId={community.id}
+              postTags={community.post_tags}
               onPost={post => setPosts(prev => [post, ...prev])}
               uploadImage={uploadImage}
             />
@@ -522,13 +602,19 @@ export default function SubCommunityPage({ slug, onNavigate, onNavigateToCommuni
               </CardContent>
             </Card>
           )}
-          {isSignedIn && !community.is_member && !community.is_banned && (
+          {isSignedIn && !community.is_post_allowed && !community.is_banned && (
             <Card className="border-border bg-card/50">
               <CardContent className="p-4 flex items-center justify-between gap-3">
-                <p className="text-sm text-muted-foreground">Join this community to post</p>
-                <Button size="sm" onClick={handleJoin} disabled={joining}>
-                  {joining ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : "Join to post"}
-                </Button>
+                {community.post_permission === "members" ? (
+                  <>
+                    <p className="text-sm text-muted-foreground">Join this community to post</p>
+                    <Button size="sm" onClick={handleJoin} disabled={joining}>
+                      {joining ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : "Join to post"}
+                    </Button>
+                  </>
+                ) : (
+                  <p className="text-sm text-muted-foreground">Posting in this community is restricted.</p>
+                )}
               </CardContent>
             </Card>
           )}
@@ -536,7 +622,7 @@ export default function SubCommunityPage({ slug, onNavigate, onNavigateToCommuni
           {/* Sort tabs */}
           <div className="flex items-center gap-1">
             {(["new","top"] as const).map(s => (
-              <button key={s} onClick={() => handleSort(s)} className={`text-xs px-3 py-1.5 rounded-md border transition-colors cursor-pointer ${sort === s ? "border-foreground/30 text-foreground bg-muted" : "border-border text-muted-foreground hover:text-foreground bg-transparent"}`}>
+              <button key={s} type="button" onClick={() => handleSort(s)} className={`text-xs px-3 py-1.5 rounded-md border transition-colors cursor-pointer ${sort === s ? "border-foreground/30 text-foreground bg-muted" : "border-border text-muted-foreground hover:text-foreground bg-transparent"}`}>
                 {s === "new" ? "New" : "Top"}
               </button>
             ))}
@@ -558,6 +644,7 @@ export default function SubCommunityPage({ slug, onNavigate, onNavigateToCommuni
                   post={p}
                   userId={userId}
                   isMod={isMod}
+                  postTags={community.post_tags}
                   onDelete={async id => { if (await deletePost(id).then(() => true).catch(() => false)) setPosts(prev => prev.filter(x => x.id !== id)) }}
                   onLike={id => likePost(id)}
                   onReport={(id, reason) => reportPost(id, reason)}
