@@ -166,14 +166,9 @@ async function applySchemaFile(pool, schemaFile, label) {
   const schemaPath = path.join(__dirname, schemaFile);
   const raw = fs.readFileSync(schemaPath, "utf8");
   let sql = raw.replace(/--[^\n]*/g, "");
-  // Strip compound CREATE EVENT ... DO BEGIN...END; blocks before splitting on ;
-  sql = sql.replace(/CREATE\s+EVENT\b[\s\S]*?\bEND\s*;/gi, "");
-  // Strip any remaining single-statement CREATE EVENT definitions
-  sql = sql.replace(/CREATE\s+EVENT\b[^;]*;/gi, "");
-  // Strip DROP EVENT statements
+  // Strip CREATE EVENT and DROP EVENT (events are managed by MySQL scheduler, not applySchemaFile)
   sql = sql.replace(/\bDROP\s+EVENT\b[^;]*;/gi, "");
-  // Strip DELIMITER commands (MySQL client-only, not valid in mysql2)
-  sql = sql.replace(/\bDELIMITER\b[^\n]*/gi, "");
+  sql = sql.replace(/\bCREATE\s+EVENT\b[^;]*;/gi, "");
   const statements = sql
     .split(";")
     .map(s => s.trim())
