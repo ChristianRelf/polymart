@@ -165,8 +165,16 @@ app.get("*", (_req, res) => {
 async function applySchemaFile(pool, schemaFile, label) {
   const schemaPath = path.join(__dirname, schemaFile);
   const raw = fs.readFileSync(schemaPath, "utf8");
-  const stripped = raw.replace(/--[^\n]*/g, "");
-  const statements = stripped
+  let sql = raw.replace(/--[^\n]*/g, "");
+  // Strip compound CREATE EVENT ... DO BEGIN...END; blocks before splitting on ;
+  sql = sql.replace(/CREATE\s+EVENT\b[\s\S]*?\bEND\s*;/gi, "");
+  // Strip any remaining single-statement CREATE EVENT definitions
+  sql = sql.replace(/CREATE\s+EVENT\b[^;]*;/gi, "");
+  // Strip DROP EVENT statements
+  sql = sql.replace(/\bDROP\s+EVENT\b[^;]*;/gi, "");
+  // Strip DELIMITER commands (MySQL client-only, not valid in mysql2)
+  sql = sql.replace(/\bDELIMITER\b[^\n]*/gi, "");
+  const statements = sql
     .split(";")
     .map(s => s.trim())
     .filter(s => {
@@ -174,8 +182,6 @@ async function applySchemaFile(pool, schemaFile, label) {
       const upper = s.toUpperCase();
       if (upper.startsWith("CREATE DATABASE")) return false;
       if (upper.startsWith("USE ")) return false;
-      if (upper.startsWith("DROP EVENT")) return false;
-      if (upper.startsWith("CREATE EVENT")) return false;
       if (upper.startsWith("SET GLOBAL")) return false;
       return true;
     });

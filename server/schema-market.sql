@@ -160,6 +160,7 @@ CREATE EVENT purge_old_events
 
 -- ── Weekly OPTIMIZE to reclaim space from high-churn tables ──────────────────
 DROP EVENT IF EXISTS optimize_market_tables;
+DELIMITER //
 CREATE EVENT optimize_market_tables
   ON SCHEDULE EVERY 7 DAY
   STARTS CURRENT_TIMESTAMP
@@ -167,4 +168,5 @@ CREATE EVENT optimize_market_tables
     OPTIMIZE TABLE events_log;
     OPTIMIZE TABLE stocks_state;
     OPTIMIZE TABLE forex_state;
-  END;
+  END//
+DELIMITER ;
