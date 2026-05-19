@@ -163,8 +163,5 @@ DROP EVENT IF EXISTS optimize_market_tables;
 CREATE EVENT optimize_market_tables
   ON SCHEDULE EVERY 7 DAY
   STARTS CURRENT_TIMESTAMP
-  DO BEGIN
+  DO
     OPTIMIZE TABLE events_log;
-    OPTIMIZE TABLE stocks_state;
-    OPTIMIZE TABLE forex_state;
-  END;
