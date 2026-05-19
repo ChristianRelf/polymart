@@ -158,7 +158,7 @@ router.put('/me', async (req, res) => {
   try {
     await pool.query(
       'UPDATE user_profiles SET display_name = COALESCE(?, display_name), bio = COALESCE(?, bio), updated_at = NOW() WHERE clerk_id = ?',
-      [display_name ?? null, bio ?? null, userId]
+      [display_name || null, bio || null, userId]
     );
     res.json({ success: true });
   } catch (err) {

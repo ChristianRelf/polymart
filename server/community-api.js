@@ -157,7 +157,9 @@ router.get('/posts', async (req, res) => {
     const where = `WHERE ${conditions.join(' AND ')}`;
 
     const [rows] = await pool.query(
-      `SELECT cp.id, cp.share_id, cp.clerk_id, cp.display_name, cp.avatar_url,
+      `SELECT cp.id, cp.share_id, cp.clerk_id,
+              COALESCE(cp.display_name, up.display_name) AS display_name,
+              COALESCE(cp.avatar_url, up.avatar_url) AS avatar_url,
               cp.title, cp.body, cp.post_type, cp.likes, cp.created_at,
               cp.is_pinned, cp.is_removed, cp.community_id,
               c.slug AS community_slug, c.display_name AS community_display_name,
@@ -306,7 +308,9 @@ router.get('/posts/share/:shareId', async (req, res) => {
   const { shareId } = req.params;
   try {
     const [[post]] = await pool.query(
-      `SELECT cp.id, cp.share_id, cp.clerk_id, cp.display_name, cp.avatar_url,
+      `SELECT cp.id, cp.share_id, cp.clerk_id,
+              COALESCE(cp.display_name, up.display_name) AS display_name,
+              COALESCE(cp.avatar_url, up.avatar_url) AS avatar_url,
               cp.title, cp.body, cp.post_type, cp.likes, cp.created_at,
               COUNT(cc.id) AS comment_count,
               COALESCE(up.is_verified, 0) AS author_verified
@@ -428,10 +432,14 @@ router.get('/posts/:id/comments', async (req, res) => {
 
   try {
     const [rows] = await pool.query(
-      `SELECT id, post_id, parent_id, clerk_id, display_name, avatar_url, body, created_at
-       FROM community_comments
-       WHERE post_id = ?
-       ORDER BY created_at ASC
+      `SELECT cc.id, cc.post_id, cc.parent_id, cc.clerk_id,
+              COALESCE(cc.display_name, up.display_name) AS display_name,
+              COALESCE(cc.avatar_url, up.avatar_url) AS avatar_url,
+              cc.body, cc.created_at
+       FROM community_comments cc
+       LEFT JOIN user_profiles up ON up.clerk_id = cc.clerk_id
+       WHERE cc.post_id = ?
+       ORDER BY cc.created_at ASC
        LIMIT 1000`,
       [postId]
     );
