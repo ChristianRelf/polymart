@@ -45,29 +45,44 @@ router.use((req, res, next) => {
 
 // ── GET /admin/users ──────────────────────────────────────────────────────────
 router.get('/users', async (req, res) => {
-  const page = Math.max(1, parseInt(req.query.page) || 1);
+  const page  = Math.max(1, parseInt(req.query.page)  || 1);
   const limit = Math.min(100, parseInt(req.query.limit) || 25);
   const { search, tier } = req.query;
 
   try {
-    let sql = 'SELECT clerk_id, display_name, email, tier, is_verified, created_at, stripe_subscription_id FROM user_profiles WHERE 1=1';
-    const params = [];
+    // Clerk is the source of truth for names and emails
+    const clerkParams = { limit, offset: (page - 1) * limit };
+    if (search) clerkParams.query = search;
+    const { data: clerkUsers, totalCount } = await clerkClient.users.getUserList(clerkParams);
 
-    if (search) {
-      sql += ' AND (display_name LIKE ? OR email LIKE ?)';
-      const q = `%${search}%`;
-      params.push(q, q);
-    }
+    if (!clerkUsers.length) return res.json({ users: [], page, limit, total: 0 });
+
+    // Fetch our metadata for these users
+    const ids = clerkUsers.map(u => u.id);
+    const [dbRows] = await pool.query(
+      'SELECT clerk_id, tier, is_verified, created_at, stripe_subscription_id FROM user_profiles WHERE clerk_id IN (?)',
+      [ids]
+    );
+    const dbMap = new Map(dbRows.map(u => [u.clerk_id, u]));
+
+    let users = clerkUsers.map(cu => {
+      const db = dbMap.get(cu.id) || {};
+      return {
+        clerk_id:              cu.id,
+        display_name:          [cu.firstName, cu.lastName].filter(Boolean).join(' ') || cu.username || null,
+        email:                 cu.emailAddresses?.[0]?.emailAddress || null,
+        tier:                  db.tier || 'basic',
+        is_verified:           db.is_verified ?? 0,
+        created_at:            db.created_at   || new Date(cu.createdAt).toISOString(),
+        stripe_subscription_id: db.stripe_subscription_id || null,
+      };
+    });
+
     if (tier && (tier === 'basic' || tier === 'premium')) {
-      sql += ' AND tier = ?';
-      params.push(tier);
+      users = users.filter(u => u.tier === tier);
     }
 
-    sql += ' ORDER BY created_at DESC LIMIT ? OFFSET ?';
-    params.push(limit, (page - 1) * limit);
-
-    const [users] = await pool.query(sql, params);
-    res.json({ users, page, limit });
+    res.json({ users, page, limit, total: totalCount });
   } catch (err) {
     console.error('[admin-api] GET /users:', err.message);
     res.status(500).json({ error: 'Internal server error' });

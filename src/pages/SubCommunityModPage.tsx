@@ -208,7 +208,7 @@ export default function SubCommunityModPage({ slug, onNavigate, onNavigateToComm
 
   const fetchAllowlist = useCallback(async () => {
     setAllowlistLoading(true)
-    try { const d = await getAllowlist(slug); setAllowlist(d.users ?? []) } catch { /* silent */ } finally { setAllowlistLoading(false) }
+    try { const d = await getAllowlist(slug); setAllowlist(d.allowlist ?? []) } catch { /* silent */ } finally { setAllowlistLoading(false) }
   }, [slug])
 
   async function handleAddToAllowlist() {

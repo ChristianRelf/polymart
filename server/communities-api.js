@@ -905,13 +905,34 @@ router.get('/:slug/mod/allowlist', async (req, res) => {
   if (!mod) return;
   try {
     const [rows] = await pool.query(
-      `SELECT al.clerk_id, al.added_at, COALESCE(p.display_name, al.clerk_id) AS display_name, p.avatar_url
+      `SELECT al.clerk_id, al.added_at, p.display_name, p.avatar_url
        FROM community_post_allowlist al
        LEFT JOIN user_profiles p ON p.clerk_id = al.clerk_id
        WHERE al.community_id = ?
        ORDER BY al.added_at ASC`,
       [community.id]
     );
+
+    // Enrich users with no local profile from Clerk
+    const unresolved = rows.filter(r => !r.display_name);
+    if (unresolved.length > 0) {
+      try {
+        const { data: clerkUsers } = await clerkClient.users.getUserList({
+          userId: unresolved.map(r => r.clerk_id),
+          limit:  unresolved.length,
+        });
+        const clerkMap = new Map(clerkUsers.map(u => [u.id, u]));
+        for (const row of rows) {
+          if (!row.display_name) {
+            const cu = clerkMap.get(row.clerk_id);
+            row.display_name = cu
+              ? ([cu.firstName, cu.lastName].filter(Boolean).join(' ') || cu.username || row.clerk_id)
+              : row.clerk_id;
+          }
+        }
+      } catch { rows.forEach(r => { if (!r.display_name) r.display_name = r.clerk_id; }); }
+    }
+
     res.json({ allowlist: rows });
   } catch (err) {
     console.error('[communities-api] GET /:slug/mod/allowlist:', err.message);
