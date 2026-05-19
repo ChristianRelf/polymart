@@ -37,6 +37,7 @@ import DashboardPage from "@/pages/DashboardPage"
 import PortfolioPage from "@/pages/PortfolioPage"
 import AccountPage from "@/pages/AccountPage"
 import AdminPage from "@/pages/AdminPage"
+import UserProfilePage from "@/pages/UserProfilePage"
 
 // ── Routing ───────────────────────────────────────────────────────────────────
 export type Route =
@@ -45,6 +46,7 @@ export type Route =
   | "bot-terms" | "bot-privacy" | "community-blog" | "sponsor" | "stock-info"
   | "kofi-terms" | "kofi-privacy" | "community-post"
   | "communities" | "sub-community" | "sub-community-mod" | "community-admin"
+  | "user-profile"
   | "sign-in" | "sign-up" | "dashboard" | "portfolio" | "account" | "admin"
   | "bug-report" | "suggestion"
 
@@ -113,6 +115,7 @@ const ROUTE_HASH: Record<Route, string> = {
   account: "/account",
   admin: "/admin",
   "community-admin": "/community-admin",
+  "user-profile": "/u",
   "bug-report": "/bot/bug-report",
   "suggestion": "/bot/suggestion",
 }
@@ -129,6 +132,8 @@ function parseHash(): { route: Route; params: Record<string, string> } {
   if (subCommunityMod) return { route: "sub-community-mod", params: { slug: subCommunityMod[1] } }
   const subCommunity = hash.match(/^\/c\/([a-z0-9-]+)$/)
   if (subCommunity) return { route: "sub-community", params: { slug: subCommunity[1] } }
+  const userProfile = hash.match(/^\/u\/(\d{16})$/)
+  if (userProfile) return { route: "user-profile", params: { profileId: userProfile[1] } }
   return { route: HASH_MAP[hash] ?? "home", params: {} }
 }
 
@@ -163,6 +168,11 @@ function navigateToSubCommunity(slug: string) {
 
 function navigateToSubCommunityMod(slug: string) {
   window.location.hash = `/c/${slug}/mod`
+  window.scrollTo({ top: 0, behavior: "instant" })
+}
+
+function navigateToUserProfile(profileId: string) {
+  window.location.hash = `/u/${profileId}`
   window.scrollTo({ top: 0, behavior: "instant" })
 }
 
@@ -689,6 +699,12 @@ export default function App() {
     setRouteParams({ slug })
   }
 
+  const goToUserProfile = (profileId: string) => {
+    navigateToUserProfile(profileId)
+    setRoute("user-profile")
+    setRouteParams({ profileId })
+  }
+
   const isAccountRoute = route === "dashboard" || route === "portfolio" || route === "account" || route === "admin"
 
   return (
@@ -712,12 +728,13 @@ export default function App() {
           {route === "help"           && <HelpCenterPage   onNavigate={go} />}
           {route === "widgets"        && <WidgetsPage      onNavigate={go} />}
           {route === "edu-tools"      && <EduToolsPage     onNavigate={go} />}
-          {route === "community"          && <CommunityPage       onNavigate={go} onNavigateToPost={goToCommunityPost} onNavigateToCommunity={goToSubCommunity} />}
-          {route === "community-post"    && <CommunityPostPage   shareId={routeParams.shareId ?? ""} onNavigate={go} />}
+          {route === "community"          && <CommunityPage       onNavigate={go} onNavigateToPost={goToCommunityPost} onNavigateToCommunity={goToSubCommunity} onNavigateToProfile={goToUserProfile} />}
+          {route === "community-post"    && <CommunityPostPage   shareId={routeParams.shareId ?? ""} onNavigate={go} onNavigateToProfile={goToUserProfile} />}
           {route === "communities"       && <CommunitiesPage     onNavigate={go} onNavigateToCommunity={goToSubCommunity} />}
-          {route === "sub-community"     && <SubCommunityPage    slug={routeParams.slug ?? ""} onNavigate={go} onNavigateToCommunity={goToSubCommunity} onNavigateToMod={goToSubCommunityMod} onNavigateToPost={goToCommunityPost} />}
+          {route === "sub-community"     && <SubCommunityPage    slug={routeParams.slug ?? ""} onNavigate={go} onNavigateToCommunity={goToSubCommunity} onNavigateToMod={goToSubCommunityMod} onNavigateToPost={goToCommunityPost} onNavigateToProfile={goToUserProfile} />}
           {route === "sub-community-mod" && <SubCommunityModPage slug={routeParams.slug ?? ""} onNavigate={go} onNavigateToCommunity={goToSubCommunity} />}
           {route === "community-admin"   && <CommunityAdminPage onNavigate={go} onNavigateToCommunity={goToSubCommunity} />}
+          {route === "user-profile"      && <UserProfilePage     profileId={routeParams.profileId ?? ""} onNavigate={go} onNavigateToPost={goToCommunityPost} onNavigateToCommunity={goToSubCommunity} />}
           {route === "bug-report"     && <BotBugReportPage  onNavigate={go} />}
           {route === "suggestion"     && <BotSuggestionPage onNavigate={go} />}
           {route === "bot-terms"      && <BotLegalPage     type="bot-terms"   onNavigate={go} />}

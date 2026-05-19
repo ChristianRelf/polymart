@@ -14,7 +14,7 @@ import { useAccount } from "@/hooks/useAccount"
 import { MarkdownBody } from "@/components/MarkdownBody"
 import { MarkdownEditor } from "@/components/MarkdownEditor"
 import { CommunitySidebar } from "@/components/CommunitySidebar"
-import { UserVerifiedBadge } from "@/components/VerificationBadge"
+import { UserVerifiedBadge, StaffBadge } from "@/components/VerificationBadge"
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
 import type { Route } from "@/App"
 
@@ -52,6 +52,8 @@ interface Post {
   display_name: string | null
   avatar_url: string | null
   author_verified?: number
+  author_profile_id?: string | null
+  author_is_staff?: number
   title: string
   body: string
   post_type: string
@@ -72,6 +74,8 @@ interface Comment {
   clerk_id: string
   display_name: string | null
   avatar_url: string | null
+  author_profile_id?: string | null
+  author_is_staff?: number
   body: string
   created_at: string
 }
@@ -137,6 +141,7 @@ function CommentThread({
   isSignedIn,
   onDelete,
   onSubmitReply,
+  onNavigateToProfile,
 }: {
   node: CommentNode
   depth: number
@@ -145,6 +150,7 @@ function CommentThread({
   isSignedIn: boolean
   onDelete: (id: number) => void
   onSubmitReply: (parentId: number | null, body: string) => Promise<void>
+  onNavigateToProfile?: (profileId: string) => void
 }) {
   const [replying, setReplying] = useState(false)
   const [replyBody, setReplyBody] = useState("")
@@ -176,9 +182,14 @@ function CommentThread({
         <div className="flex-1 min-w-0">
           <div className="bg-muted/40 rounded-lg px-3 py-2">
             <div className="flex items-center gap-1.5 mb-1">
-              <span className="text-xs font-semibold text-foreground">
+              <button
+                type="button"
+                onClick={() => node.author_profile_id && onNavigateToProfile?.(node.author_profile_id)}
+                className={`text-xs font-semibold text-foreground leading-none bg-transparent border-0 p-0 ${node.author_profile_id ? "hover:underline cursor-pointer" : "cursor-default"}`}
+              >
                 {node.display_name ?? "Anonymous"}
-              </span>
+              </button>
+              {!!node.author_is_staff && <StaffBadge size="xs" />}
               <span className="text-[10px] text-muted-foreground">{timeAgo(node.created_at)}</span>
               {canDelete && (
                 <button
@@ -245,6 +256,7 @@ function CommentThread({
           isSignedIn={isSignedIn}
           onDelete={onDelete}
           onSubmitReply={onSubmitReply}
+          onNavigateToProfile={onNavigateToProfile}
         />
       ))}
     </div>
@@ -259,12 +271,14 @@ function CommentsSection({
   currentUserId,
   isSignedIn,
   onCountChange,
+  onNavigateToProfile,
 }: {
   postId: number
   postAuthorId: string
   currentUserId: string | null | undefined
   isSignedIn: boolean
   onCountChange: (delta: number) => void
+  onNavigateToProfile?: (profileId: string) => void
 }) {
   const { getComments, createComment, deleteComment } = useAccount()
   const [comments, setComments]     = useState<Comment[]>([])
@@ -345,6 +359,7 @@ function CommentsSection({
             isSignedIn={isSignedIn}
             onDelete={handleDelete}
             onSubmitReply={handleSubmitReply}
+            onNavigateToProfile={onNavigateToProfile}
           />
         ))}
       </div>
@@ -556,6 +571,7 @@ function PostCard({
   onReport,
   onNavigateToPost,
   onNavigateToCommunity,
+  onNavigateToProfile,
 }: {
   post: Post
   currentUserId: string | null | undefined
@@ -566,6 +582,7 @@ function PostCard({
   onReport: (postId: number, reason: string) => Promise<void>
   onNavigateToPost: (shareId: string) => void
   onNavigateToCommunity?: (slug: string) => void
+  onNavigateToProfile?: (profileId: string) => void
 }) {
   const [liked, setLiked]           = useState(false)
   const [likes, setLikes]           = useState(post.likes)
@@ -604,11 +621,23 @@ function PostCard({
       <CardContent className="p-5">
         {/* Header */}
         <div className="flex items-center gap-2.5 mb-3">
-          <Avatar name={post.display_name} url={post.avatar_url} size={8} />
+          <button
+            type="button"
+            aria-label={`View ${post.display_name ?? "Anonymous"}'s profile`}
+            onClick={() => post.author_profile_id && onNavigateToProfile?.(post.author_profile_id)}
+            className={`shrink-0 ${post.author_profile_id ? "cursor-pointer" : "cursor-default"} bg-transparent border-0 p-0`}
+          >
+            <Avatar name={post.display_name} url={post.avatar_url} size={8} />
+          </button>
           <div className="flex-1 min-w-0 flex items-center gap-2 flex-wrap">
-            <span className="text-sm font-semibold text-foreground truncate">
+            <button
+              type="button"
+              onClick={() => post.author_profile_id && onNavigateToProfile?.(post.author_profile_id)}
+              className={`text-sm font-semibold text-foreground truncate bg-transparent border-0 p-0 leading-none ${post.author_profile_id ? "hover:underline cursor-pointer" : "cursor-default"}`}
+            >
               {post.display_name ?? "Anonymous"}
-            </span>
+            </button>
+            {!!post.author_is_staff && <StaffBadge size="xs" />}
             {!!post.author_verified && <UserVerifiedBadge size="xs" />}
             <span className="text-xs text-muted-foreground">{timeAgo(post.created_at)}</span>
             <Badge
@@ -766,6 +795,7 @@ function PostCard({
             currentUserId={currentUserId}
             isSignedIn={isSignedIn}
             onCountChange={delta => setCommentCount(c => c + delta)}
+            onNavigateToProfile={onNavigateToProfile}
           />
         )}
       </CardContent>
@@ -892,9 +922,10 @@ interface Props {
   onNavigate: (r: Route) => void
   onNavigateToPost: (shareId: string) => void
   onNavigateToCommunity?: (slug: string) => void
+  onNavigateToProfile?: (profileId: string) => void
 }
 
-export default function CommunityPage({ onNavigate, onNavigateToPost, onNavigateToCommunity }: Props) {
+export default function CommunityPage({ onNavigate, onNavigateToPost, onNavigateToCommunity, onNavigateToProfile }: Props) {
   const { isSignedIn, userId } = useAuth()
   const { getCommunityPosts, likePost, deletePost, reportPost } = useAccount()
 
@@ -1152,6 +1183,7 @@ export default function CommunityPage({ onNavigate, onNavigateToPost, onNavigate
                     onReport={handleReport}
                     onNavigateToPost={onNavigateToPost}
                     onNavigateToCommunity={onNavigateToCommunity}
+                    onNavigateToProfile={onNavigateToProfile}
                   />
                 ))}
               </div>

@@ -488,6 +488,11 @@ export function useAccount() {
     [withToken]
   )
 
+  const getPublicProfile = useCallback(
+    (profileId: string) => fetch(`${API}/users/profile/${profileId}`).then(r => r.json()),
+    []
+  )
+
   return {
     getMe,
     updateMe,
@@ -554,5 +559,6 @@ export function useAccount() {
     addToAllowlist,
     removeFromAllowlist,
     verifyUser,
+    getPublicProfile,
   }
 }

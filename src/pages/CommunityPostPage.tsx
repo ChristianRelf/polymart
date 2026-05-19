@@ -10,7 +10,7 @@ import {
 } from "lucide-react"
 import { useAccount } from "@/hooks/useAccount"
 import { MarkdownBody } from "@/components/MarkdownBody"
-import { UserVerifiedBadge } from "@/components/VerificationBadge"
+import { UserVerifiedBadge, StaffBadge } from "@/components/VerificationBadge"
 import type { Route } from "@/App"
 
 const TYPE_LABELS: Record<string, string> = {
@@ -34,6 +34,8 @@ interface Post {
   display_name: string | null
   avatar_url: string | null
   author_verified?: number
+  author_profile_id?: string | null
+  author_is_staff?: number
   title: string
   body: string
   post_type: string
@@ -49,6 +51,8 @@ interface Comment {
   clerk_id: string
   display_name: string | null
   avatar_url: string | null
+  author_profile_id?: string | null
+  author_is_staff?: number
   body: string
   created_at: string
 }
@@ -114,6 +118,7 @@ function CommentThread({
   isSignedIn,
   onDelete,
   onSubmitReply,
+  onNavigateToProfile,
 }: {
   node: CommentNode
   depth: number
@@ -122,6 +127,7 @@ function CommentThread({
   isSignedIn: boolean
   onDelete: (id: number) => void
   onSubmitReply: (parentId: number | null, body: string) => Promise<void>
+  onNavigateToProfile?: (profileId: string) => void
 }) {
   const [replying, setReplying]     = useState(false)
   const [replyBody, setReplyBody]   = useState("")
@@ -158,9 +164,14 @@ function CommentThread({
         <div className="flex-1 min-w-0">
           <div className="bg-muted/40 rounded-xl px-4 py-3">
             <div className="flex items-center gap-2 mb-2">
-              <span className="text-xs font-semibold text-foreground">
+              <button
+                type="button"
+                onClick={() => node.author_profile_id && onNavigateToProfile?.(node.author_profile_id)}
+                className={`text-xs font-semibold text-foreground bg-transparent border-0 p-0 leading-none ${node.author_profile_id ? "hover:underline cursor-pointer" : "cursor-default"}`}
+              >
                 {node.display_name ?? "Anonymous"}
-              </span>
+              </button>
+              {!!node.author_is_staff && <StaffBadge size="xs" />}
               <span className="text-[10px] text-muted-foreground">{timeAgo(node.created_at)}</span>
               {canDelete && (
                 <button
@@ -232,6 +243,7 @@ function CommentThread({
           isSignedIn={isSignedIn}
           onDelete={onDelete}
           onSubmitReply={onSubmitReply}
+          onNavigateToProfile={onNavigateToProfile}
         />
       ))}
     </div>
@@ -243,9 +255,11 @@ function CommentThread({
 export default function CommunityPostPage({
   shareId,
   onNavigate,
+  onNavigateToProfile,
 }: {
   shareId: string
   onNavigate: (r: Route) => void
+  onNavigateToProfile?: (profileId: string) => void
 }) {
   const { isSignedIn, userId } = useAuth()
   const { getPostByShareId, likePost, getComments, createComment, deleteComment } = useAccount()
@@ -401,12 +415,24 @@ export default function CommunityPostPage({
 
           {/* Author row */}
           <div className="flex items-center gap-3 mb-5">
-            <Avatar name={post.display_name} url={post.avatar_url} size={10} />
+            <button
+              type="button"
+              aria-label={`View ${post.display_name ?? "Anonymous"}'s profile`}
+              onClick={() => post.author_profile_id && onNavigateToProfile?.(post.author_profile_id)}
+              className={`shrink-0 bg-transparent border-0 p-0 ${post.author_profile_id ? "cursor-pointer" : "cursor-default"}`}
+            >
+              <Avatar name={post.display_name} url={post.avatar_url} size={10} />
+            </button>
             <div className="flex-1 min-w-0">
               <div className="flex items-center gap-1.5">
-                <p className="text-sm font-semibold text-foreground">
+                <button
+                  type="button"
+                  onClick={() => post.author_profile_id && onNavigateToProfile?.(post.author_profile_id)}
+                  className={`text-sm font-semibold text-foreground bg-transparent border-0 p-0 leading-none ${post.author_profile_id ? "hover:underline cursor-pointer" : "cursor-default"}`}
+                >
                   {post.display_name ?? "Anonymous"}
-                </p>
+                </button>
+                {!!post.author_is_staff && <StaffBadge size="sm" />}
                 {!!post.author_verified && <UserVerifiedBadge size="sm" />}
               </div>
               <p className="text-xs text-muted-foreground">{timeAgo(post.created_at)}</p>
@@ -491,6 +517,7 @@ export default function CommunityPostPage({
                   isSignedIn={!!isSignedIn}
                   onDelete={handleDeleteComment}
                   onSubmitReply={handleSubmitReply}
+                  onNavigateToProfile={onNavigateToProfile}
                 />
               ))}
             </div>

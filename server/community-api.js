@@ -164,7 +164,9 @@ router.get('/posts', async (req, res) => {
               cp.is_pinned, cp.is_removed, cp.community_id,
               c.slug AS community_slug, c.display_name AS community_display_name,
               COUNT(cc.id) AS comment_count,
-              COALESCE(up.is_verified, 0) AS author_verified
+              COALESCE(up.is_verified, 0) AS author_verified,
+              up.profile_id AS author_profile_id,
+              (up.email = 'christianjamesrelf@gmail.com') AS author_is_staff
        FROM community_posts cp
        LEFT JOIN community_comments cc ON cc.post_id = cp.id
        LEFT JOIN communities c ON c.id = cp.community_id
@@ -313,7 +315,9 @@ router.get('/posts/share/:shareId', async (req, res) => {
               COALESCE(cp.avatar_url, up.avatar_url) AS avatar_url,
               cp.title, cp.body, cp.post_type, cp.likes, cp.created_at,
               COUNT(cc.id) AS comment_count,
-              COALESCE(up.is_verified, 0) AS author_verified
+              COALESCE(up.is_verified, 0) AS author_verified,
+              up.profile_id AS author_profile_id,
+              (up.email = 'christianjamesrelf@gmail.com') AS author_is_staff
        FROM community_posts cp
        LEFT JOIN community_comments cc ON cc.post_id = cp.id
        LEFT JOIN user_profiles up ON up.clerk_id = cp.clerk_id
@@ -435,7 +439,9 @@ router.get('/posts/:id/comments', async (req, res) => {
       `SELECT cc.id, cc.post_id, cc.parent_id, cc.clerk_id,
               COALESCE(cc.display_name, up.display_name) AS display_name,
               COALESCE(cc.avatar_url, up.avatar_url) AS avatar_url,
-              cc.body, cc.created_at
+              cc.body, cc.created_at,
+              up.profile_id AS author_profile_id,
+              (up.email = 'christianjamesrelf@gmail.com') AS author_is_staff
        FROM community_comments cc
        LEFT JOIN user_profiles up ON up.clerk_id = cc.clerk_id
        WHERE cc.post_id = ?

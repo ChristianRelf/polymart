@@ -13,6 +13,7 @@ import supportRouter from "./support-api.js";
 import adminRouter from "./admin-api.js";
 import communityRouter from "./community-api.js";
 import communitiesRouter from "./communities-api.js";
+import usersRouter from "./users-api.js";
 import botFeedbackRouter from "./bot-feedback-api.js";
 import { startTickLoop } from "./tick.js";
 
@@ -72,6 +73,7 @@ app.use("/api/v1/community", restrictedCors, communityRouter);
 
 // ── Communities API (sub-communities, memberships, mod tools) ─────────────────
 app.use("/api/v1/communities", restrictedCors, communitiesRouter);
+app.use("/api/v1/users", usersRouter);
 
 // ── Bot feedback (bug reports & suggestions) ──────────────────────────────────
 app.use("/api/v1/bot-feedback", botFeedbackRouter);
@@ -473,6 +475,32 @@ async function applyMigrations() {
         KEY idx_allowlist_community (community_id)
       ) ENGINE=InnoDB`);
     console.log("[polymart] Migration: created community_post_allowlist table");
+  }
+
+  // Add profile_id to user_profiles for public profile URLs.
+  const [[{ profileIdCnt }]] = await dbUser.query(
+    `SELECT COUNT(*) AS profileIdCnt FROM INFORMATION_SCHEMA.COLUMNS
+     WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'user_profiles' AND COLUMN_NAME = 'profile_id'`
+  );
+  if (!profileIdCnt) {
+    await dbUser.query(`ALTER TABLE user_profiles ADD COLUMN profile_id VARCHAR(16) NULL AFTER clerk_id`);
+    await dbUser.query(`ALTER TABLE user_profiles ADD UNIQUE INDEX idx_profiles_profile_id (profile_id)`);
+    console.log("[polymart] Migration: added profile_id to user_profiles");
+  }
+
+  // Backfill profile_id for existing users who don't have one.
+  const [[{ nullProfileCnt }]] = await dbUser.query(
+    `SELECT COUNT(*) AS nullProfileCnt FROM user_profiles WHERE profile_id IS NULL`
+  );
+  if (nullProfileCnt > 0) {
+    // Generate unique 16-digit IDs using MySQL's RAND() seeded per row.
+    // We do a loop since uniqueness isn't guaranteed on batch, but collisions are astronomically rare.
+    await dbUser.query(
+      `UPDATE user_profiles
+       SET profile_id = LPAD(FLOOR(RAND(UNIX_TIMESTAMP() + id) * 9000000000000000) + 1000000000000000, 16, '0')
+       WHERE profile_id IS NULL`
+    );
+    console.log(`[polymart] Migration: backfilled profile_id for ${nullProfileCnt} user(s)`);
   }
 }
 

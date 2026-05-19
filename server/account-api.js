@@ -5,6 +5,10 @@ import { dbUser as pool, dbMarket } from './db.js';
 import TIER_CONFIG from './tier-config.js';
 import { resolvePrice, isValidAssetType, isValidSymbol } from './asset-resolver.js';
 
+function generateProfileId() {
+  return Array.from({ length: 16 }, () => Math.floor(Math.random() * 10)).join('');
+}
+
 const router = Router();
 
 // ── Per-user rate limiter ─────────────────────────────────────────────────────
@@ -84,17 +88,19 @@ export async function clerkWebhookHandler(req, res) {
       const email = data.email_addresses?.[0]?.email_address || null;
       const display_name = [data.first_name, data.last_name].filter(Boolean).join(' ') || null;
       const avatar_url = data.image_url || null;
+      const profile_id = generateProfileId();
 
       await pool.query(
-        `INSERT INTO user_profiles (clerk_id, display_name, email, avatar_url)
-         VALUES (?, ?, ?, ?)
+        `INSERT INTO user_profiles (clerk_id, profile_id, display_name, email, avatar_url)
+         VALUES (?, ?, ?, ?, ?)
          ON DUPLICATE KEY UPDATE
+           profile_id   = IF(profile_id IS NULL, VALUES(profile_id), profile_id),
            display_name = IF(? IS NULL, display_name, ?),
            email        = IF(? IS NULL, email, ?),
            avatar_url   = IF(? IS NULL, avatar_url, ?),
            updated_at   = NOW()`,
         [
-          data.id, display_name, email, avatar_url,
+          data.id, profile_id, display_name, email, avatar_url,
           display_name, display_name,
           email, email,
           avatar_url, avatar_url,
@@ -128,11 +134,16 @@ router.get('/me', async (req, res) => {
   try {
     // Auto-create profile if the Clerk webhook hasn't fired yet (e.g. first sign-in).
     await pool.query(
-      'INSERT IGNORE INTO user_profiles (clerk_id) VALUES (?)',
-      [userId]
+      'INSERT IGNORE INTO user_profiles (clerk_id, profile_id) VALUES (?, ?)',
+      [userId, generateProfileId()]
+    );
+    // Generate profile_id for any existing row that somehow lacks one.
+    await pool.query(
+      'UPDATE user_profiles SET profile_id = ? WHERE clerk_id = ? AND profile_id IS NULL',
+      [generateProfileId(), userId]
     );
     const [[user]] = await pool.query(
-      'SELECT clerk_id, display_name, email, tier, avatar_url, bio, stripe_subscription_id, tier_expires_at, created_at FROM user_profiles WHERE clerk_id = ?',
+      'SELECT clerk_id, profile_id, display_name, email, tier, avatar_url, bio, stripe_subscription_id, tier_expires_at, created_at FROM user_profiles WHERE clerk_id = ?',
       [userId]
     );
     const tierLimits = TIER_CONFIG[user.tier] || TIER_CONFIG.basic;

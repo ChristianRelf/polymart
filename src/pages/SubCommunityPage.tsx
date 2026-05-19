@@ -13,7 +13,7 @@ import { useAccount } from "@/hooks/useAccount"
 import { MarkdownBody } from "@/components/MarkdownBody"
 import { MarkdownEditor } from "@/components/MarkdownEditor"
 import { CommunitySidebar } from "@/components/CommunitySidebar"
-import { VerificationBadge, UserVerifiedBadge } from "@/components/VerificationBadge"
+import { VerificationBadge, UserVerifiedBadge, StaffBadge } from "@/components/VerificationBadge"
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
 import type { Route } from "@/App"
 
@@ -48,6 +48,8 @@ interface Post {
   display_name: string | null
   avatar_url: string | null
   author_verified?: number
+  author_profile_id?: string | null
+  author_is_staff?: number
   title: string
   body: string
   post_type: string
@@ -97,6 +99,7 @@ function resolveTagLabel(postType: string, postTags?: PostTag[] | null) {
 const REPORT_REASONS = ["Spam", "Misinformation", "Inappropriate", "Off-topic"] as const
 
 interface Props {
+  onNavigateToProfile?: (profileId: string) => void
   slug: string
   onNavigate: (r: Route) => void
   onNavigateToCommunity: (slug: string) => void
@@ -125,7 +128,7 @@ function CommunityIcon({ icon_url, display_name, size = "md" }: { icon_url: stri
 }
 
 function PostCard({
-  post, userId, isMod, postTags, onDelete, onLike, onReport, onPin, onUnpin, onRemove, onRestore, onNavigateToPost, uploadImage,
+  post, userId, isMod, postTags, onDelete, onLike, onReport, onPin, onUnpin, onRemove, onRestore, onNavigateToPost, onNavigateToProfile, uploadImage,
 }: {
   post: Post
   userId: string | null | undefined
@@ -139,6 +142,7 @@ function PostCard({
   onRemove: (id: number) => void
   onRestore: (id: number) => void
   onNavigateToPost: (shareId: string) => void
+  onNavigateToProfile?: (profileId: string) => void
   uploadImage: (file: File) => Promise<string>
 }) {
   const [expanded, setExpanded] = useState(false)
@@ -198,13 +202,27 @@ function PostCard({
 
         {/* Header */}
         <div className="flex items-start gap-2 mb-2">
-          {post.avatar_url
-            ? <img src={post.avatar_url} alt="" loading="lazy" decoding="async" className="w-7 h-7 rounded-full object-cover shrink-0 mt-0.5" />
-            : <div className="w-7 h-7 rounded-full bg-muted flex items-center justify-center shrink-0 mt-0.5 text-xs font-bold text-muted-foreground">{post.display_name?.[0]?.toUpperCase() ?? "?"}</div>
-          }
+          <button
+            type="button"
+            aria-label={`View ${post.display_name ?? "Anonymous"}'s profile`}
+            onClick={() => post.author_profile_id && onNavigateToProfile?.(post.author_profile_id)}
+            className={`shrink-0 mt-0.5 bg-transparent border-0 p-0 ${post.author_profile_id ? "cursor-pointer" : "cursor-default"}`}
+          >
+            {post.avatar_url
+              ? <img src={post.avatar_url} alt="" loading="lazy" decoding="async" className="w-7 h-7 rounded-full object-cover" />
+              : <div className="w-7 h-7 rounded-full bg-muted flex items-center justify-center text-xs font-bold text-muted-foreground">{post.display_name?.[0]?.toUpperCase() ?? "?"}</div>
+            }
+          </button>
           <div className="flex-1 min-w-0">
             <div className="flex flex-wrap items-center gap-1.5 text-xs text-muted-foreground">
-              <span className="font-medium text-foreground">{post.display_name ?? "Anonymous"}</span>
+              <button
+                type="button"
+                onClick={() => post.author_profile_id && onNavigateToProfile?.(post.author_profile_id)}
+                className={`font-medium text-foreground bg-transparent border-0 p-0 leading-none ${post.author_profile_id ? "hover:underline cursor-pointer" : "cursor-default"}`}
+              >
+                {post.display_name ?? "Anonymous"}
+              </button>
+              {!!post.author_is_staff && <StaffBadge size="xs" />}
               {!!post.author_verified && <UserVerifiedBadge size="xs" />}
               <span className="text-muted-foreground/40">·</span>
               <span>{timeAgo(post.created_at)}</span>
@@ -415,7 +433,7 @@ function ComposeForm({ communityId, postTags, onPost, uploadImage }: {
   )
 }
 
-export default function SubCommunityPage({ slug, onNavigate, onNavigateToCommunity, onNavigateToMod, onNavigateToPost }: Props) {
+export default function SubCommunityPage({ slug, onNavigate, onNavigateToCommunity, onNavigateToMod, onNavigateToPost, onNavigateToProfile }: Props) {
   const { isSignedIn, userId } = useAuth()
   const {
     getCommunity, joinCommunity, leaveCommunity,
@@ -653,6 +671,7 @@ export default function SubCommunityPage({ slug, onNavigate, onNavigateToCommuni
                   onRemove={async id => { await removePost(slug, id); fetchPosts(page) }}
                   onRestore={async id => { await restorePost(slug, id); fetchPosts(page) }}
                   onNavigateToPost={onNavigateToPost}
+                  onNavigateToProfile={onNavigateToProfile}
                   uploadImage={uploadImage}
                 />
               ))}
