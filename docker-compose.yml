@@ -1,24 +1,21 @@
 services:
 
-  # ── MySQL database ─────────────────────────────────────────────────────────
-  db:
+  # ── Volume 1: Market/stock/forex simulation DB (high-churn, aggressively culled)
+  db-market:
     image: mysql:8.0
-    container_name: polymart-db
+    container_name: polymart-db-market
     restart: unless-stopped
     environment:
       MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:-rootpassword}
-      MYSQL_DATABASE: polymart
+      MYSQL_DATABASE: polymart_market
       MYSQL_USER: polymart
       MYSQL_PASSWORD: ${DB_PASSWORD:-polymart_password}
     ports:
-      - "${DB_PORT_EXTERNAL:-3306}:3306"
+      - "${DB_MARKET_PORT_EXTERNAL:-3306}:3306"
     volumes:
-      # Persist database data across restarts
-      - polymart-db-data:/var/lib/mysql
-      # Run schema on first start
-      - ./server/schema.sql:/docker-entrypoint-initdb.d/01-schema.sql:ro
-      # Enable event scheduler for 7-day purge
-      - ./mysql-config/polymart.cnf:/etc/mysql/conf.d/polymart.cnf:ro
+      - polymart-market-data:/var/lib/mysql
+      - ./server/schema-market.sql:/docker-entrypoint-initdb.d/01-schema.sql:ro
+      - ./mysql-config/market.cnf:/etc/mysql/conf.d/polymart.cnf:ro
     healthcheck:
       test: ["CMD-SHELL", "mysqladmin ping -h 127.0.0.1 -u polymart -p$$MYSQL_PASSWORD --silent"]
       interval: 5s
@@ -26,7 +23,30 @@ services:
       retries: 20
       start_period: 60s
 
-  # ── Node API + simulation server ───────────────────────────────────────────
+  # ── Volume 2: User data, portfolios, and community DB (persistent, full ACID) ─
+  db-user:
+    image: mysql:8.0
+    container_name: polymart-db-user
+    restart: unless-stopped
+    environment:
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:-rootpassword}
+      MYSQL_DATABASE: polymart_user
+      MYSQL_USER: polymart
+      MYSQL_PASSWORD: ${DB_PASSWORD:-polymart_password}
+    ports:
+      - "${DB_USER_PORT_EXTERNAL:-3307}:3306"
+    volumes:
+      - polymart-user-data:/var/lib/mysql
+      - ./server/schema-user.sql:/docker-entrypoint-initdb.d/01-schema.sql:ro
+      - ./mysql-config/user.cnf:/etc/mysql/conf.d/polymart.cnf:ro
+    healthcheck:
+      test: ["CMD-SHELL", "mysqladmin ping -h 127.0.0.1 -u polymart -p$$MYSQL_PASSWORD --silent"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+      start_period: 60s
+
+  # ── Node API + simulation server ───────────────────────────────────────────────
   app:
     build:
       context: .
@@ -37,15 +57,23 @@ services:
     container_name: polymart-app
     restart: unless-stopped
     depends_on:
-      db:
+      db-market:
+        condition: service_healthy
+      db-user:
         condition: service_healthy
     environment:
       PORT: 4000
-      DB_HOST: db
-      DB_PORT: 3306
+      # Market DB (Volume 1)
+      DB_MARKET_HOST: db-market
+      DB_MARKET_PORT: 3306
+      DB_MARKET_NAME: polymart_market
+      # User DB (Volume 2)
+      DB_USER_HOST: db-user
+      DB_USER_PORT: 3306
+      DB_USER_NAME: polymart_user
+      # Shared credentials
       DB_USER: polymart
       DB_PASSWORD: ${DB_PASSWORD:-polymart_password}
-      DB_NAME: polymart
       CLERK_PUBLISHABLE_KEY: ${CLERK_PUBLISHABLE_KEY}
       CLERK_SECRET_KEY: ${CLERK_SECRET_KEY}
       CLERK_WEBHOOK_SECRET: ${CLERK_WEBHOOK_SECRET}
@@ -58,7 +86,19 @@ services:
       RESEND_API_KEY: ${RESEND_API_KEY}
     ports:
       - "${APP_PORT:-4000}:4000"
+    volumes:
+      # Volume 3: CDN for community images and user uploads
+      - polymart-cdn-data:/app/server/uploads
 
 volumes:
-  polymart-db-data:
+  # Volume 1: market simulation state — small, high-churn, culled weekly via MySQL events
+  polymart-market-data:
+    driver: local
+
+  # Volume 2: user data, portfolios, community content — persistent, full ACID
+  polymart-user-data:
+    driver: local
+
+  # Volume 3: CDN image storage — immutable uploads served with 1-year cache headers
+  polymart-cdn-data:
     driver: local

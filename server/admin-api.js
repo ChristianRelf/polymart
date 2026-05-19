@@ -1,7 +1,7 @@
 import { Router } from 'express';
 import Stripe from 'stripe';
 import { getAuth, clerkClient } from '@clerk/express';
-import pool from './db.js';
+import { dbUser as pool } from './db.js';
 import TIER_CONFIG from './tier-config.js';
 
 const router = Router();

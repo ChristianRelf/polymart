@@ -1,0 +1,23 @@
+[mysqld]
+# ── Durability: full ACID for user data, portfolios, community posts ───────────
+innodb_flush_log_at_trx_commit=1
+
+# ── Memory: sized for user query patterns ────────────────────────────────────
+innodb_buffer_pool_size=128M
+innodb_log_file_size=64M
+innodb_flush_method=O_DIRECT
+
+# ── Space: one .ibd file per table ───────────────────────────────────────────
+innodb_file_per_table=ON
+
+# ── In-memory temp tables ─────────────────────────────────────────────────────
+tmp_table_size=32M
+max_heap_table_size=32M
+
+# ── Connections ───────────────────────────────────────────────────────────────
+max_connections=25
+back_log=10
+
+# ── Character set ─────────────────────────────────────────────────────────────
+character_set_server=utf8mb4
+collation_server=utf8mb4_unicode_ci

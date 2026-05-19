@@ -6,7 +6,7 @@ import path                from 'path';
 import { mkdirSync }       from 'fs';
 import multer              from 'multer';
 import sharp               from 'sharp';
-import pool                from './db.js';
+import { dbUser as pool } from './db.js';
 
 const __dirname    = path.dirname(fileURLToPath(import.meta.url));
 const UPLOADS_DIR  = path.join(__dirname, 'uploads', 'community');

@@ -1,6 +1,6 @@
 import { Router } from 'express';
 import { getAuth } from '@clerk/express';
-import pool from './db.js';
+import { dbUser as pool } from './db.js';
 
 const router = Router();
 

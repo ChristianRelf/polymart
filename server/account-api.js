@@ -1,7 +1,7 @@
 import { Router } from 'express';
 import { getAuth } from '@clerk/express';
 import { Webhook } from 'svix';
-import pool from './db.js';
+import { dbUser as pool, dbMarket } from './db.js';
 import TIER_CONFIG from './tier-config.js';
 import { resolvePrice, isValidAssetType, isValidSymbol } from './asset-resolver.js';
 
@@ -354,8 +354,8 @@ router.post('/portfolios/:id/orders', orderRateLimit, async (req, res) => {
       });
     }
 
-    // Look up current price from simulation DB
-    const currentPrice = await resolvePrice(asset_type, symbol, pool);
+    // Look up current price from market simulation DB
+    const currentPrice = await resolvePrice(asset_type, symbol, dbMarket);
     if (currentPrice === null) return res.status(404).json({ error: `Symbol "${symbol}" not found` });
 
     const total = parseFloat((currentPrice * quantity).toFixed(4));

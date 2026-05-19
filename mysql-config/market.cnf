@@ -1,0 +1,32 @@
+[mysqld]
+# ── Event scheduler (required for purge_old_events + optimize_market_tables) ──
+event_scheduler=ON
+
+# ── Durability: relaxed for regeneratable simulation state ────────────────────
+# trx_commit=2: flush to OS buffer each second instead of every commit.
+# Safe because market state is fully regenerated on restart anyway.
+innodb_flush_log_at_trx_commit=2
+
+# ── Memory: tiny dataset (~150 rows, ~5 MB data) ─────────────────────────────
+innodb_buffer_pool_size=64M
+innodb_log_file_size=32M
+innodb_flush_method=O_DIRECT
+
+# ── Space reclamation: one .ibd file per table so OPTIMIZE TABLE reclaims space
+innodb_file_per_table=ON
+
+# ── Aggressive purge to reclaim space from events_log churn ──────────────────
+innodb_purge_threads=4
+innodb_max_dirty_pages_pct=40
+
+# ── Compact in-memory temp tables ─────────────────────────────────────────────
+tmp_table_size=16M
+max_heap_table_size=16M
+
+# ── Connections: only the app process connects ────────────────────────────────
+max_connections=25
+back_log=10
+
+# ── Character set ─────────────────────────────────────────────────────────────
+character_set_server=utf8mb4
+collation_server=utf8mb4_unicode_ci

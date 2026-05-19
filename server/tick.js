@@ -1,6 +1,6 @@
 // Polymart universal tick worker - runs stock + forex simulation every 10 seconds
 
-import pool from "./db.js";
+import { dbMarket, dbUser } from "./db.js";
 import { runTick, buildInitialStocks, buildInitialSectors, STOCK_DEFS, SECTORS } from "./simulation.js";
 import { runForexTick, buildInitialForex, FOREX_PAIRS } from "./forex-simulation.js";
 
@@ -9,7 +9,7 @@ let ticking = false;
 // ── Stock market persistence ───────────────────────────────────────────────────
 
 async function writeStocksBatch(ms, stocks, sectors, newEvent) {
-  const conn = await pool.getConnection();
+  const conn = await dbMarket.getConnection();
   try {
     await conn.query(
       `INSERT INTO market_state (id,index_value,index_prev,fear_greed,interest_rate,inflation,gdp_growth,
@@ -86,7 +86,7 @@ async function writeStocksBatch(ms, stocks, sectors, newEvent) {
 
 async function writeForexBatch(pairs) {
   if (!pairs || pairs.length === 0) return;
-  const conn = await pool.getConnection();
+  const conn = await dbMarket.getConnection();
   try {
     const chunkSize = 14;
     for (let i = 0; i < pairs.length; i += chunkSize) {
@@ -120,9 +120,9 @@ async function writeForexBatch(pairs) {
 
 async function readStockState() {
   const [[msRows], [stockRows], [sectorRows]] = await Promise.all([
-    pool.query("SELECT * FROM market_state WHERE id = 1 LIMIT 1"),
-    pool.query("SELECT * FROM stocks_state"),
-    pool.query("SELECT * FROM sector_state"),
+    dbMarket.query("SELECT * FROM market_state WHERE id = 1 LIMIT 1"),
+    dbMarket.query("SELECT * FROM stocks_state"),
+    dbMarket.query("SELECT * FROM sector_state"),
   ]);
 
   const rawMs = msRows[0] ?? null;
@@ -172,7 +172,7 @@ async function readStockState() {
 }
 
 async function readForexState() {
-  const [rows] = await pool.query("SELECT * FROM forex_state");
+  const [rows] = await dbMarket.query("SELECT * FROM forex_state");
   return rows.map(p => ({
     ...p,
     history: Array.isArray(p.history) ? p.history : [],
@@ -249,38 +249,40 @@ async function ensureForexInitialised(pairs) {
 
 // ── Portfolio snapshots ───────────────────────────────────────────────────────
 // Upsert one row per portfolio per day. Throttled to run at most once per 5 min.
+// Uses in-memory prices from the current tick to avoid a cross-DB join.
 
 let lastSnapshotRun = 0;
 
-async function snapshotPortfolios() {
+async function snapshotPortfolios(currentStocks, currentForex) {
   const now = Date.now();
   if (now - lastSnapshotRun < 5 * 60 * 1000) return;
   lastSnapshotRun = now;
 
+  const stockPrices = new Map(currentStocks.map(s => [s.ticker, s.price]));
+  const forexPrices = new Map(currentForex.map(p => [p.pair, p.price]));
+
   try {
-    const [portfolios] = await pool.query('SELECT id FROM portfolios');
+    const [portfolios] = await dbUser.query('SELECT id FROM portfolios');
     if (!portfolios.length) return;
 
     for (const port of portfolios) {
-      const [positions] = await pool.query(
-        `SELECT p.quantity, p.asset_type,
-           COALESCE(ss.price, fs.price, p.avg_cost) as current_price
-         FROM positions p
-         LEFT JOIN stocks_state ss ON p.asset_type = 'stock' AND p.symbol = ss.ticker
-         LEFT JOIN forex_state fs ON p.asset_type = 'forex' AND p.symbol = fs.pair
-         WHERE p.portfolio_id = ?`,
+      const [positions] = await dbUser.query(
+        'SELECT quantity, asset_type, symbol, avg_cost FROM positions WHERE portfolio_id = ?',
         [port.id]
       );
-      const [[{ cash }]] = await pool.query(
+      const [[{ cash }]] = await dbUser.query(
         'SELECT cash_balance as cash FROM portfolios WHERE id = ?',
         [port.id]
       );
-      const positionValue = positions.reduce(
-        (sum, p) => sum + Number(p.quantity) * Number(p.current_price), 0
-      );
+      const positionValue = positions.reduce((sum, p) => {
+        const price = p.asset_type === 'stock'
+          ? (stockPrices.get(p.symbol) ?? Number(p.avg_cost))
+          : (forexPrices.get(p.symbol) ?? Number(p.avg_cost));
+        return sum + Number(p.quantity) * price;
+      }, 0);
       const totalValue = Number(cash) + positionValue;
 
-      await pool.query(
+      await dbUser.query(
         `INSERT INTO portfolio_snapshots (portfolio_id, total_value, snapped_at)
          VALUES (?, ?, CURDATE())
          ON DUPLICATE KEY UPDATE total_value = VALUES(total_value)`,
@@ -314,7 +316,7 @@ export async function tick() {
     await Promise.all([
       writeStocksBatch(newMs, newStocks, newSectors, newEvent),
       writeForexBatch(newForexPairs),
-      snapshotPortfolios(),
+      snapshotPortfolios(newStocks, newForexPairs),
     ]);
 
     const elapsed = Date.now() - t0;

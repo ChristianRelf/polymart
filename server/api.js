@@ -1,5 +1,5 @@
 import express from "express";
-import pool from "./db.js";
+import { dbMarket as pool } from "./db.js";
 import { STOCK_DEFS, SECTORS } from "./simulation.js";
 import { COMPANY_PROFILES, generateNews } from "./company-data.js";
 import { FOREX_PAIRS, COUNTRY_FLAGS } from "./forex-simulation.js";
