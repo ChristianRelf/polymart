@@ -8,7 +8,7 @@ import { Textarea } from "@/components/ui/textarea"
 import {
   Users, ArrowRight, Bot, Coffee, Heart, Trash2, Plus, Loader2,
   AlertCircle, Send, MessageCircle, Pencil, Flag, Check, Link,
-  CornerDownRight,
+  CornerDownRight, Compass,
 } from "lucide-react"
 import { useAccount } from "@/hooks/useAccount"
 import { MarkdownBody } from "@/components/MarkdownBody"
@@ -1035,6 +1035,12 @@ export default function CommunityPage({ onNavigate, onNavigateToPost, onNavigate
             Join on Discord
           </a>
           <button
+            onClick={() => onNavigateToCommunity && onNavigate("communities")}
+            className="inline-flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground transition-colors cursor-pointer bg-transparent border-0 p-0"
+          >
+            <Compass className="w-3.5 h-3.5" /> Browse communities
+          </button>
+          <button
             onClick={() => onNavigate("community-blog" as Route)}
             className="inline-flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground transition-colors cursor-pointer bg-transparent border-0 p-0"
           >
@@ -1097,13 +1103,19 @@ export default function CommunityPage({ onNavigate, onNavigateToPost, onNavigate
           {isSignedIn ? (
             <ComposeForm onPosted={handlePosted} />
           ) : (
-            <div className="flex items-center justify-between gap-3 px-4 py-3 rounded-xl border border-dashed border-border bg-card">
-              <span className="text-sm text-muted-foreground">
-                Sign in to post, like, and join the conversation.
-              </span>
-              <Button size="sm" onClick={() => onNavigate("sign-in")} className="text-xs h-7 shrink-0">
-                Sign in
-              </Button>
+            <div className="rounded-xl border border-border bg-card px-5 py-4 flex flex-col sm:flex-row sm:items-center gap-3">
+              <div className="flex-1 min-w-0">
+                <p className="text-sm font-semibold text-foreground mb-0.5">Join the conversation</p>
+                <p className="text-xs text-muted-foreground">Sign in to post trades, share analysis, ask questions, and reply to others.</p>
+              </div>
+              <div className="flex gap-2 shrink-0">
+                <Button size="sm" onClick={() => onNavigate("sign-in")} className="text-xs h-8">
+                  Sign in
+                </Button>
+                <Button size="sm" variant="outline" onClick={() => onNavigate("sign-up" as Route)} className="text-xs h-8">
+                  Create account
+                </Button>
+              </div>
             </div>
           )}
 

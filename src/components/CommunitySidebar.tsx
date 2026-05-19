@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react"
 import { useAuth } from "@clerk/clerk-react"
-import { Plus, ArrowRight } from "lucide-react"
+import { Plus, Compass, Rss } from "lucide-react"
 import { useAccount } from "@/hooks/useAccount"
 import { VerificationBadge } from "@/components/VerificationBadge"
 import type { Route } from "@/App"
@@ -78,10 +78,10 @@ export function CommunitySidebar({ currentSlug, onNavigate, onNavigateToCommunit
               : "text-muted-foreground hover:bg-muted/50 hover:text-foreground"
           }`}
         >
-          <div className="w-5 h-5 rounded-full bg-blue-500/20 flex items-center justify-center text-[9px] font-bold text-blue-500 shrink-0">
-            G
+          <div className="w-5 h-5 rounded-full bg-blue-500/20 flex items-center justify-center shrink-0">
+            <Rss className="w-3 h-3 text-blue-500" />
           </div>
-          <span className="text-xs">General Feed</span>
+          <span className="text-xs font-medium">All Posts</span>
         </button>
       </div>
 
@@ -110,21 +110,23 @@ export function CommunitySidebar({ currentSlug, onNavigate, onNavigateToCommunit
       )}
 
       {/* Footer links */}
-      <div className="pt-1 space-y-1">
+      <div className="pt-1 space-y-1.5">
         <button
           type="button"
           onClick={() => onNavigate("communities")}
-          className="flex items-center gap-1 text-[10px] text-muted-foreground/60 hover:text-muted-foreground px-3 cursor-pointer bg-transparent border-0 transition-colors"
+          className="w-full flex items-center gap-2 px-3 py-2 rounded-lg text-xs font-medium text-muted-foreground hover:bg-muted/50 hover:text-foreground transition-colors cursor-pointer bg-transparent border-0 text-left"
         >
-          Browse all <ArrowRight className="w-2.5 h-2.5" />
+          <Compass className="w-3.5 h-3.5 shrink-0" />
+          Browse all communities
         </button>
         {isSignedIn && (
           <button
             type="button"
             onClick={() => onNavigate("communities")}
-            className="flex items-center gap-1 text-[10px] text-muted-foreground/60 hover:text-muted-foreground px-3 cursor-pointer bg-transparent border-0 transition-colors"
+            className="w-full flex items-center gap-2 px-3 py-2 rounded-lg text-xs font-medium text-muted-foreground hover:bg-muted/50 hover:text-foreground transition-colors cursor-pointer bg-transparent border-0 text-left"
           >
-            <Plus className="w-2.5 h-2.5" /> Create community
+            <Plus className="w-3.5 h-3.5 shrink-0" />
+            Create a community
           </button>
         )}
       </div>

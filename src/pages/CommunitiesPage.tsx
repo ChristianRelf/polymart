@@ -303,14 +303,17 @@ export default function CommunitiesPage({ onNavigateToCommunity }: Props) {
       )}
 
       {/* Header */}
-      <div className="flex items-center justify-between gap-4">
+      <div className="flex items-start justify-between gap-4">
         <div>
-          <h1 className="text-xl font-bold text-foreground">Communities</h1>
-          <p className="text-sm text-muted-foreground mt-0.5">{total.toLocaleString()} communities</p>
+          <h1 className="text-2xl font-bold text-foreground">Communities</h1>
+          <p className="text-sm text-muted-foreground mt-1 max-w-md">
+            Discover groups built around trading strategies, markets, and ideas.
+            {total > 0 && <span className="ml-1 text-muted-foreground/60">{total.toLocaleString()} communities</span>}
+          </p>
         </div>
         {isSignedIn && (
-          <Button size="sm" onClick={() => setShowCreate(true)} className="gap-1.5">
-            <Plus className="w-3.5 h-3.5" />Create
+          <Button size="sm" onClick={() => setShowCreate(true)} className="gap-1.5 shrink-0">
+            <Plus className="w-3.5 h-3.5" />New community
           </Button>
         )}
       </div>
@@ -376,13 +379,21 @@ export default function CommunitiesPage({ onNavigateToCommunity }: Props) {
           <AlertCircle className="w-4 h-4" />{error}
         </div>
       ) : communities.length === 0 ? (
-        <div className="text-center py-12 text-muted-foreground">
+        <div className="text-center py-16 text-muted-foreground">
           <Users className="w-8 h-8 mx-auto mb-3 opacity-30" />
-          <p className="text-sm">{q ? "No communities match your search" : "No communities yet — be the first!"}</p>
+          <p className="text-sm font-semibold text-foreground mb-1">
+            {q ? "No communities found" : "No communities yet"}
+          </p>
+          <p className="text-xs text-muted-foreground mb-4">
+            {q ? `Nothing matched "${q}" — try a different search.` : "Be the first to start a community around your trading niche."}
+          </p>
           {isSignedIn && !q && (
-            <Button size="sm" variant="outline" className="mt-3" onClick={() => setShowCreate(true)}>
-              <Plus className="w-3.5 h-3.5 mr-1" />Create one
+            <Button size="sm" onClick={() => setShowCreate(true)} className="gap-1.5">
+              <Plus className="w-3.5 h-3.5" />Create the first community
             </Button>
+          )}
+          {!isSignedIn && !q && (
+            <p className="text-xs text-muted-foreground">Sign in to create a community.</p>
           )}
         </div>
       ) : (
