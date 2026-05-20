@@ -394,6 +394,3 @@ export class ForexSimulation {
     return true;
   }
 }
-
-/** Exported for DataWrapper / DB layer to reference pair metadata. */
-export { PAIR_DEFS };
