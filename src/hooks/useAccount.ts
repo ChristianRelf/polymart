@@ -16,9 +16,15 @@ async function apiFetch(path: string, token: string, options: RequestInit = {}) 
   if (!contentType.includes("application/json")) {
     throw new Error(`API error ${res.status}: server returned non-JSON response for ${path}`)
   }
-  const data = await res.json()
-  if (!res.ok) throw new Error(data.error || `Request failed: ${res.status}`)
-  return data
+  const json = await res.json()
+  if (!res.ok) throw new Error(json.error?.message || json.error || `Request failed: ${res.status}`)
+  return json.data ?? json
+}
+
+async function unwrapJson(res: Response) {
+  const json = await res.json()
+  if (!res.ok) throw new Error(json.error?.message || json.error || `Error ${res.status}`)
+  return json.data ?? json
 }
 
 export function useAccount() {
@@ -166,7 +172,7 @@ export function useAccount() {
       if (params?.page) qs.set("page", String(params.page))
       if (params?.type) qs.set("type", params.type)
       if (params?.sort) qs.set("sort", params.sort)
-      return fetch(`${API}/community/posts?${qs}`).then(r => r.json())
+      return fetch(`${API}/community/posts?${qs}`).then(unwrapJson)
     },
     []
   )
@@ -196,15 +202,15 @@ export function useAccount() {
   const getPostByShareId = useCallback(
     (shareId: string) =>
       fetch(`${API}/community/posts/share/${shareId}`).then(async r => {
-        const data = await r.json()
-        if (!r.ok) throw new Error(r.status === 404 ? "not_found" : data.error || `Error ${r.status}`)
-        return data
+        const json = await r.json()
+        if (!r.ok) throw new Error(r.status === 404 ? "not_found" : json.error?.message || json.error || `Error ${r.status}`)
+        return json.data ?? json
       }),
     []
   )
 
   const getComments = useCallback(
-    (postId: number) => fetch(`${API}/community/posts/${postId}/comments`).then(r => r.json()),
+    (postId: number) => fetch(`${API}/community/posts/${postId}/comments`).then(unwrapJson),
     []
   )
 
@@ -238,9 +244,9 @@ export function useAccount() {
           headers: { Authorization: `Bearer ${t}` },
           body: form,
         })
-        const data = await res.json()
-        if (!res.ok) throw new Error(data.error || "Upload failed")
-        return data.url as string
+        const json = await res.json()
+        if (!res.ok) throw new Error(json.error?.message || json.error || "Upload failed")
+        return (json.data ?? json).url as string
       }),
     [withToken]
   )
@@ -253,7 +259,7 @@ export function useAccount() {
       if (params?.q)    qs.set("q",    params.q)
       if (params?.sort) qs.set("sort", params.sort)
       if (params?.page) qs.set("page", String(params.page))
-      return fetch(`${API}/communities?${qs}`).then(r => r.json())
+      return fetch(`${API}/communities?${qs}`).then(unwrapJson)
     },
     []
   )
@@ -266,9 +272,9 @@ export function useAccount() {
   const getCommunity = useCallback(
     (slug: string) =>
       fetch(`${API}/communities/${slug}`).then(async r => {
-        const data = await r.json()
-        if (!r.ok) throw new Error(data.error || `Error ${r.status}`)
-        return data
+        const json = await r.json()
+        if (!r.ok) throw new Error(json.error?.message || json.error || `Error ${r.status}`)
+        return json.data ?? json
       }),
     []
   )
@@ -313,7 +319,7 @@ export function useAccount() {
 
   const getCommunityMembers = useCallback(
     (slug: string, page = 1) =>
-      fetch(`${API}/communities/${slug}/members?page=${page}`).then(r => r.json()),
+      fetch(`${API}/communities/${slug}/members?page=${page}`).then(unwrapJson),
     []
   )
 
@@ -322,13 +328,13 @@ export function useAccount() {
       const qs = new URLSearchParams({ community: slug })
       if (params?.page) qs.set("page", String(params.page))
       if (params?.sort) qs.set("sort", params.sort ?? "new")
-      return fetch(`${API}/community/posts?${qs}`).then(r => r.json())
+      return fetch(`${API}/community/posts?${qs}`).then(unwrapJson)
     },
     []
   )
 
   const getCommunityRules = useCallback(
-    (slug: string) => fetch(`${API}/communities/${slug}/rules`).then(r => r.json()),
+    (slug: string) => fetch(`${API}/communities/${slug}/rules`).then(unwrapJson),
     []
   )
 
@@ -425,9 +431,9 @@ export function useAccount() {
           headers: { Authorization: `Bearer ${t}` },
           body: form,
         })
-        const data = await res.json()
-        if (!res.ok) throw new Error(data.error || "Upload failed")
-        return data.url as string
+        const json = await res.json()
+        if (!res.ok) throw new Error(json.error?.message || json.error || "Upload failed")
+        return (json.data ?? json).url as string
       }),
     [withToken]
   )
@@ -442,9 +448,9 @@ export function useAccount() {
           headers: { Authorization: `Bearer ${t}` },
           body: form,
         })
-        const data = await res.json()
-        if (!res.ok) throw new Error(data.error || "Upload failed")
-        return data.url as string
+        const json = await res.json()
+        if (!res.ok) throw new Error(json.error?.message || json.error || "Upload failed")
+        return (json.data ?? json).url as string
       }),
     [withToken]
   )
@@ -489,7 +495,7 @@ export function useAccount() {
   )
 
   const getPublicProfile = useCallback(
-    (profileId: string) => fetch(`${API}/users/profile/${profileId}`).then(r => r.json()),
+    (profileId: string) => fetch(`${API}/users/profile/${profileId}`).then(unwrapJson),
     []
   )
 

@@ -1,0 +1,40 @@
+"filename", "language", "JavaScript", "TypeScript JSX", "comment", "blank", "total"
+"c:\Users\chris\Documents\GitHub\polymart\server\PolyAPI\AccountsAPI.js", "JavaScript", 401, 0, 30, 102, 533
+"c:\Users\chris\Documents\GitHub\polymart\server\PolyAPI\AdminAPI.js", "JavaScript", 290, 0, 27, 73, 390
+"c:\Users\chris\Documents\GitHub\polymart\server\PolyAPI\BillingAPI.js", "JavaScript", 119, 0, 15, 22, 156
+"c:\Users\chris\Documents\GitHub\polymart\server\PolyAPI\BotFeedbackAPI.js", "JavaScript", 104, 0, 13, 26, 143
+"c:\Users\chris\Documents\GitHub\polymart\server\PolyAPI\CommunitiesAPI.js", "JavaScript", 673, 0, 32, 130, 835
+"c:\Users\chris\Documents\GitHub\polymart\server\PolyAPI\CommunityAPI.js", "JavaScript", 350, 0, 24, 63, 437
+"c:\Users\chris\Documents\GitHub\polymart\server\PolyAPI\MarketAPI.js", "JavaScript", 650, 0, 58, 85, 793
+"c:\Users\chris\Documents\GitHub\polymart\server\PolyAPI\Middleware.js", "JavaScript", 101, 0, 60, 23, 184
+"c:\Users\chris\Documents\GitHub\polymart\server\PolyAPI\Protocol.js", "JavaScript", 81, 0, 54, 14, 149
+"c:\Users\chris\Documents\GitHub\polymart\server\PolyAPI\Registry.js", "JavaScript", 118, 0, 71, 24, 213
+"c:\Users\chris\Documents\GitHub\polymart\server\PolyAPI\Router.js", "JavaScript", 15, 0, 37, 8, 60
+"c:\Users\chris\Documents\GitHub\polymart\server\PolyAPI\SupportAPI.js", "JavaScript", 55, 0, 12, 15, 82
+"c:\Users\chris\Documents\GitHub\polymart\server\PolyAPI\ToolsAPI.js", "JavaScript", 154, 0, 16, 38, 208
+"c:\Users\chris\Documents\GitHub\polymart\server\PolyAPI\UsersAPI.js", "JavaScript", 41, 0, 8, 10, 59
+"c:\Users\chris\Documents\GitHub\polymart\server\PolyAPI\Validator.js", "JavaScript", 123, 0, 112, 20, 255
+"c:\Users\chris\Documents\GitHub\polymart\server\PolyEngine\AssetResolver.js", "JavaScript", 28, 0, 36, 13, 77
+"c:\Users\chris\Documents\GitHub\polymart\server\PolyEngine\DataAdapter.js", "JavaScript", 236, 0, 34, 30, 300
+"c:\Users\chris\Documents\GitHub\polymart\server\PolyEngine\DataWrapper.js", "JavaScript", 18, 0, 11, 6, 35
+"c:\Users\chris\Documents\GitHub\polymart\server\PolyEngine\ForexSimulation.js", "JavaScript", 29, 0, 1, 1, 31
+"c:\Users\chris\Documents\GitHub\polymart\server\PolyEngine\StockSimulation.js", "JavaScript", 17, 0, 2, 0, 19
+"c:\Users\chris\Documents\GitHub\polymart\server\PolyEngine\tick.js", "JavaScript", 22, 0, 1, 1, 24
+"c:\Users\chris\Documents\GitHub\polymart\server\account-api.js", "JavaScript", -603, 0, -37, -96, -736
+"c:\Users\chris\Documents\GitHub\polymart\server\admin-api.js", "JavaScript", -407, 0, -23, -57, -487
+"c:\Users\chris\Documents\GitHub\polymart\server\api.js", "JavaScript", -811, 0, -45, -100, -956
+"c:\Users\chris\Documents\GitHub\polymart\server\asset-resolver.js", "JavaScript", -28, 0, -3, -8, -39
+"c:\Users\chris\Documents\GitHub\polymart\server\billing-api.js", "JavaScript", -151, 0, -6, -17, -174
+"c:\Users\chris\Documents\GitHub\polymart\server\bot-feedback-api.js", "JavaScript", -85, 0, -3, -14, -102
+"c:\Users\chris\Documents\GitHub\polymart\server\communities-api.js", "JavaScript", -826, 0, -48, -108, -982
+"c:\Users\chris\Documents\GitHub\polymart\server\community-api.js", "JavaScript", -501, 0, -32, -66, -599
+"c:\Users\chris\Documents\GitHub\polymart\server\forex-simulation.js", "JavaScript", -520, 0, -29, -34, -583
+"c:\Users\chris\Documents\GitHub\polymart\server\server.js", "JavaScript", 5, 0, 0, 0, 5
+"c:\Users\chris\Documents\GitHub\polymart\server\simulation.js", "JavaScript", -640, 0, -30, -56, -726
+"c:\Users\chris\Documents\GitHub\polymart\server\support-api.js", "JavaScript", -86, 0, -7, -12, -105
+"c:\Users\chris\Documents\GitHub\polymart\server\tick.js", "JavaScript", -287, 0, -9, -40, -336
+"c:\Users\chris\Documents\GitHub\polymart\server\tools-api.js", "JavaScript", -162, 0, -14, -28, -204
+"c:\Users\chris\Documents\GitHub\polymart\server\users-api.js", "JavaScript", -48, 0, -3, -9, -60
+"c:\Users\chris\Documents\GitHub\polymart\src\pages\HomePage.tsx", "TypeScript JSX", 0, -1, 0, 0, -1
+"c:\Users\chris\Documents\GitHub\polymart\src\pages\TradingTerminalPage.tsx", "TypeScript JSX", 0, -2, 0, 0, -2
+"Total", "-", -1525, -3, 365, 59, -1104
