@@ -498,11 +498,14 @@ async function applyMigrations() {
     `SELECT COUNT(*) AS nullProfileCnt FROM user_profiles WHERE profile_id IS NULL`
   );
   if (nullProfileCnt > 0) {
-    // Generate unique 16-digit IDs using MySQL's RAND() seeded per row.
-    // We do a loop since uniqueness isn't guaranteed on batch, but collisions are astronomically rare.
+    // Seed RAND with CRC32(clerk_id) so each user gets a unique, stable seed
+    // regardless of when they registered. UNIX_TIMESTAMP(created_at) caused
+    // UNIQUE violations when multiple users registered within the same second.
     await dbUser.query(
       `UPDATE user_profiles
-       SET profile_id = LPAD(FLOOR(RAND(UNIX_TIMESTAMP(created_at)) * 9000000000000000) + 1000000000000000, 16, '0')
+       SET profile_id = LPAD(
+         MOD(CONV(SUBSTRING(MD5(clerk_id), 1, 15), 16, 10), 9000000000000000) + 1000000000000000,
+         16, '0')
        WHERE profile_id IS NULL`
     );
     console.log(`[polymart] Migration: backfilled profile_id for ${nullProfileCnt} user(s)`);

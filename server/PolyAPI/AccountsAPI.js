@@ -489,18 +489,37 @@ router.get('/stats', guard(async (req, res) => {
     'SELECT COALESCE(SUM(cash_balance), 0) as total_cash FROM portfolios WHERE clerk_id = ?',
     [req.userId]
   );
-  const [positions] = await pool.query(`
-    SELECT p.quantity, p.avg_cost, p.asset_type,
-      COALESCE(ss.price, fs.price, p.avg_cost) as current_price
+  const [rawPositions] = await pool.query(`
+    SELECT p.quantity, p.avg_cost, p.asset_type, p.symbol
     FROM positions p
     JOIN portfolios port ON p.portfolio_id = port.id
-    LEFT JOIN stocks_state ss ON p.asset_type = 'stock' AND p.symbol = ss.ticker
-    LEFT JOIN forex_state fs  ON p.asset_type = 'forex' AND p.symbol = fs.pair
     WHERE port.clerk_id = ?
   `, [req.userId]);
 
-  const position_value = positions.reduce((s, p) => s + Number(p.quantity) * Number(p.current_price), 0);
-  const cost_basis     = positions.reduce((s, p) => s + Number(p.quantity) * Number(p.avg_cost), 0);
+  let position_value = 0;
+  let cost_basis = 0;
+
+  if (rawPositions.length > 0) {
+    const stocks = [...new Set(rawPositions.filter(p => p.asset_type === 'stock').map(p => p.symbol))];
+    const forex  = [...new Set(rawPositions.filter(p => p.asset_type === 'forex').map(p => p.symbol))];
+    const priceMap = {};
+
+    if (stocks.length > 0) {
+      const [rows] = await dbMarket.query('SELECT ticker, price FROM stocks_state WHERE ticker IN (?)', [stocks]);
+      for (const r of rows) priceMap[`stock:${r.ticker}`] = Number(r.price);
+    }
+    if (forex.length > 0) {
+      const [rows] = await dbMarket.query('SELECT pair, price FROM forex_state WHERE pair IN (?)', [forex]);
+      for (const r of rows) priceMap[`forex:${r.pair}`] = Number(r.price);
+    }
+
+    for (const p of rawPositions) {
+      const current_price = priceMap[`${p.asset_type}:${p.symbol}`] ?? Number(p.avg_cost);
+      position_value += Number(p.quantity) * current_price;
+      cost_basis     += Number(p.quantity) * Number(p.avg_cost);
+    }
+  }
+
   const total_value    = Number(total_cash) + position_value;
   const unrealised_pnl = position_value - cost_basis;
 
