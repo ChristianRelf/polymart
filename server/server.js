@@ -502,7 +502,7 @@ async function applyMigrations() {
     // We do a loop since uniqueness isn't guaranteed on batch, but collisions are astronomically rare.
     await dbUser.query(
       `UPDATE user_profiles
-       SET profile_id = LPAD(FLOOR(RAND(UNIX_TIMESTAMP() + id) * 9000000000000000) + 1000000000000000, 16, '0')
+       SET profile_id = LPAD(FLOOR(RAND(UNIX_TIMESTAMP(created_at)) * 9000000000000000) + 1000000000000000, 16, '0')
        WHERE profile_id IS NULL`
     );
     console.log(`[polymart] Migration: backfilled profile_id for ${nullProfileCnt} user(s)`);
