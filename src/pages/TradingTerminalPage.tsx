@@ -61,6 +61,17 @@ interface PortfolioSummary {
   id: number; name: string; cash_balance: number
 }
 
+interface Position {
+  id: number; portfolio_id: number; asset_type: string
+  symbol: string; quantity: number; avg_cost: number; opened_at: string
+}
+
+interface RecentOrder {
+  id: number; asset_type: string; symbol: string
+  side: "buy" | "sell"; quantity: number; price: number; total: number
+  executed_at: string; portfolio_id: number; portfolio_name: string
+}
+
 // ── LocalStorage hooks ───────────────────────────────────────────────────────
 function useDrawings(symbol: string): [Drawing[], (ds: Drawing[]) => void] {
   const [drawings, set] = useState<Drawing[]>(() => {
@@ -686,15 +697,17 @@ function SymbolListPanel({
 
 function RightPanel({
   symbol, assetType, currentPrice, portfolios, selectedPortfolio, setSelectedPortfolio,
+  positions, onTradeComplete,
   alerts, setAlerts, notes, setNotes,
 }: {
   symbol: string; assetType: string; currentPrice: number
   portfolios: PortfolioSummary[]; selectedPortfolio: number | null; setSelectedPortfolio: (id: number) => void
+  positions: Position[]; onTradeComplete: () => void
   alerts: PriceAlert[]; setAlerts: (a: PriceAlert[]) => void
   notes: string; setNotes: (n: string) => void
 }) {
   const { isSignedIn } = useAuth()
-  const { placeOrder, getPortfolio } = useAccount()
+  const { placeOrder } = useAccount()
   const { stocks, forexPairs } = useSimulation()
 
   const [side, setSide] = useState<"buy" | "sell">("buy")
@@ -702,7 +715,6 @@ function RightPanel({
   const [orderNotes, setOrderNotes] = useState("")
   const [placing, setPlacing] = useState(false)
   const [orderMsg, setOrderMsg] = useState<{ ok: boolean; text: string } | null>(null)
-  const [positions, setPositions] = useState<{ symbol: string; quantity: number; avg_cost: number }[]>([])
 
   // Pip / Point value calculator
   const [lotSize, setLotSize] = useState("1000")
@@ -718,13 +730,6 @@ function RightPanel({
     if (currentPrice > 0) setEntry(currentPrice.toFixed(2))
   }, [symbol, currentPrice])
 
-  useEffect(() => {
-    if (!selectedPortfolio) return
-    getPortfolio(selectedPortfolio).then(p => {
-      setPositions(p.positions ?? [])
-    }).catch(() => {})
-  }, [selectedPortfolio, getPortfolio, symbol])
-
   const livePriceData = assetType === "stock" ? stocks[symbol] : forexPairs[symbol]
   const livePrice = livePriceData?.price ?? currentPrice
   const previewCost = qty && parseFloat(qty) > 0 ? livePrice * parseFloat(qty) : null
@@ -739,7 +744,7 @@ function RightPanel({
       const r = await placeOrder(selectedPortfolio, { asset_type: assetType, symbol, side, quantity: parseFloat(qty), notes: orderNotes || undefined })
       setOrderMsg({ ok: true, text: `${side === "buy" ? "Bought" : "Sold"} ${qty} ${symbol} @ $${r.executedPrice?.toFixed(2) ?? "?"}` })
       setQty(""); setOrderNotes("")
-      getPortfolio(selectedPortfolio).then(p => setPositions(p.positions ?? [])).catch(() => {})
+      onTradeComplete()
     } catch (e: unknown) {
       setOrderMsg({ ok: false, text: e instanceof Error ? e.message : "Order failed" })
     } finally { setPlacing(false) }
@@ -1211,12 +1216,131 @@ function RightPanel({
   )
 }
 
+// ── Bottom blotter panel ──────────────────────────────────────────────────────
+
+function timeAgo(dateStr: string) {
+  const diff = Date.now() - new Date(dateStr).getTime()
+  const m = Math.floor(diff / 60_000)
+  if (m < 1) return "just now"
+  if (m < 60) return `${m}m ago`
+  const h = Math.floor(m / 60)
+  if (h < 24) return `${h}h ago`
+  return `${Math.floor(h / 24)}d ago`
+}
+
+function BottomPanel({
+  positions, orders,
+}: {
+  positions: Position[]
+  orders: RecentOrder[]
+}) {
+  const { stocks, forexPairs } = useSimulation()
+  const [tab, setTab] = useState<"positions" | "orders">("positions")
+
+  return (
+    <div className="shrink-0 border-t border-border bg-card/20 flex flex-col h-[180px]">
+      {/* Tab bar */}
+      <div className="flex border-b border-border shrink-0">
+        {(["positions", "orders"] as const).map(t => (
+          <button key={t} type="button" onClick={() => setTab(t)}
+            className={`px-3 py-1.5 text-[10px] font-semibold uppercase tracking-wider cursor-pointer border-0 transition-colors ${tab === t ? "text-foreground border-b-2 border-foreground bg-foreground/5" : "text-muted-foreground hover:text-foreground bg-transparent"}`}>
+            {t === "positions" ? `Positions (${positions.length})` : `Orders (${orders.length})`}
+          </button>
+        ))}
+      </div>
+
+      {/* Content */}
+      <div className="flex-1 overflow-y-auto">
+        {tab === "positions" ? (
+          positions.length === 0 ? (
+            <div className="flex items-center justify-center h-full text-[11px] text-muted-foreground/50">No open positions</div>
+          ) : (
+            <table className="w-full text-[11px]">
+              <thead className="sticky top-0 bg-card/80">
+                <tr className="text-muted-foreground/60 text-[10px]">
+                  <th className="text-left px-3 py-1 font-medium">Symbol</th>
+                  <th className="text-right px-2 py-1 font-medium">Qty</th>
+                  <th className="text-right px-2 py-1 font-medium">Avg Cost</th>
+                  <th className="text-right px-2 py-1 font-medium">Current</th>
+                  <th className="text-right px-2 py-1 font-medium">P&amp;L $</th>
+                  <th className="text-right px-3 py-1 font-medium">P&amp;L %</th>
+                </tr>
+              </thead>
+              <tbody>
+                {positions.map(p => {
+                  const live = p.asset_type === "stock" ? stocks[p.symbol]?.price : forexPairs[p.symbol]?.price
+                  const current = live ?? p.avg_cost
+                  const pnl = (current - p.avg_cost) * p.quantity
+                  const pnlPct = p.avg_cost > 0 ? ((current - p.avg_cost) / p.avg_cost) * 100 : 0
+                  const up = pnl >= 0
+                  return (
+                    <tr key={p.id} className="border-t border-border/30 hover:bg-muted/20">
+                      <td className="px-3 py-1.5">
+                        <span className="font-mono font-semibold">{p.symbol}</span>
+                        <span className="ml-1.5 text-[9px] text-muted-foreground/60 uppercase">{p.asset_type}</span>
+                      </td>
+                      <td className="px-2 py-1.5 text-right font-mono tabular-nums">{Number(p.quantity).toFixed(p.asset_type === "forex" ? 2 : 0)}</td>
+                      <td className="px-2 py-1.5 text-right font-mono tabular-nums text-muted-foreground">${Number(p.avg_cost).toFixed(p.asset_type === "forex" ? 4 : 2)}</td>
+                      <td className="px-2 py-1.5 text-right font-mono tabular-nums">${current.toFixed(p.asset_type === "forex" ? 4 : 2)}</td>
+                      <td className={`px-2 py-1.5 text-right font-mono tabular-nums ${up ? "text-emerald-500" : "text-red-400"}`}>
+                        {up ? "+" : ""}{pnl.toFixed(2)}
+                      </td>
+                      <td className={`px-3 py-1.5 text-right font-mono tabular-nums ${up ? "text-emerald-500" : "text-red-400"}`}>
+                        {up ? "+" : ""}{pnlPct.toFixed(2)}%
+                      </td>
+                    </tr>
+                  )
+                })}
+              </tbody>
+            </table>
+          )
+        ) : (
+          orders.length === 0 ? (
+            <div className="flex items-center justify-center h-full text-[11px] text-muted-foreground/50">No recent orders</div>
+          ) : (
+            <table className="w-full text-[11px]">
+              <thead className="sticky top-0 bg-card/80">
+                <tr className="text-muted-foreground/60 text-[10px]">
+                  <th className="text-left px-3 py-1 font-medium">Time</th>
+                  <th className="text-left px-2 py-1 font-medium">Portfolio</th>
+                  <th className="text-left px-2 py-1 font-medium">Symbol</th>
+                  <th className="text-left px-2 py-1 font-medium">Side</th>
+                  <th className="text-right px-2 py-1 font-medium">Qty</th>
+                  <th className="text-right px-2 py-1 font-medium">Price</th>
+                  <th className="text-right px-3 py-1 font-medium">Total</th>
+                </tr>
+              </thead>
+              <tbody>
+                {orders.map(o => (
+                  <tr key={o.id} className="border-t border-border/30 hover:bg-muted/20">
+                    <td className="px-3 py-1.5 text-muted-foreground/70">{timeAgo(o.executed_at)}</td>
+                    <td className="px-2 py-1.5 text-muted-foreground/70 max-w-[80px] truncate">{o.portfolio_name}</td>
+                    <td className="px-2 py-1.5 font-mono font-semibold">{o.symbol}</td>
+                    <td className="px-2 py-1.5">
+                      <span className={`text-[9px] font-bold uppercase px-1.5 py-0.5 rounded ${o.side === "buy" ? "bg-emerald-500/15 text-emerald-500" : "bg-red-500/15 text-red-400"}`}>
+                        {o.side}
+                      </span>
+                    </td>
+                    <td className="px-2 py-1.5 text-right font-mono tabular-nums">{Number(o.quantity)}</td>
+                    <td className="px-2 py-1.5 text-right font-mono tabular-nums">${Number(o.price).toFixed(o.asset_type === "forex" ? 4 : 2)}</td>
+                    <td className="px-3 py-1.5 text-right font-mono tabular-nums">${Number(o.total).toFixed(2)}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          )
+        )}
+      </div>
+    </div>
+  )
+}
+
 // ── Main page ─────────────────────────────────────────────────────────────────
 interface Props { onNavigate: (r: Route) => void }
 
 export default function TradingTerminalPage({ onNavigate }: Props) {
   const { isSignedIn } = useAuth()
-  const { getPortfolios } = useAccount()
+  const { getPortfolios, getPortfolio, getRecentOrders } = useAccount()
   const { market, stocks, forexPairs, getDetail, getForexPair } = useSimulation()
 
   const [selectedSymbol, setSelectedSymbol] = useState<{ symbol: string; assetType: "stock" | "forex" } | null>(null)
@@ -1225,6 +1349,8 @@ export default function TradingTerminalPage({ onNavigate }: Props) {
 
   const [portfolios, setPortfolios] = useState<PortfolioSummary[]>([])
   const [selectedPortfolio, setSelectedPortfolio] = useState<number | null>(null)
+  const [positions, setPositions] = useState<Position[]>([])
+  const [recentOrders, setRecentOrders] = useState<RecentOrder[]>([])
 
   const [chartMode, setChartMode] = useState<"candle" | "line">("candle")
   const [activeTool, setActiveTool] = useState<ToolMode>("cursor")
@@ -1243,6 +1369,19 @@ export default function TradingTerminalPage({ onNavigate }: Props) {
       if (ps.length > 0 && !selectedPortfolio) setSelectedPortfolio(ps[0].id)
     }).catch(() => {})
   }, [isSignedIn, getPortfolios])
+
+  // Load positions for selected portfolio + recent orders (blotter)
+  const refreshBlotter = useCallback(() => {
+    if (selectedPortfolio) {
+      getPortfolio(selectedPortfolio).then(p => setPositions(p.positions ?? [])).catch(() => {})
+    }
+    getRecentOrders().then((orders: RecentOrder[]) => setRecentOrders(orders)).catch(() => {})
+  }, [selectedPortfolio, getPortfolio, getRecentOrders])
+
+  useEffect(() => {
+    if (!isSignedIn) return
+    refreshBlotter()
+  }, [isSignedIn, refreshBlotter])
 
   // Auto-select first stock
   useEffect(() => {
@@ -1391,6 +1530,11 @@ export default function TradingTerminalPage({ onNavigate }: Props) {
           )}
         </div>
 
+        {/* Blotter: positions + order history */}
+        {isSignedIn && (
+          <BottomPanel positions={positions} orders={recentOrders} />
+        )}
+
         {/* Bottom market bar */}
         {market && (
           <div className="px-3 py-1.5 border-t border-border bg-card/20 flex items-center gap-4 text-[10px] text-muted-foreground shrink-0 flex-wrap">
@@ -1413,6 +1557,8 @@ export default function TradingTerminalPage({ onNavigate }: Props) {
           symbol={sym} assetType={selectedSymbol?.assetType ?? "stock"}
           currentPrice={livePrice}
           portfolios={portfolios} selectedPortfolio={selectedPortfolio} setSelectedPortfolio={setSelectedPortfolio}
+          positions={positions}
+          onTradeComplete={refreshBlotter}
           alerts={alerts} setAlerts={setAlerts}
           notes={notes} setNotes={setNotes}
         />
