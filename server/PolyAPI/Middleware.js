@@ -13,8 +13,7 @@
  * error shapes are always { ok: false, error: { code, message } }.
  */
 
-import { getAuth } from '@clerk/express';
-import { clerkClient } from '@clerk/express';
+import { getAuth, clerkClient } from '@clerk/express';
 import { fail, ERRORS, HTTP } from './Protocol.js';
 
 // ── requireAuth ───────────────────────────────────────────────────────────────
@@ -150,7 +149,7 @@ export function corsHeaders(allowedOrigins) {
       res.set('Access-Control-Allow-Headers', 'Content-Type, Authorization');
       res.set('Access-Control-Allow-Credentials', 'true');
     }
-    if (req.method === 'OPTIONS') return res.sendStatus(HTTP.NO_CONTENT ?? 204);
+    if (req.method === 'OPTIONS') return res.sendStatus(HTTP.NO_CONTENT);
     next();
   };
 }

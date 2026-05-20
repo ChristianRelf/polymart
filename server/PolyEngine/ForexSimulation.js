@@ -91,6 +91,17 @@ function getActiveSession() {
   return 'new_york';
 }
 
+// ── Country flag lookup (ISO-2 → emoji) ──────────────────────────────────────
+
+export const COUNTRY_FLAGS = {
+  US: '🇺🇸', EU: '🇪🇺', GB: '🇬🇧', JP: '🇯🇵', CH: '🇨🇭',
+  AU: '🇦🇺', CA: '🇨🇦', NZ: '🇳🇿', MX: '🇲🇽', ZA: '🇿🇦',
+  TR: '🇹🇷', BR: '🇧🇷', SG: '🇸🇬', HK: '🇭🇰', CN: '🇨🇳',
+  NO: '🇳🇴', SE: '🇸🇪', PL: '🇵🇱', CZ: '🇨🇿', HU: '🇭🇺',
+  IN: '🇮🇳', TH: '🇹🇭', MY: '🇲🇾', ID: '🇮🇩', PH: '🇵🇭',
+  KR: '🇰🇷', AE: '🇦🇪', SA: '🇸🇦', EG: '🇪🇬',
+};
+
 // ── Pair definitions ──────────────────────────────────────────────────────────
 
 /**
@@ -114,7 +125,7 @@ function getActiveSession() {
  */
 
 /** @type {Record<string, PairDef>} */
-const PAIR_DEFS = {
+export const PAIR_DEFS = {
   // ── Majors ──────────────────────────────────────────────────────────────────
   EURUSD: { base:"EUR", quote:"USD", category:"major", basePrice:1.0850, volatility:0.00038, trend:0, spread:0.00010, decimals:4, pipSize:0.0001, baseName:"Euro", quoteName:"US Dollar", baseCountry:"EU", quoteCountry:"US", description:"The most-traded currency pair in the world.", economicDrivers:["ECB vs Fed rate differential","Eurozone GDP & PMI","US Non-Farm Payrolls & CPI","Trade balance"], factSheet:{dailyVolume:"$1.1T",avgSpread:"0.1 pips",sessions:"London/NY overlap most active"} },
   GBPUSD: { base:"GBP", quote:"USD", category:"major", basePrice:1.2650, volatility:0.00048, trend:0, spread:0.00012, decimals:4, pipSize:0.0001, baseName:"British Pound", quoteName:"US Dollar", baseCountry:"GB", quoteCountry:"US", description:"'Cable' — highly sensitive to Bank of England policy.", economicDrivers:["Bank of England policy","UK CPI & unemployment","US Fed rate decisions","UK-EU trade balance"], factSheet:{dailyVolume:"$422B",avgSpread:"0.15 pips",sessions:"London session most active"} },

@@ -6,17 +6,18 @@ import { fileURLToPath } from "url";
 import dotenv from "dotenv";
 import { clerkMiddleware } from "@clerk/express";
 import { dbMarket, dbUser } from "./db.js";
-import apiRouter from "./api.js";
-import accountRouter, { clerkWebhookHandler } from "./account-api.js";
-import billingRouter, { stripeWebhookHandler } from "./billing-api.js";
-import supportRouter from "./support-api.js";
-import adminRouter from "./admin-api.js";
-import communityRouter from "./community-api.js";
-import communitiesRouter from "./communities-api.js";
-import usersRouter from "./users-api.js";
-import botFeedbackRouter from "./bot-feedback-api.js";
-import toolsRouter from "./tools-api.js";
-import { startTickLoop } from "./tick.js";
+import marketRouter from "./PolyAPI/MarketAPI.js";
+import accountRouter, { clerkWebhookHandler } from "./PolyAPI/AccountsAPI.js";
+import billingRouter, { stripeWebhookHandler } from "./PolyAPI/BillingAPI.js";
+import supportRouter from "./PolyAPI/SupportAPI.js";
+import adminRouter from "./PolyAPI/AdminAPI.js";
+import communityRouter from "./PolyAPI/CommunityAPI.js";
+import communitiesRouter from "./PolyAPI/CommunitiesAPI.js";
+import usersRouter from "./PolyAPI/UsersAPI.js";
+import botFeedbackRouter from "./PolyAPI/BotFeedbackAPI.js";
+import toolsRouter from "./PolyAPI/ToolsAPI.js";
+import { PolyEngineTick } from "./PolyEngine/tick.js";
+import { createDbAdapter, registerDbSubscribers } from "./PolyEngine/DataAdapter.js";
 
 dotenv.config();
 
@@ -55,7 +56,7 @@ app.post("/api/v1/webhooks/stripe", express.raw({ type: "application/json" }), s
 app.use(express.json({ limit: "10kb" }));
 
 // ── Public market API ─────────────────────────────────────────────────────────
-app.use("/api/v1", apiRouter);
+app.use("/api/v1", marketRouter);
 
 // ── Account API (protected by Clerk auth inside the router) ───────────────────
 app.use("/api/v1/account", restrictedCors, accountRouter);
@@ -526,11 +527,15 @@ async function waitForDb(retries = 30, delayMs = 2000) {
 
 const PORT = parseInt(process.env.PORT || "4000");
 
-waitForDb().then(() => applySchema()).then(() => applyMigrations()).then(() => {
+waitForDb().then(() => applySchema()).then(() => applyMigrations()).then(async () => {
   app.listen(PORT, "0.0.0.0", () => {
     console.log(`[polymart] API + frontend running on port ${PORT}`);
   });
-  startTickLoop(10000);
+  const dbAdapter = createDbAdapter(dbMarket);
+  const engine    = new PolyEngineTick({ db: dbAdapter, intervalMs: 10000 });
+  registerDbSubscribers(engine.data, dbMarket, dbUser);
+  await engine.init();
+  engine.start();
 }).catch(err => {
   console.error(err.message);
   process.exit(1);

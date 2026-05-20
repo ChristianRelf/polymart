@@ -1,4 +1,3 @@
-import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Separator } from "@/components/ui/separator"
 import { ArrowRight, GraduationCap, ChartBar as BarChart2, Globe, Bot, TrendingUp, Activity, Monitor, Brain, FlaskConical, Rocket, Laugh, Pill, Landmark, Gamepad2, Leaf, Bitcoin, Shield, Utensils, ShoppingCart, Tv as Tv2, Car, Building2, Plane, Bolt as BoltIcon, Package, Wheat } from "lucide-react"

@@ -11,7 +11,7 @@
 import { Webhook }   from 'svix';
 import { dbUser as pool, dbMarket } from '../db.js';
 import TIER_CONFIG from '../tier-config.js';
-import { resolvePrice, isValidAssetType, isValidSymbol } from '../asset-resolver.js';
+import { resolvePrice, isValidAssetType, isValidSymbol } from '../PolyEngine/AssetResolver.js';
 import { createRouter } from './Router.js';
 import { requireAuth, rateLimit } from './Middleware.js';
 import { success, fail, guard, ERRORS, HTTP } from './Protocol.js';

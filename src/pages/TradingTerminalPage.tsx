@@ -7,13 +7,12 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Textarea } from "@/components/ui/textarea"
 import { ScrollArea } from "@/components/ui/scroll-area"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { Card, CardContent } from "@/components/ui/card"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog"
 import {
-  Search, TrendingUp, TrendingDown, Minus, Bell, MousePointer2, Eraser,
-  Trash2, Loader2, AlertCircle, RefreshCw, ShoppingCart, ArrowDownLeft,
-  BookOpen, Wrench, Calculator, Target, Type, Square, Plus, X, Check,
-  BarChart2, CandlestickChart, ChevronRight, Layers,
+  Search, TrendingUp, Minus, Bell, MousePointer2, Eraser,
+  Trash2, Loader2, ShoppingCart,
+  BookOpen, Calculator, Target, Type, Square, X, Check,
+  BarChart2, ChevronRight, Layers,
 } from "lucide-react"
 import { useAccount } from "@/hooks/useAccount"
 import { useSimulation } from "@/lib/SimulationContext"
@@ -684,7 +683,6 @@ function SymbolListPanel({
 }
 
 // ── Right panel ───────────────────────────────────────────────────────────────
-interface OrderForm { assetType: string; symbol: string; side: "buy" | "sell"; quantity: string; notes: string }
 
 function RightPanel({
   symbol, assetType, currentPrice, portfolios, selectedPortfolio, setSelectedPortfolio,
