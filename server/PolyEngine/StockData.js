@@ -264,7 +264,7 @@ export const TICKERS = Object.freeze(Object.keys(STOCK_DEFS));
  * @param {number} i
  * @param {EventDef} e
  */
-function validateEvent(i, e) {
+function validateEvent(e, i) {
   assertString(e.text, `EVENTS[${i}].text`);
   assertNumber(e.effect, `EVENTS[${i}].effect`, -1, 1);
   assertNumber(e.weight, `EVENTS[${i}].weight`, 1, 10);
