@@ -20,7 +20,8 @@ import { schema, v } from './Validator.js';
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
 function generateProfileId() {
-  return Array.from({ length: 16 }, () => Math.floor(Math.random() * 10)).join('');
+  // 16-digit string starting with 1-8, value always < Number.MAX_SAFE_INTEGER
+  return Math.floor(Math.random() * 8e15 + 1e15).toString();
 }
 
 async function getUserTier(userId) {

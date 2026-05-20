@@ -1,7 +1,10 @@
 import { createContext, useContext, useEffect, useState, useCallback } from "react"
 
 function apiFetch(endpoint: string) {
-  return fetch(endpoint).then(r => r.json())
+  return fetch(endpoint).then(async r => {
+    const json = await r.json()
+    return json.data ?? json
+  })
 }
 
 // ── Simulation registry ───────────────────────────────────────────────────────

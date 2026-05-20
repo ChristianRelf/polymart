@@ -16,7 +16,7 @@ import {
 } from "lucide-react"
 import { useAccount } from "@/hooks/useAccount"
 import { useSimulation } from "@/lib/SimulationContext"
-import type { StockDetail, Candle } from "@/lib/SimulationContext"
+import type { StockDetail, ForexPairDetail, Candle } from "@/lib/SimulationContext"
 import type { Route } from "@/App"
 
 // ── Chart palette (matches MarketPage) ───────────────────────────────────────
@@ -655,7 +655,7 @@ function SymbolListPanel({
         ))}
       </div>
       {/* List */}
-      <ScrollArea className="flex-1">
+      <ScrollArea className="flex-1 min-h-0">
         <div className="py-1">
           {list.map(s => {
             const isSelected = selected?.symbol === s.symbol && selected?.assetType === s.assetType
@@ -704,6 +704,9 @@ function RightPanel({
   const [orderMsg, setOrderMsg] = useState<{ ok: boolean; text: string } | null>(null)
   const [positions, setPositions] = useState<{ symbol: string; quantity: number; avg_cost: number }[]>([])
 
+  // Pip / Point value calculator
+  const [lotSize, setLotSize] = useState("1000")
+
   // Calculators
   const [entry, setEntry] = useState(currentPrice > 0 ? currentPrice.toFixed(2) : "")
   const [stop, setStop] = useState("")
@@ -741,6 +744,39 @@ function RightPanel({
       setOrderMsg({ ok: false, text: e instanceof Error ? e.message : "Order failed" })
     } finally { setPlacing(false) }
   }
+
+  // Live technical data
+  const liveData = assetType === "stock" ? stocks[symbol] : forexPairs[symbol]
+  const rsi = liveData?.rsi ?? 0
+  const macdHist = liveData?.macdHist ?? 0
+  const sma20 = liveData?.sma20 ?? 0
+  const sma50 = liveData?.sma50 ?? 0
+  const bbUpper = liveData?.bbUpper ?? 0
+  const bbLower = liveData?.bbLower ?? 0
+  const atr = liveData?.atr ?? 0
+  const liveDataPrice = liveData?.price ?? currentPrice
+
+  const rsiSignal = rsi >= 70 ? "Overbought" : rsi <= 30 ? "Oversold" : "Neutral"
+  const rsiColor  = rsi >= 70 ? "text-red-400" : rsi <= 30 ? "text-emerald-500" : "text-muted-foreground"
+  const macdBull  = macdHist > 0
+  const smaCross  = sma20 > 0 && sma50 > 0 ? (sma20 > sma50 ? "Bullish" : "Bearish") : null
+  const bbRange   = bbUpper - bbLower
+  const bbPct     = bbRange > 0 ? ((liveDataPrice - bbLower) / bbRange) * 100 : null
+
+  // Pip/point value
+  const lotSizeN = parseFloat(lotSize) || 0
+  const forexData = assetType === "forex" ? forexPairs[symbol] : null
+  const pipSize   = forexData?.pipSize ?? 0.0001
+  const pipValue  = lotSizeN > 0 && liveDataPrice > 0 ? (pipSize / liveDataPrice) * lotSizeN : null
+
+  // Key levels
+  const hi52w = liveData?.hi52w ?? 0
+  const lo52w = liveData?.lo52w ?? 0
+  const pivotP  = forexData?.pivotP  ?? 0
+  const pivotR1 = forexData?.pivotR1 ?? 0
+  const pivotR2 = forexData?.pivotR2 ?? 0
+  const pivotS1 = forexData?.pivotS1 ?? 0
+  const pivotS2 = forexData?.pivotS2 ?? 0
 
   // R:R calculation
   const entryN = parseFloat(entry), stopN = parseFloat(stop), targetN = parseFloat(target)
@@ -792,7 +828,7 @@ function RightPanel({
                         {portfolios.map(p => (
                           <SelectItem key={p.id} value={p.id.toString()}>
                             <span className="text-xs">{p.name}</span>
-                            <span className="ml-2 text-xs text-muted-foreground">${p.cash_balance.toLocaleString("en-US", { maximumFractionDigits: 0 })}</span>
+                            <span className="ml-2 text-xs text-muted-foreground">${Number(p.cash_balance).toLocaleString("en-US", { maximumFractionDigits: 0 })}</span>
                           </SelectItem>
                         ))}
                       </SelectContent>
@@ -803,7 +839,7 @@ function RightPanel({
                   {portfolio && (
                     <div className="flex justify-between text-xs px-1">
                       <span className="text-muted-foreground">Available cash</span>
-                      <span className="font-semibold tabular-nums">${portfolio.cash_balance.toLocaleString("en-US", { maximumFractionDigits: 2 })}</span>
+                      <span className="font-semibold tabular-nums">${Number(portfolio.cash_balance).toLocaleString("en-US", { maximumFractionDigits: 2 })}</span>
                     </div>
                   )}
 
@@ -863,17 +899,19 @@ function RightPanel({
                     <div className="pt-1">
                       <p className="text-[10px] text-muted-foreground uppercase tracking-wider mb-1.5">Open Position</p>
                       {symbolPositions.map(pos => {
-                        const pnl = (livePrice - pos.avg_cost) * pos.quantity
-                        const pnlPct = pos.avg_cost > 0 ? ((livePrice - pos.avg_cost) / pos.avg_cost) * 100 : 0
+                        const avgCost = Number(pos.avg_cost)
+                        const qty = Number(pos.quantity)
+                        const pnl = (livePrice - avgCost) * qty
+                        const pnlPct = avgCost > 0 ? ((livePrice - avgCost) / avgCost) * 100 : 0
                         return (
                           <div key={`${pos.symbol}`} className="bg-muted/30 rounded-lg px-3 py-2 space-y-1">
                             <div className="flex justify-between text-xs">
                               <span className="text-muted-foreground">Shares</span>
-                              <span className="font-mono font-semibold">{pos.quantity}</span>
+                              <span className="font-mono font-semibold">{qty}</span>
                             </div>
                             <div className="flex justify-between text-xs">
                               <span className="text-muted-foreground">Avg cost</span>
-                              <span className="font-mono">${pos.avg_cost.toFixed(2)}</span>
+                              <span className="font-mono">${avgCost.toFixed(2)}</span>
                             </div>
                             <div className="flex justify-between text-xs">
                               <span className="text-muted-foreground">Unrealised P&L</span>
@@ -998,6 +1036,157 @@ function RightPanel({
                   </div>
                 )}
               </div>
+
+              <div className="border-t border-border" />
+
+              {/* Technical Signals */}
+              {liveData && (
+                <div>
+                  <p className="text-[10px] text-muted-foreground uppercase tracking-wider mb-2 flex items-center gap-1">
+                    <TrendingUp className="w-3 h-3" /> Technical Signals
+                  </p>
+                  <div className="space-y-2">
+                    {/* RSI */}
+                    <div className="flex items-center justify-between">
+                      <span className="text-[10px] text-muted-foreground">RSI ({rsi.toFixed(1)})</span>
+                      <div className="flex items-center gap-2">
+                        <div className="w-20 h-1.5 rounded-full bg-muted/50 overflow-hidden">
+                          <div
+                            className={`h-full rounded-full transition-all ${rsi >= 70 ? "bg-red-400" : rsi <= 30 ? "bg-emerald-400" : "bg-blue-400"}`}
+                            style={{ width: `${Math.min(rsi, 100)}%` }}
+                          />
+                        </div>
+                        <span className={`text-[10px] font-semibold w-16 text-right ${rsiColor}`}>{rsiSignal}</span>
+                      </div>
+                    </div>
+                    {/* MACD */}
+                    <div className="flex items-center justify-between">
+                      <span className="text-[10px] text-muted-foreground">MACD hist</span>
+                      <span className={`text-[10px] font-semibold font-mono ${macdBull ? "text-emerald-500" : "text-red-400"}`}>
+                        {macdHist >= 0 ? "+" : ""}{macdHist.toFixed(4)} {macdBull ? "▲ Bull" : "▼ Bear"}
+                      </span>
+                    </div>
+                    {/* BB %B */}
+                    {bbPct !== null && (
+                      <div className="flex items-center justify-between">
+                        <span className="text-[10px] text-muted-foreground">BB position</span>
+                        <span className={`text-[10px] font-semibold ${bbPct > 80 ? "text-red-400" : bbPct < 20 ? "text-emerald-500" : "text-muted-foreground"}`}>
+                          {bbPct.toFixed(0)}%
+                          {bbPct > 80 ? " Near top" : bbPct < 20 ? " Near bottom" : " Mid-range"}
+                        </span>
+                      </div>
+                    )}
+                    {/* SMA cross */}
+                    {smaCross && (
+                      <div className="flex items-center justify-between">
+                        <span className="text-[10px] text-muted-foreground">SMA20 vs SMA50</span>
+                        <span className={`text-[10px] font-semibold ${smaCross === "Bullish" ? "text-emerald-500" : "text-red-400"}`}>
+                          {smaCross === "Bullish" ? "▲" : "▼"} {smaCross}
+                        </span>
+                      </div>
+                    )}
+                    {/* ATR */}
+                    {atr > 0 && (
+                      <div className="flex items-center justify-between">
+                        <span className="text-[10px] text-muted-foreground">ATR (volatility)</span>
+                        <span className="text-[10px] font-mono text-muted-foreground">{atr.toFixed(4)}</span>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )}
+
+              <div className="border-t border-border" />
+
+              {/* Key Levels */}
+              {liveData && (
+                <div>
+                  <p className="text-[10px] text-muted-foreground uppercase tracking-wider mb-2 flex items-center gap-1">
+                    <Layers className="w-3 h-3" /> Key Levels
+                  </p>
+                  {assetType === "forex" && pivotP > 0 ? (
+                    <div className="space-y-1">
+                      {[
+                        { label: "R2", val: pivotR2, color: "text-red-300" },
+                        { label: "R1", val: pivotR1, color: "text-red-400" },
+                        { label: "Pivot", val: pivotP, color: "text-amber-400", bold: true },
+                        { label: "S1", val: pivotS1, color: "text-emerald-500" },
+                        { label: "S2", val: pivotS2, color: "text-emerald-300" },
+                      ].map(({ label, val, color, bold }) => (
+                        <div key={label} className={`flex justify-between text-[10px] px-2 py-0.5 rounded ${label === "Pivot" ? "bg-muted/20" : ""}`}>
+                          <span className={`${color} ${bold ? "font-bold" : ""}`}>{label}</span>
+                          <span className={`font-mono ${color} ${bold ? "font-bold" : ""}`}>{val.toFixed(4)}</span>
+                        </div>
+                      ))}
+                    </div>
+                  ) : (
+                    <div className="space-y-1">
+                      {hi52w > 0 && (
+                        <div className="flex justify-between text-[10px]">
+                          <span className="text-muted-foreground">52w High</span>
+                          <span className="font-mono text-red-400">${hi52w.toFixed(2)}</span>
+                        </div>
+                      )}
+                      {lo52w > 0 && (
+                        <div className="flex justify-between text-[10px]">
+                          <span className="text-muted-foreground">52w Low</span>
+                          <span className="font-mono text-emerald-500">${lo52w.toFixed(2)}</span>
+                        </div>
+                      )}
+                      {atr > 0 && (
+                        <div className="flex justify-between text-[10px]">
+                          <span className="text-muted-foreground">ATR range</span>
+                          <span className="font-mono text-muted-foreground">±${atr.toFixed(2)}</span>
+                        </div>
+                      )}
+                    </div>
+                  )}
+                </div>
+              )}
+
+              <div className="border-t border-border" />
+
+              {/* Pip / Point value calculator */}
+              <div>
+                <p className="text-[10px] text-muted-foreground uppercase tracking-wider mb-2 flex items-center gap-1">
+                  <BarChart2 className="w-3 h-3" /> {assetType === "forex" ? "Pip Value" : "Point Value"}
+                </p>
+                <div className="flex items-center justify-between gap-2 mb-2">
+                  <label className="text-[10px] text-muted-foreground shrink-0 w-24">
+                    {assetType === "forex" ? "Units" : "Shares"}
+                  </label>
+                  <Input type="number" value={lotSize} onChange={e => setLotSize(e.target.value)}
+                    className="h-7 text-xs font-mono w-24 text-right" step="any" min={0} />
+                </div>
+                {pipValue !== null && pipValue > 0 && (
+                  <div className="bg-muted/30 rounded-lg p-2.5 space-y-1.5">
+                    <div className="flex justify-between text-xs">
+                      <span className="text-muted-foreground">Value per pip</span>
+                      <span className="font-mono font-bold">${pipValue.toFixed(4)}</span>
+                    </div>
+                    {stop && parseFloat(stop) > 0 && (
+                      <div className="flex justify-between text-xs">
+                        <span className="text-muted-foreground">Stop loss value</span>
+                        <span className="font-mono text-red-400">
+                          ${(Math.abs(parseFloat(entry || "0") - parseFloat(stop)) / pipSize * pipValue).toFixed(2)}
+                        </span>
+                      </div>
+                    )}
+                  </div>
+                )}
+                {assetType === "stock" && lotSizeN > 0 && liveDataPrice > 0 && (
+                  <div className="bg-muted/30 rounded-lg p-2.5 space-y-1.5">
+                    <div className="flex justify-between text-xs">
+                      <span className="text-muted-foreground">Position value</span>
+                      <span className="font-mono font-bold">${(lotSizeN * liveDataPrice).toLocaleString("en-US", { maximumFractionDigits: 2 })}</span>
+                    </div>
+                    <div className="flex justify-between text-xs">
+                      <span className="text-muted-foreground">$1 move</span>
+                      <span className="font-mono text-emerald-500">±${lotSizeN.toLocaleString()}</span>
+                    </div>
+                  </div>
+                )}
+              </div>
             </div>
           </ScrollArea>
         </TabsContent>
@@ -1028,10 +1217,10 @@ interface Props { onNavigate: (r: Route) => void }
 export default function TradingTerminalPage({ onNavigate }: Props) {
   const { isSignedIn } = useAuth()
   const { getPortfolios } = useAccount()
-  const { market, stocks, forexPairs, getDetail } = useSimulation()
+  const { market, stocks, forexPairs, getDetail, getForexPair } = useSimulation()
 
   const [selectedSymbol, setSelectedSymbol] = useState<{ symbol: string; assetType: "stock" | "forex" } | null>(null)
-  const [detail, setDetail] = useState<StockDetail | null>(null)
+  const [detail, setDetail] = useState<StockDetail | ForexPairDetail | null>(null)
   const [detailLoading, setDetailLoading] = useState(false)
 
   const [portfolios, setPortfolios] = useState<PortfolioSummary[]>([])
@@ -1067,12 +1256,12 @@ export default function TradingTerminalPage({ onNavigate }: Props) {
   const loadDetail = useCallback(async (sym: string, assetType: string) => {
     setDetailLoading(true)
     try {
-      const d = assetType === "stock" ? await getDetail(sym) : null
+      const d = assetType === "stock" ? await getDetail(sym) : await getForexPair(sym)
       setDetail(d)
     } finally {
       setDetailLoading(false)
     }
-  }, [getDetail])
+  }, [getDetail, getForexPair])
 
   useEffect(() => {
     if (selectedSymbol) loadDetail(selectedSymbol.symbol, selectedSymbol.assetType)
@@ -1080,8 +1269,11 @@ export default function TradingTerminalPage({ onNavigate }: Props) {
 
   // Refresh detail on market tick
   useEffect(() => {
-    if (selectedSymbol && detail) {
+    if (!selectedSymbol || !detail) return
+    if (selectedSymbol.assetType === "stock") {
       getDetail(selectedSymbol.symbol).then(d => { if (d) setDetail(d) }).catch(() => {})
+    } else {
+      getForexPair(selectedSymbol.symbol).then(d => { if (d) setDetail(d) }).catch(() => {})
     }
   }, [market])
 

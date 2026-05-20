@@ -140,7 +140,7 @@ function parseHash(): { route: Route; params: Record<string, string> } {
   if (subCommunityMod) return { route: "sub-community-mod", params: { slug: subCommunityMod[1] } }
   const subCommunity = hash.match(/^\/c\/([a-z0-9-]+)$/)
   if (subCommunity) return { route: "sub-community", params: { slug: subCommunity[1] } }
-  const userProfile = hash.match(/^\/u\/(\d{16})$/)
+  const userProfile = hash.match(/^\/u\/(\d+)$/)
   if (userProfile) return { route: "user-profile", params: { profileId: userProfile[1] } }
   return { route: HASH_MAP[hash] ?? "home", params: {} }
 }

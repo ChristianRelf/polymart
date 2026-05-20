@@ -18,7 +18,7 @@ const router = createRouter({ label: '[users-api]' });
 
 router.get('/profile/:profileId', guard(async (req, res) => {
   const { profileId } = req.params;
-  if (!/^\d{16}$/.test(profileId))
+  if (!/^\d{9,16}$/.test(profileId))
     return fail(res, ERRORS.VALIDATION_ERROR, 'Invalid profile ID');
 
   const [[user]] = await pool.query(
