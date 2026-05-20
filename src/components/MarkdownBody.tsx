@@ -38,7 +38,7 @@ const components: Components = {
   },
   code({ className, children }: { className?: string; children?: ReactNode }) {
     if (className) {
-      // Fenced code block — styling comes from <pre> wrapper
+      // Fenced code block - styling comes from <pre> wrapper
       return <code className={`${className} text-xs font-mono`}>{children}</code>
     }
     return (

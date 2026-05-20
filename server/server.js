@@ -15,6 +15,7 @@ import communityRouter from "./community-api.js";
 import communitiesRouter from "./communities-api.js";
 import usersRouter from "./users-api.js";
 import botFeedbackRouter from "./bot-feedback-api.js";
+import toolsRouter from "./tools-api.js";
 import { startTickLoop } from "./tick.js";
 
 dotenv.config();
@@ -78,6 +79,9 @@ app.use("/api/v1/users", usersRouter);
 // ── Bot feedback (bug reports & suggestions) ──────────────────────────────────
 app.use("/api/v1/bot-feedback", botFeedbackRouter);
 
+// ── Community tools & plugins ─────────────────────────────────────────────────
+app.use("/api/v1/tools", restrictedCors, toolsRouter);
+
 // ── Share embed route ─────────────────────────────────────────────────────────
 // Serves an OG-tagged HTML page for /s/:shareId so Discord/Slack/etc can unfurl
 // the link. Real users are JS-redirected to the SPA immediately.
@@ -118,7 +122,7 @@ app.get("/s/:shareId", async (req, res) => {
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<title>${escapeHtml(title)} — Polymart Community</title>
+<title>${escapeHtml(title)} - Polymart Community</title>
 <meta name="description" content="${escapeHtml(preview)}">
 <meta property="og:type"        content="article">
 <meta property="og:site_name"   content="Polymart Community">
@@ -154,7 +158,7 @@ app.use((err, req, res, _next) => {
 
 // ── Community image uploads ───────────────────────────────────────────────────
 // Persistent storage outside dist/ so rebuilds don't wipe uploads.
-// Filenames are random hex — content never changes, so cache aggressively.
+// Filenames are random hex - content never changes, so cache aggressively.
 app.use("/uploads", express.static(path.join(__dirname, "uploads"), {
   maxAge: "1y",
   immutable: true,

@@ -45,7 +45,6 @@ function CandleChart({ candles, price, sma20, sma50, bbUpper, bbMiddle, bbLower,
     const cH = H - pad.t - pad.b
 
     const vals = candles.flatMap(c => [c.h, c.l])
-    vals.push(bbUpper, bbLower)
     const mn = Math.min(...vals) * 0.998
     const mx = Math.max(...vals) * 1.002
     const rng = mx - mn || 1
@@ -266,7 +265,7 @@ function PriceChart({ data, sma20, sma50, vwap, bbUpper, bbLower }: {
     const pad = { t: 14, r: 74, b: 24, l: 8 }
     const cW = W - pad.l - pad.r
     const cH = H - pad.t - pad.b
-    const allVals = [...data, bbUpper, bbLower, sma20, sma50, vwap].filter(Boolean)
+    const allVals = data.filter(Boolean)
     const mn = Math.min(...allVals) * 0.997
     const mx = Math.max(...allVals) * 1.003
     const rng = mx - mn || 1

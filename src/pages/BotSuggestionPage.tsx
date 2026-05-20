@@ -102,7 +102,7 @@ export default function BotSuggestionPage({ onNavigate }: Props) {
               <Textarea
                 value={description}
                 onChange={e => setDescription(e.target.value)}
-                placeholder="Describe your idea in detail — what it does, how it would work, which part of Polymart it relates to..."
+                placeholder="Describe your idea in detail - what it does, how it would work, which part of Polymart it relates to..."
                 maxLength={1000}
                 rows={6}
                 className="resize-none"

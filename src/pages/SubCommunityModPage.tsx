@@ -328,7 +328,7 @@ export default function SubCommunityModPage({ slug, onNavigate, onNavigateToComm
         </button>
         <div className="flex items-center gap-2">
           <Shield className="w-4 h-4 text-blue-400" />
-          <h1 className="text-base font-semibold text-foreground">Mod Tools — {community.display_name}</h1>
+          <h1 className="text-base font-semibold text-foreground">Mod Tools - {community.display_name}</h1>
         </div>
       </div>
 
@@ -436,7 +436,7 @@ export default function SubCommunityModPage({ slug, onNavigate, onNavigateToComm
                     <span className="text-muted-foreground"> {ACTION_LABELS[entry.action_type] ?? entry.action_type}</span>
                     {entry.target_name && <span className="text-foreground/70"> {entry.target_name}</span>}
                     {entry.post_title && <span className="text-muted-foreground"> "{entry.post_title}"</span>}
-                    {entry.details && <span className="text-muted-foreground/60"> — {entry.details}</span>}
+                    {entry.details && <span className="text-muted-foreground/60"> - {entry.details}</span>}
                   </div>
                   <span className="text-muted-foreground/40 shrink-0">{timeAgo(entry.created_at)}</span>
                 </div>

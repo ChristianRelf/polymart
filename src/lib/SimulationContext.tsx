@@ -15,7 +15,7 @@ export const SIM_CONFIGS: {
   status: "live" | "coming_soon"
   description: string
 }[] = [
-  { id: "stocks", label: "Stocks", icon: "📈", status: "live",        description: "132 simulated equities across 20 sectors. Prices update every 10 seconds." },
+  { id: "stocks", label: "Stocks", icon: "📈", status: "live",        description: "132 simulated equities across 20 sectors. Prices update every 5 seconds." },
   { id: "forex",  label: "Forex",  icon: "💱", status: "live",        description: "40 currency pairs (major, minor, exotic) with live technical indicators." },
   { id: "crypto", label: "Crypto", icon: "₿",  status: "coming_soon", description: "Simulated cryptocurrency market with volatile assets and 24/7 trading." },
 ]
@@ -286,7 +286,7 @@ export function SimulationProvider({ children }: { children: React.ReactNode }) 
 
   useEffect(() => {
     refresh()
-    const id = setInterval(refresh, 10_000)
+    const id = setInterval(refresh, 5_000)
     return () => clearInterval(id)
   }, [refresh])
 

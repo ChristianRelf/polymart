@@ -15,7 +15,7 @@ const FEATURES = [
   {
     icon: Activity,
     title: "Live Simulation Engine",
-    desc: "Prices tick every 10 seconds driven by volatility, momentum, RSI, insider bias, earnings cycles, and macro sensitivity.",
+    desc: "Prices tick every 5 seconds driven by volatility, momentum, RSI, insider bias, earnings cycles, and macro sensitivity.",
   },
   {
     icon: GraduationCap,
@@ -70,7 +70,7 @@ const SECTORS: { icon: LucideIcon; label: string }[] = [
 const STATS = [
   { value: "132", label: "Simulated Stocks" },
   { value: "40", label: "Forex Pairs" },
-  { value: "10s", label: "Tick Interval" },
+  { value: "5s", label: "Tick Interval" },
   { value: "240+", label: "Event Types" },
 ]
 
@@ -92,12 +92,6 @@ export default function HomePage({ onNavigate }: Props) {
         {/* glow */}
         <div className="pointer-events-none absolute top-0 left-1/2 -translate-x-1/2 w-[900px] h-[500px] rounded-full opacity-[0.06] blur-[140px] bg-foreground" />
 
-        <Badge
-          variant="outline"
-          className="mb-6 px-4 py-1.5 text-xs tracking-[0.15em] uppercase font-medium border-border text-muted-foreground"
-        >
-          Simulated Financial Market Data
-        </Badge>
 
         <h1 className="text-4xl sm:text-6xl lg:text-8xl xl:text-9xl font-extrabold tracking-tight text-balance leading-[1.05] sm:leading-[1.02] mb-6 sm:mb-8 max-w-6xl">
           Real market mechanics.

@@ -134,7 +134,7 @@ GET /api/v1/forex/search?q=eur
 
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-ACCOUNT API (requires valid Clerk JWT — use a test user token)
+ACCOUNT API (requires valid Clerk JWT - use a test user token)
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 These require Authorization: Bearer <token>. A 401 = auth service down.
 A 200 but with error body = DB issue.
@@ -183,17 +183,17 @@ GET /api/v1/support/tickets
 
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-WEBHOOK ENDPOINTS (internal — not publicly monitorable)
+WEBHOOK ENDPOINTS (internal - not publicly monitorable)
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 These are POST-only and require signed payloads. Do not health-check them
 directly; verify via the Clerk and Stripe dashboards instead.
 
-POST /api/v1/account/webhook       (Clerk user sync — signed with CLERK_WEBHOOK_SECRET)
-POST /api/v1/webhooks/stripe       (Stripe billing events — signed with STRIPE_WEBHOOK_SECRET)
+POST /api/v1/account/webhook       (Clerk user sync - signed with CLERK_WEBHOOK_SECRET)
+POST /api/v1/webhooks/stripe       (Stripe billing events - signed with STRIPE_WEBHOOK_SECRET)
 
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-ADMIN API (requires admin Clerk role — not for public status page)
+ADMIN API (requires admin Clerk role - not for public status page)
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 GET  /api/v1/admin/users
 GET  /api/v1/admin/users/:clerkId
@@ -212,15 +212,15 @@ SUGGESTED MONITORING TIERS
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
 CRITICAL (alert immediately, every 30s):
-  /api/v1/getHealth            — primary canary, checks DB + tick freshness
-  /api/v1/getMarket            — most-hit public endpoint
-  /api/v1/forex/getPairs       — covers forex simulation
+  /api/v1/getHealth            - primary canary, checks DB + tick freshness
+  /api/v1/getMarket            - most-hit public endpoint
+  /api/v1/forex/getPairs       - covers forex simulation
 
 HIGH (alert after 2 consecutive failures, every 60s):
-  /api/v1/getStocks            — large response, covers DB read path
-  /api/v1/getStock?ticker=AAPL — single-ticker path
+  /api/v1/getStocks            - large response, covers DB read path
+  /api/v1/getStock?ticker=AAPL - single-ticker path
   /api/v1/forex/getPair?pair=EURUSD
-  /api/v1/account/me           — covers Clerk JWT verification + DB
+  /api/v1/account/me           - covers Clerk JWT verification + DB
 
 MEDIUM (alert after 3 failures, every 5 min):
   /api/v1/getTopMovers
@@ -228,7 +228,7 @@ MEDIUM (alert after 3 failures, every 5 min):
   /api/v1/forex/getMarketOverview
   /api/v1/forex/getSessions
   /api/v1/account/stats
-  /api/v1/billing              — covers Stripe connectivity
+  /api/v1/billing              - covers Stripe connectivity
 
 LOW (daily check, informational):
   /api/v1/getLeaderboard
@@ -243,14 +243,14 @@ EXTERNAL DEPENDENCIES TO MONITOR SEPARATELY
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 These are not Polymart endpoints but failures here will surface as errors:
 
-Clerk (auth)     — https://status.clerk.com
-Stripe (billing) — https://status.stripe.com
-Resend (email)   — https://status.resend.com
-MySQL / MariaDB  — monitored indirectly via /api/v1/getHealth returning HTTP 500
+Clerk (auth)     - https://status.clerk.com
+Stripe (billing) - https://status.stripe.com
+Resend (email)   - https://status.resend.com
+MySQL / MariaDB  - monitored indirectly via /api/v1/getHealth returning HTTP 500
 
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-LLM INSTRUCTIONS — HOW TO BUILD THE STATUS PAGE
+LLM INSTRUCTIONS - HOW TO BUILD THE STATUS PAGE
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
 Use the following prompt when asking an LLM (Claude, GPT-4, etc.) to build
@@ -267,7 +267,7 @@ project at src/pages/StatusPage.tsx). Use the endpoint list in this file
 to know what to monitor and what each response means.
 
 
-DESIGN LANGUAGE — match the existing Polymart site exactly
+DESIGN LANGUAGE - match the existing Polymart site exactly
 ──────────────────────────────────────────────────────────
 The existing app uses Tailwind CSS with shadcn/ui and a dark-first theme.
 Replicate this aesthetic:
@@ -284,7 +284,7 @@ Replicate this aesthetic:
   Font:         System sans-serif (Inter or the user's default)
   Mono font:    Used for endpoint paths, latency numbers, timestamps
   Radius:       Rounded corners on all cards (rounded-xl or rounded-2xl)
-  Density:      Compact — small text (text-xs to text-sm), tight padding
+  Density:      Compact - small text (text-xs to text-sm), tight padding
 
 Logo: use <img src="/polymartlogo.png"> for light-on-dark contexts.
 The logo is already served from the same origin at /polymartlogo.png.
@@ -304,7 +304,7 @@ Build the page in these sections, top to bottom:
    - Page title: "System Status" right-aligned in text-sm font-medium
    - One-line overall status banner directly below the header:
        Green  "All systems operational" when everything is up
-       Amber  "Partial degradation — some services affected" when 1+ degraded
+       Amber  "Partial degradation - some services affected" when 1+ degraded
        Red    "Major outage" when any CRITICAL service is down
    - Show last-checked timestamp (e.g. "Last checked 12 seconds ago") in
      muted text, updating live.
@@ -346,7 +346,7 @@ Build the page in these sections, top to bottom:
         GET /api/v1/forex/getMarketOverview
 
    d) Paper Trading (Account)
-      Endpoints to check (no auth token — just verify HTTP response):
+      Endpoints to check (no auth token - just verify HTTP response):
         GET /api/v1/account/me     → expect HTTP 401 (correct, means server is up)
       Explanation: without a token this returns 401. A 401 proves the
       auth middleware is running. A 500 or no response means server down.
@@ -359,13 +359,13 @@ Build the page in these sections, top to bottom:
       link to https://status.stripe.com for Stripe's own status.
 
    f) External Dependencies
-      Do not health-check these — just link to their status pages:
+      Do not health-check these - just link to their status pages:
         Clerk (auth)     https://status.clerk.com
         Stripe (billing) https://status.stripe.com
         Resend (email)   https://status.resend.com
       Show as static informational rows with an external link icon.
 
-4. LIVE MARKET SNAPSHOT (bonus section — makes the page feel alive)
+4. LIVE MARKET SNAPSHOT (bonus section - makes the page feel alive)
    Since /api/v1/getHealth and /api/v1/getMarket are already being polled,
    surface a few fields from those responses to show real data:
      - Market session badge (Open / Pre-market / After-hours / Closed)
@@ -382,7 +382,7 @@ Build the page in these sections, top to bottom:
    A simple list of past incidents with date, title, and status.
    Start with an empty state: "No incidents in the past 90 days."
    Format each entry as:
-     [RESOLVED] 2025-05-14  —  Brief database connectivity issue (duration: 4 min)
+     [RESOLVED] 2025-05-14  -  Brief database connectivity issue (duration: 4 min)
    Keep this section collapsible if there are more than 5 entries.
 
 6. FOOTER
@@ -395,22 +395,22 @@ STATUS STATES AND HOW TO DISPLAY THEM
 Each individual endpoint check has one of four states. Use these
 consistently across all groups:
 
-  OPERATIONAL   — HTTP 200 (or expected 401 for auth endpoints), latency normal
+  OPERATIONAL   - HTTP 200 (or expected 401 for auth endpoints), latency normal
                   Green dot ● + text "Operational"
                   Tailwind: text-emerald-500, bg-emerald-500/10
 
-  DEGRADED      — HTTP 200 but response time > 2000ms, OR getHealth stale flag
+  DEGRADED      - HTTP 200 but response time > 2000ms, OR getHealth stale flag
                   Amber dot ● + text "Degraded" + optional detail in muted text
                   Tailwind: text-amber-500, bg-amber-500/10
 
-  PARTIAL OUTAGE — Some checks in the group failing, not all
+  PARTIAL OUTAGE - Some checks in the group failing, not all
                   Amber dot ● + text "Partial Outage"
 
-  DOWN          — HTTP 4xx (unexpected), HTTP 5xx, or request timeout (>5s)
+  DOWN          - HTTP 4xx (unexpected), HTTP 5xx, or request timeout (>5s)
                   Red dot ● + text "Down" + last seen timestamp
                   Tailwind: text-red-500, bg-red-500/10
 
-  UNKNOWN       — Not yet checked since page load (initial state)
+  UNKNOWN       - Not yet checked since page load (initial state)
                   Grey dot ● + text "Checking..."
                   Tailwind: text-zinc-500
 
@@ -433,7 +433,7 @@ POLLING BEHAVIOUR
 - Record response time (ms) for each check and display it in muted text
   next to each endpoint row (e.g. "143ms").
 - Keep a rolling window of the last 10 response times per endpoint and
-  compute a p95 — show it on hover/tooltip as "p95: 340ms".
+  compute a p95 - show it on hover/tooltip as "p95: 340ms".
 - If an endpoint fails, retry once after 3 seconds before marking it down.
 
 
@@ -444,11 +444,11 @@ If building as a standalone HTML file:
   - Import Tailwind from CDN: <script src="https://cdn.tailwindcss.com">
   - Use CSS variables to match the Polymart dark theme (set on :root).
   - The file should work when opened directly in a browser (no server needed
-    for the page itself — it just calls the live polymart.co API).
+    for the page itself - it just calls the live polymart.co API).
 
 If building as a React component (src/pages/StatusPage.tsx) inside the
 existing Vite project:
-  - Import useSimulation from @/lib/SimulationContext — this already polls
+  - Import useSimulation from @/lib/SimulationContext - this already polls
     /api/v1/getMarket and /api/v1/getHealth every 10 seconds. Use it for
     the live market snapshot section instead of polling those again.
   - Use shadcn Card, Badge, Separator components to match the app exactly.
@@ -458,7 +458,7 @@ existing Vite project:
   - Add a small green/red dot indicator to the footer link showing overall
     system status so users on any page can see it at a glance.
 
-Either way — DO NOT embed any API keys, secrets, or user tokens in the
+Either way - DO NOT embed any API keys, secrets, or user tokens in the
 page. All endpoints polled from the status page must be either:
   a) Publicly accessible (the public market API), or
   b) Verified via the "expect 401" pattern for auth-protected endpoints.

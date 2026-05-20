@@ -1,0 +1,39 @@
+"filename", "language", "TypeScript JSX", "JavaScript", "TypeScript", "MS SQL", "YAML", "comment", "blank", "total"
+"c:\Users\chris\Documents\GitHub\polymart\docker-compose.yml", "YAML", 0, 0, 0, 0, 32, 5, 3, 40
+"c:\Users\chris\Documents\GitHub\polymart\server\PolyEngine\DataWrapper.js", "JavaScript", 0, 125, 0, 0, 0, 90, 34, 249
+"c:\Users\chris\Documents\GitHub\polymart\server\PolyEngine\ForexSimulation.js", "JavaScript", 0, 268, 0, 0, 0, 54, 44, 366
+"c:\Users\chris\Documents\GitHub\polymart\server\PolyEngine\StockData.js", "JavaScript", 0, 338, 0, 0, 0, 101, 26, 465
+"c:\Users\chris\Documents\GitHub\polymart\server\PolyEngine\StockSimulation.js", "JavaScript", 0, 489, 0, 0, 0, 90, 78, 657
+"c:\Users\chris\Documents\GitHub\polymart\server\PolyEngine\tick.js", "JavaScript", 0, 148, 0, 0, 0, 73, 36, 257
+"c:\Users\chris\Documents\GitHub\polymart\server\account-api.js", "JavaScript", 0, 9, 0, 0, 0, 1, 1, 11
+"c:\Users\chris\Documents\GitHub\polymart\server\admin-api.js", "JavaScript", 0, 29, 0, 0, 0, 3, 6, 38
+"c:\Users\chris\Documents\GitHub\polymart\server\bot-feedback-api.js", "JavaScript", 0, 85, 0, 0, 0, 3, 14, 102
+"c:\Users\chris\Documents\GitHub\polymart\server\communities-api.js", "JavaScript", 0, 112, 0, 0, 0, 5, 9, 126
+"c:\Users\chris\Documents\GitHub\polymart\server\community-api.js", "JavaScript", 0, 76, 0, 0, 0, 7, 5, 88
+"c:\Users\chris\Documents\GitHub\polymart\server\db.js", "JavaScript", 0, 11, 0, 0, 0, 1, 1, 13
+"c:\Users\chris\Documents\GitHub\polymart\server\schema-market.sql", "MS SQL", 0, 0, 0, 158, 0, 11, 11, 180
+"c:\Users\chris\Documents\GitHub\polymart\server\schema-user.sql", "MS SQL", 0, 0, 0, 253, 0, 25, 24, 302
+"c:\Users\chris\Documents\GitHub\polymart\server\server.js", "JavaScript", 0, 82, 0, 0, 0, 12, 8, 102
+"c:\Users\chris\Documents\GitHub\polymart\server\tick.js", "JavaScript", 0, 0, 0, 0, 0, 1, 1, 2
+"c:\Users\chris\Documents\GitHub\polymart\server\tools-api.js", "JavaScript", 0, 162, 0, 0, 0, 14, 28, 204
+"c:\Users\chris\Documents\GitHub\polymart\server\users-api.js", "JavaScript", 0, 48, 0, 0, 0, 3, 9, 60
+"c:\Users\chris\Documents\GitHub\polymart\src\App.tsx", "TypeScript JSX", 41, 0, 0, 0, 0, 0, 2, 43
+"c:\Users\chris\Documents\GitHub\polymart\src\components\CommunitySidebar.tsx", "TypeScript JSX", 2, 0, 0, 0, 0, 0, 0, 2
+"c:\Users\chris\Documents\GitHub\polymart\src\components\VerificationBadge.tsx", "TypeScript JSX", 42, 0, 0, 0, 0, 0, 4, 46
+"c:\Users\chris\Documents\GitHub\polymart\src\hooks\useAccount.ts", "TypeScript", 0, 0, 33, 0, 0, 0, 5, 38
+"c:\Users\chris\Documents\GitHub\polymart\src\pages\BotBugReportPage.tsx", "TypeScript JSX", 146, 0, 0, 0, 0, 1, 16, 163
+"c:\Users\chris\Documents\GitHub\polymart\src\pages\BotSuggestionPage.tsx", "TypeScript JSX", 132, 0, 0, 0, 0, 1, 15, 148
+"c:\Users\chris\Documents\GitHub\polymart\src\pages\CommunitiesPage.tsx", "TypeScript JSX", 267, 0, 0, 0, 0, 3, 22, 292
+"c:\Users\chris\Documents\GitHub\polymart\src\pages\CommunityAdminPage.tsx", "TypeScript JSX", 99, 0, 0, 0, 0, 2, 6, 107
+"c:\Users\chris\Documents\GitHub\polymart\src\pages\CommunityPage.tsx", "TypeScript JSX", 80, 0, 0, 0, 0, 0, 0, 80
+"c:\Users\chris\Documents\GitHub\polymart\src\pages\CommunityPostPage.tsx", "TypeScript JSX", 32, 0, 0, 0, 0, 0, 0, 32
+"c:\Users\chris\Documents\GitHub\polymart\src\pages\CommunityStandardsPage.tsx", "TypeScript JSX", 204, 0, 0, 0, 0, 8, 19, 231
+"c:\Users\chris\Documents\GitHub\polymart\src\pages\DashboardPage.tsx", "TypeScript JSX", 20, 0, 0, 0, 0, 1, 1, 22
+"c:\Users\chris\Documents\GitHub\polymart\src\pages\HomePage.tsx", "TypeScript JSX", -6, 0, 0, 0, 0, 0, 0, -6
+"c:\Users\chris\Documents\GitHub\polymart\src\pages\MarketPage.tsx", "TypeScript JSX", -1, 0, 0, 0, 0, 0, 0, -1
+"c:\Users\chris\Documents\GitHub\polymart\src\pages\PortfolioPage.tsx", "TypeScript JSX", 6, 0, 0, 0, 0, 0, 0, 6
+"c:\Users\chris\Documents\GitHub\polymart\src\pages\SubCommunityModPage.tsx", "TypeScript JSX", 164, 0, 0, 0, 0, 2, 15, 181
+"c:\Users\chris\Documents\GitHub\polymart\src\pages\SubCommunityPage.tsx", "TypeScript JSX", 101, 0, 0, 0, 0, 0, 5, 106
+"c:\Users\chris\Documents\GitHub\polymart\src\pages\TradingTerminalPage.tsx", "TypeScript JSX", 1065, 0, 0, 0, 0, 55, 104, 1224
+"c:\Users\chris\Documents\GitHub\polymart\src\pages\UserProfilePage.tsx", "TypeScript JSX", 201, 0, 0, 0, 0, 3, 20, 224
+"Total", "-", 2595, 1982, 33, 411, 32, 575, 572, 6200

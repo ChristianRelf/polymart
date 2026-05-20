@@ -6,7 +6,7 @@ const STAFF_EMAIL = 'christianjamesrelf@gmail.com';
 const router = Router();
 
 // ── GET /users/profile/:profileId ─────────────────────────────────────────────
-// Public — no auth required. Returns sanitized profile + recent posts.
+// Public - no auth required. Returns sanitized profile + recent posts.
 router.get('/profile/:profileId', async (req, res) => {
   const { profileId } = req.params;
   if (!/^\d{16}$/.test(profileId)) {

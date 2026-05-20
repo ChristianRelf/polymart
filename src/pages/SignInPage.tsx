@@ -23,7 +23,7 @@ export default function SignInPage() {
 
   return (
     <div className="flex min-h-[calc(100vh-4rem)]">
-      {/* Left panel — marketing */}
+      {/* Left panel - marketing */}
       <div className="hidden lg:flex flex-col justify-between w-[52%] bg-foreground text-background px-12 py-14">
         <div>
           <img
@@ -79,7 +79,7 @@ export default function SignInPage() {
         )}
       </div>
 
-      {/* Right panel — auth widget */}
+      {/* Right panel - auth widget */}
       <div className="flex-1 flex flex-col items-center justify-center px-4 py-12 bg-background">
         {/* Mobile-only logo */}
         <img

@@ -7,6 +7,7 @@ import { Textarea } from "@/components/ui/textarea"
 import { Badge } from "@/components/ui/badge"
 import {
   Users, Search, Plus, Loader2, AlertCircle, ArrowRight, Shield, X,
+  Puzzle, ExternalLink, Tag, CheckCircle2, ChevronRight,
 } from "lucide-react"
 import { useAccount } from "@/hooks/useAccount"
 import { VerificationBadge } from "@/components/VerificationBadge"
@@ -38,6 +39,247 @@ function CommunityAvatar({ icon_url, display_name, size = "md" }: { icon_url: st
   return (
     <div className={`${sz} rounded-full bg-muted flex items-center justify-center shrink-0 border border-border font-bold text-muted-foreground`}>
       {display_name[0]?.toUpperCase() ?? "C"}
+    </div>
+  )
+}
+
+// ── Tool categories ───────────────────────────────────────────────────────────
+const TOOL_CATEGORIES = ["Charting", "Screener", "Backtester", "Portfolio Tracker", "News Aggregator", "API / Data", "Discord Bot", "Education", "Other"] as const
+type ToolCategory = typeof TOOL_CATEGORIES[number]
+
+interface Tool {
+  id: number
+  name: string
+  description: string
+  url: string
+  category: ToolCategory
+  author_name: string
+  upvotes: number
+  created_at: string
+}
+
+function SubmitToolModal({ onClose, onSubmitted }: { onClose: () => void; onSubmitted: () => void }) {
+  const [name, setName] = useState("")
+  const [description, setDescription] = useState("")
+  const [url, setUrl] = useState("")
+  const [category, setCategory] = useState<ToolCategory>("Other")
+  const [error, setError] = useState("")
+  const [loading, setLoading] = useState(false)
+  const [done, setDone] = useState(false)
+
+  async function handleSubmit(e: React.FormEvent) {
+    e.preventDefault()
+    setError("")
+    if (!name.trim()) { setError("Name is required"); return }
+    if (!description.trim()) { setError("Description is required"); return }
+    if (!url.trim() || !/^https?:\/\/.+/.test(url.trim())) { setError("A valid URL starting with http:// or https:// is required"); return }
+    setLoading(true)
+    try {
+      const res = await fetch("/api/v1/tools", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ name: name.trim(), description: description.trim(), url: url.trim(), category }),
+      })
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}))
+        throw new Error(data.error || "Submission failed")
+      }
+      setDone(true)
+      setTimeout(() => { onClose(); onSubmitted() }, 1500)
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : "Submission failed")
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
+      <Card className="w-full max-w-md bg-card border-border shadow-2xl">
+        <CardContent className="p-6">
+          <div className="flex items-center justify-between mb-5">
+            <div className="flex items-center gap-2">
+              <Puzzle className="w-4 h-4 text-muted-foreground" />
+              <h2 className="text-base font-semibold text-foreground">Submit a Tool or Plugin</h2>
+            </div>
+            <button type="button" onClick={onClose} aria-label="Close" className="text-muted-foreground hover:text-foreground transition-colors cursor-pointer bg-transparent border-0">
+              <X className="w-4 h-4" />
+            </button>
+          </div>
+
+          {done ? (
+            <div className="flex flex-col items-center gap-3 py-6">
+              <CheckCircle2 className="w-8 h-8 text-emerald-400" />
+              <p className="text-sm font-semibold text-foreground">Submitted for review!</p>
+              <p className="text-xs text-muted-foreground text-center">Your tool will appear once it's been reviewed by the team.</p>
+            </div>
+          ) : (
+            <form onSubmit={handleSubmit} className="space-y-4">
+              <div>
+                <label className="text-xs text-muted-foreground mb-1 block">Tool / Plugin Name</label>
+                <Input value={name} onChange={e => setName(e.target.value)} placeholder="e.g. TradingView Pine Screener" maxLength={128} className="h-9 text-sm" />
+              </div>
+              <div>
+                <label className="text-xs text-muted-foreground mb-1 block">URL</label>
+                <Input value={url} onChange={e => setUrl(e.target.value)} placeholder="https://example.com" maxLength={512} className="h-9 text-sm" />
+              </div>
+              <div>
+                <label className="text-xs text-muted-foreground mb-1 block">Category</label>
+                <select
+                  value={category}
+                  onChange={e => setCategory(e.target.value as ToolCategory)}
+                  aria-label="Tool category"
+                  className="w-full h-9 rounded-md border border-input bg-background px-3 text-sm text-foreground focus:outline-none focus:ring-1 focus:ring-ring"
+                >
+                  {TOOL_CATEGORIES.map(c => <option key={c} value={c}>{c}</option>)}
+                </select>
+              </div>
+              <div>
+                <label className="text-xs text-muted-foreground mb-1 block">Description</label>
+                <Textarea value={description} onChange={e => setDescription(e.target.value)} placeholder="What does this tool do? How does it help traders?" maxLength={500} rows={3} className="resize-none text-sm" />
+              </div>
+
+              {error && (
+                <div className="flex items-center gap-2 text-xs text-red-400">
+                  <AlertCircle className="w-3.5 h-3.5 shrink-0" />{error}
+                </div>
+              )}
+
+              <div className="flex gap-2 pt-1">
+                <Button type="button" variant="ghost" size="sm" onClick={onClose} className="flex-1">Cancel</Button>
+                <Button type="submit" size="sm" disabled={loading} className="flex-1">
+                  {loading ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : "Submit Tool"}
+                </Button>
+              </div>
+            </form>
+          )}
+        </CardContent>
+      </Card>
+    </div>
+  )
+}
+
+function ToolCard({ tool }: { tool: Tool }) {
+  return (
+    <Card className="border-border bg-card hover:border-border/80 transition-colors group">
+      <CardContent className="p-4">
+        <div className="flex items-start gap-3">
+          <div className="w-10 h-10 rounded-lg bg-muted flex items-center justify-center shrink-0 border border-border">
+            <Puzzle className="w-4 h-4 text-muted-foreground" />
+          </div>
+          <div className="flex-1 min-w-0">
+            <div className="flex items-start justify-between gap-2">
+              <div className="min-w-0">
+                <p className="text-sm font-semibold text-foreground truncate">{tool.name}</p>
+                <p className="text-[11px] text-muted-foreground/60">by {tool.author_name}</p>
+              </div>
+              <Badge variant="outline" className="text-[10px] shrink-0 border-border text-muted-foreground">
+                <Tag className="w-2.5 h-2.5 mr-1" />{tool.category}
+              </Badge>
+            </div>
+            <p className="text-xs text-muted-foreground mt-1.5 line-clamp-2 leading-relaxed">{tool.description}</p>
+            <div className="flex items-center justify-between mt-2.5">
+              <span className="text-[11px] text-muted-foreground/60">{tool.upvotes} upvotes</span>
+              <a
+                href={tool.url}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-[11px] font-medium text-emerald-500 hover:text-emerald-400 transition-colors flex items-center gap-1"
+                onClick={e => e.stopPropagation()}
+              >
+                Visit <ExternalLink className="w-2.5 h-2.5" />
+              </a>
+            </div>
+          </div>
+        </div>
+      </CardContent>
+    </Card>
+  )
+}
+
+function ToolsPanel({ isSignedIn }: { isSignedIn: boolean }) {
+  const [tools, setTools] = useState<Tool[]>([])
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState("")
+  const [showSubmit, setShowSubmit] = useState(false)
+  const [categoryFilter, setCategoryFilter] = useState<ToolCategory | "All">("All")
+
+  async function fetchTools() {
+    setLoading(true)
+    setError("")
+    try {
+      const res = await fetch("/api/v1/tools")
+      const data = await res.json()
+      setTools(data.tools ?? [])
+    } catch {
+      setError("Failed to load tools")
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  useEffect(() => { fetchTools() }, [])
+
+  const filtered = categoryFilter === "All" ? tools : tools.filter(t => t.category === categoryFilter)
+
+  return (
+    <div className="space-y-5">
+      {showSubmit && (
+        <SubmitToolModal onClose={() => setShowSubmit(false)} onSubmitted={fetchTools} />
+      )}
+
+      <div className="flex items-start justify-between gap-4">
+        <div>
+          <h2 className="text-lg font-bold text-foreground">Tools & Plugins</h2>
+          <p className="text-xs text-muted-foreground mt-0.5">Community-submitted tools, scripts, bots, and plugins for traders.</p>
+        </div>
+        {isSignedIn && (
+          <Button type="button" size="sm" onClick={() => setShowSubmit(true)} className="gap-1.5 shrink-0">
+            <Plus className="w-3.5 h-3.5" />Submit Tool
+          </Button>
+        )}
+      </div>
+
+      {/* Category filter */}
+      <div className="flex flex-wrap gap-1.5">
+        {(["All", ...TOOL_CATEGORIES] as const).map(c => (
+          <button
+            type="button"
+            key={c}
+            onClick={() => setCategoryFilter(c)}
+            className={`text-xs px-2.5 py-1 rounded-md border transition-colors cursor-pointer ${
+              categoryFilter === c
+                ? "border-foreground/30 text-foreground bg-muted"
+                : "border-border text-muted-foreground hover:text-foreground bg-transparent"
+            }`}
+          >
+            {c}
+          </button>
+        ))}
+      </div>
+
+      {loading ? (
+        <div className="flex justify-center py-12"><Loader2 className="w-5 h-5 animate-spin text-muted-foreground" /></div>
+      ) : error ? (
+        <div className="flex items-center gap-2 text-sm text-red-400 py-8 justify-center">
+          <AlertCircle className="w-4 h-4" />{error}
+        </div>
+      ) : filtered.length === 0 ? (
+        <div className="text-center py-16 text-muted-foreground">
+          <Puzzle className="w-8 h-8 mx-auto mb-3 opacity-30" />
+          <p className="text-sm font-semibold text-foreground mb-1">No tools yet{categoryFilter !== "All" ? ` in ${categoryFilter}` : ""}</p>
+          <p className="text-xs text-muted-foreground mb-4">Be the first to share a tool with the community.</p>
+          {isSignedIn && (
+            <Button type="button" size="sm" onClick={() => setShowSubmit(true)} className="gap-1.5">
+              <Plus className="w-3.5 h-3.5" />Submit the first tool
+            </Button>
+          )}
+        </div>
+      ) : (
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          {filtered.map(t => <ToolCard key={t.id} tool={t} />)}
+        </div>
+      )}
     </div>
   )
 }
@@ -84,7 +326,7 @@ function CreateCommunityModal({ onClose, onCreated }: { onClose: () => void; onC
         <CardContent className="p-6">
           <div className="flex items-center justify-between mb-5">
             <h2 className="text-base font-semibold text-foreground">Create a community</h2>
-            <button onClick={onClose} className="text-muted-foreground hover:text-foreground transition-colors cursor-pointer bg-transparent border-0">
+            <button type="button" aria-label="Close" onClick={onClose} className="text-muted-foreground hover:text-foreground transition-colors cursor-pointer bg-transparent border-0">
               <X className="w-4 h-4" />
             </button>
           </div>
@@ -195,6 +437,8 @@ function CommunityCard({
               </div>
               {isSignedIn && (
                 <button
+                  type="button"
+                  aria-label={isMine ? "Leave community" : "Join community"}
                   onClick={e => { e.stopPropagation(); isMine ? onLeave() : onJoin() }}
                   disabled={joining}
                   className={`text-[11px] font-medium px-2.5 py-1 rounded-md border transition-colors cursor-pointer ${
@@ -214,10 +458,13 @@ function CommunityCard({
   )
 }
 
-export default function CommunitiesPage({ onNavigateToCommunity }: Props) {
+type Tab = "communities" | "tools"
+
+export default function CommunitiesPage({ onNavigateToCommunity, onNavigate }: Props) {
   const { isSignedIn } = useAuth()
   const { getCommunities, getMyJoinedCommunities, joinCommunity, leaveCommunity } = useAccount()
 
+  const [tab, setTab] = useState<Tab>("communities")
   const [communities, setCommunities] = useState<Community[]>([])
   const [myCommunities, setMyCommunities] = useState<Community[]>([])
   const [total, setTotal] = useState(0)
@@ -293,7 +540,7 @@ export default function CommunitiesPage({ onNavigateToCommunity }: Props) {
   const mySlugSet = new Set(myCommunities.map(c => c.slug))
 
   return (
-    <div className="max-w-5xl mx-auto px-4 sm:px-6 py-8 space-y-6">
+    <div className="max-w-6xl mx-auto px-4 sm:px-6 py-8 space-y-6">
 
       {showCreate && (
         <CreateCommunityModal
@@ -308,15 +555,46 @@ export default function CommunitiesPage({ onNavigateToCommunity }: Props) {
           <h1 className="text-2xl font-bold text-foreground">Communities</h1>
           <p className="text-sm text-muted-foreground mt-1 max-w-md">
             Discover groups built around trading strategies, markets, and ideas.
-            {total > 0 && <span className="ml-1 text-muted-foreground/60">{total.toLocaleString()} communities</span>}
+            {tab === "communities" && total > 0 && <span className="ml-1 text-muted-foreground/60">{total.toLocaleString()} communities</span>}
           </p>
         </div>
-        {isSignedIn && (
+        {tab === "communities" && isSignedIn && (
           <Button size="sm" onClick={() => setShowCreate(true)} className="gap-1.5 shrink-0">
             <Plus className="w-3.5 h-3.5" />New community
           </Button>
         )}
       </div>
+
+      {/* Tab bar */}
+      <div className="flex items-center gap-1 border-b border-border">
+        {([["communities", "Communities", <Users key="u" className="w-3.5 h-3.5" />], ["tools", "Tools & Plugins", <Puzzle key="p" className="w-3.5 h-3.5" />]] as const).map(([id, label, icon]) => (
+          <button
+            type="button"
+            key={id}
+            onClick={() => setTab(id as Tab)}
+            className={`flex items-center gap-1.5 px-4 py-2.5 text-sm font-medium border-b-2 -mb-px transition-colors cursor-pointer bg-transparent ${
+              tab === id
+                ? "border-foreground text-foreground"
+                : "border-transparent text-muted-foreground hover:text-foreground"
+            }`}
+          >
+            {icon}{label}
+          </button>
+        ))}
+        <div className="ml-auto pb-2.5 flex items-center gap-1.5">
+          <button
+            type="button"
+            onClick={() => onNavigate("community-standards")}
+            className="text-xs text-muted-foreground/60 hover:text-muted-foreground transition-colors flex items-center gap-1 cursor-pointer bg-transparent border-0"
+          >
+            Community Standards <ChevronRight className="w-3 h-3" />
+          </button>
+        </div>
+      </div>
+
+      {tab === "tools" && <ToolsPanel isSignedIn={!!isSignedIn} />}
+
+      {tab === "communities" && <>
 
       {/* My Communities (signed-in only) */}
       {isSignedIn && myCommunities.length > 0 && (
@@ -355,6 +633,7 @@ export default function CommunitiesPage({ onNavigateToCommunity }: Props) {
         <div className="flex items-center gap-1">
           {(["members", "new"] as const).map(s => (
             <button
+              type="button"
               key={s}
               onClick={() => handleSort(s)}
               className={`text-xs px-3 py-1.5 rounded-md border transition-colors cursor-pointer ${
@@ -385,7 +664,7 @@ export default function CommunitiesPage({ onNavigateToCommunity }: Props) {
             {q ? "No communities found" : "No communities yet"}
           </p>
           <p className="text-xs text-muted-foreground mb-4">
-            {q ? `Nothing matched "${q}" — try a different search.` : "Be the first to start a community around your trading niche."}
+            {q ? `Nothing matched "${q}" - try a different search.` : "Be the first to start a community around your trading niche."}
           </p>
           {isSignedIn && !q && (
             <Button size="sm" onClick={() => setShowCreate(true)} className="gap-1.5">
@@ -425,6 +704,8 @@ export default function CommunitiesPage({ onNavigateToCommunity }: Props) {
           )}
         </>
       )}
+
+      </>}
     </div>
   )
 }

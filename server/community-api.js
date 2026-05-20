@@ -32,6 +32,40 @@ const router = Router();
 const VALID_TYPES   = new Set(['general', 'trade', 'analysis', 'question']);
 const VALID_REASONS = new Set(['Spam', 'Misinformation', 'Inappropriate', 'Off-topic']);
 
+// ── Content moderation ────────────────────────────────────────────────────────
+// Pattern list covering racial slurs and common hate-speech phrases.
+// Uses word-boundary matching to avoid false positives on substrings.
+const HATE_PATTERNS = [
+  /\bn[i!1|]+gg[e3]r/i,
+  /\bn[i!1]+gg[a@]/i,
+  /\bf[a@]gg[o0]t/i,
+  /\bk[i!1]k[e3]/i,
+  /\bsp[i!1]c/i,
+  /\bc[h]ink/i,
+  /\bg[o0]ok/i,
+  /\bwetback/i,
+  /\btr[a@]nny/i,
+  /\bretard/i,
+  /\bc[o0][o0]n\b/i,
+  /\bj[e3]w[s]?\s*(lover|pig|rat|scum|bastard)/i,
+  /\bwhite\s*(power|pride|supremac)/i,
+  /\bheil\s*hitler/i,
+  /\bn[a@]zi/i,
+  /\bdie\s+(you\s+)?(n[i!1]gg|f[a@]g|sp[i!1]c|k[i!1]k)/i,
+  /\bkill\s+(all\s+)?(blacks|jews|muslims|gays|trans)/i,
+];
+
+function containsHateSpeech(text) {
+  return HATE_PATTERNS.some(p => p.test(text));
+}
+
+function moderateContent(...fields) {
+  for (const field of fields) {
+    if (typeof field === 'string' && containsHateSpeech(field)) return true;
+  }
+  return false;
+}
+
 // Rate limit: 5 posts per hour per user (in-memory, resets on server restart)
 const postRateMap = new Map();
 function postRateLimit(req, res, next) {
@@ -76,7 +110,7 @@ router.post('/upload', (req, res, next) => {
   upload.single('image')(req, res, err => {
     if (err) {
       const msg = err.code === 'LIMIT_FILE_SIZE'
-        ? 'File too large — maximum 10 MB'
+        ? 'File too large - maximum 10 MB'
         : (err.message || 'Upload error');
       return res.status(400).json({ error: msg });
     }
@@ -151,7 +185,7 @@ router.get('/posts', async (req, res) => {
       params.push(comm.id);
     } else {
       // General feed: posts with no community OR posts from any community.
-      // (no extra filter — show everything not removed)
+      // (no extra filter - show everything not removed)
     }
 
     const where = `WHERE ${conditions.join(' AND ')}`;
@@ -201,6 +235,8 @@ router.post('/posts', postRateLimit, async (req, res) => {
     return res.status(400).json({ error: 'title is required and must be under 280 characters' });
   if (!body || typeof body !== 'string' || !body.trim() || body.length > 10000)
     return res.status(400).json({ error: 'body is required and must be under 10000 characters' });
+  if (moderateContent(title, body))
+    return res.status(400).json({ error: 'Your post contains content that violates the Polymart Community Standards. Please review our guidelines and resubmit.' });
   let resolvedCommunityId = null;
   if (community_id) {
     resolvedCommunityId = parseInt(community_id) || null;
@@ -467,6 +503,8 @@ router.post('/posts/:id/comments', commentRateLimit, async (req, res) => {
   const { body, parent_id } = req.body;
   if (!body || typeof body !== 'string' || !body.trim() || body.length > 2000)
     return res.status(400).json({ error: 'Comment must be between 1 and 2000 characters' });
+  if (moderateContent(body))
+    return res.status(400).json({ error: 'Your comment contains content that violates the Polymart Community Standards.' });
 
   let parentId = null;
   if (parent_id != null) {

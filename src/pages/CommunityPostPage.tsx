@@ -358,7 +358,7 @@ export default function CommunityPostPage({
 
   if (loading) {
     return (
-      <div className="max-w-[760px] mx-auto px-4 py-24 flex items-center justify-center">
+      <div className="max-w-4xl mx-auto px-4 py-24 flex items-center justify-center">
         <Loader2 className="w-6 h-6 animate-spin text-muted-foreground" />
       </div>
     )
@@ -366,7 +366,7 @@ export default function CommunityPostPage({
 
   if (notFound) {
     return (
-      <div className="max-w-[760px] mx-auto px-4 py-24 flex flex-col items-center text-center gap-4">
+      <div className="max-w-4xl mx-auto px-4 py-24 flex flex-col items-center text-center gap-4">
         <p className="text-4xl">🔍</p>
         <p className="text-lg font-bold text-foreground">Post not found</p>
         <p className="text-sm text-muted-foreground">
@@ -381,7 +381,7 @@ export default function CommunityPostPage({
 
   if (error || !post) {
     return (
-      <div className="max-w-[760px] mx-auto px-4 py-24 flex flex-col items-center text-center gap-3">
+      <div className="max-w-4xl mx-auto px-4 py-24 flex flex-col items-center text-center gap-3">
         <AlertCircle className="w-8 h-8 text-destructive" />
         <p className="text-sm text-muted-foreground">{error ?? "Something went wrong."}</p>
         <Button size="sm" variant="outline" onClick={() => onNavigate("community")} className="mt-2">
@@ -397,7 +397,7 @@ export default function CommunityPostPage({
   const tree  = buildTree(comments)
 
   return (
-    <div className="max-w-[760px] mx-auto px-4 sm:px-6 py-12 sm:py-16">
+    <div className="max-w-4xl mx-auto px-4 sm:px-6 py-12 sm:py-16">
 
       {/* Back link */}
       <button
@@ -450,7 +450,7 @@ export default function CommunityPostPage({
             {post.title}
           </h1>
 
-          {/* Body — full markdown, no truncation */}
+          {/* Body - full markdown, no truncation */}
           <MarkdownBody content={post.body} className="mb-6" />
 
           {/* Action bar */}

@@ -53,7 +53,7 @@ export function MarkdownEditor({
       const snippet  = `![${file.name}](${url})`
       onChange(value.slice(0, pos) + snippet + value.slice(pos))
     } catch {
-      // silent — user can retry
+      // silent - user can retry
     } finally {
       setUploading(false)
     }

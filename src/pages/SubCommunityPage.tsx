@@ -593,7 +593,7 @@ export default function SubCommunityPage({ slug, onNavigate, onNavigateToCommuni
 
         {/* Feed */}
         <div className="flex-1 min-w-0 space-y-4">
-          {/* Back link (mobile only — xl has sidebar) */}
+          {/* Back link (mobile only - xl has sidebar) */}
           <button type="button" onClick={() => onNavigate("community")} className="xl:hidden flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground cursor-pointer bg-transparent border-0 transition-colors">
             <ChevronLeft className="w-3.5 h-3.5" />Community
           </button>
@@ -652,7 +652,7 @@ export default function SubCommunityPage({ slug, onNavigate, onNavigateToCommuni
           ) : posts.length === 0 ? (
             <div className="text-center py-12 text-muted-foreground">
               <CornerDownRight className="w-7 h-7 mx-auto mb-2 opacity-30" />
-              <p className="text-sm">No posts yet — be the first to share something!</p>
+              <p className="text-sm">No posts yet - be the first to share something!</p>
             </div>
           ) : (
             <div className="space-y-3">

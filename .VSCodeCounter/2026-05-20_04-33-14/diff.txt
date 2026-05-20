@@ -1,0 +1,74 @@
+Date : 2026-05-20 04:33:14
+Directory : c:\Users\chris\Documents\GitHub\polymart
+Total : 37 files,  5053 codes, 575 comments, 572 blanks, all 6200 lines
+
+Languages
++----------------+------------+------------+------------+------------+------------+
+| language       | files      | code       | comment    | blank      | total      |
++----------------+------------+------------+------------+------------+------------+
+| TypeScript JSX |         18 |      2,595 |         76 |        229 |      2,900 |
+| JavaScript     |         15 |      1,982 |        458 |        300 |      2,740 |
+| MS SQL         |          2 |        411 |         36 |         35 |        482 |
+| TypeScript     |          1 |         33 |          0 |          5 |         38 |
+| YAML           |          1 |         32 |          5 |          3 |         40 |
++----------------+------------+------------+------------+------------+------------+
+
+Directories
++-------------------------------------------------------------------------------+------------+------------+------------+------------+------------+
+| path                                                                          | files      | code       | comment    | blank      | total      |
++-------------------------------------------------------------------------------+------------+------------+------------+------------+------------+
+| .                                                                             |         37 |      5,053 |        575 |        572 |      6,200 |
+| . (Files)                                                                     |          1 |         32 |          5 |          3 |         40 |
+| server                                                                        |         17 |      2,393 |        494 |        335 |      3,222 |
+| server (Files)                                                                |         12 |      1,025 |         86 |        117 |      1,228 |
+| server\PolyEngine                                                             |          5 |      1,368 |        408 |        218 |      1,994 |
+| src                                                                           |         19 |      2,628 |         76 |        234 |      2,938 |
+| src (Files)                                                                   |          1 |         41 |          0 |          2 |         43 |
+| src\components                                                                |          2 |         44 |          0 |          4 |         48 |
+| src\hooks                                                                     |          1 |         33 |          0 |          5 |         38 |
+| src\pages                                                                     |         15 |      2,510 |         76 |        223 |      2,809 |
++-------------------------------------------------------------------------------+------------+------------+------------+------------+------------+
+
+Files
++-------------------------------------------------------------------------------+----------------+------------+------------+------------+------------+
+| filename                                                                      | language       | code       | comment    | blank      | total      |
++-------------------------------------------------------------------------------+----------------+------------+------------+------------+------------+
+| c:\Users\chris\Documents\GitHub\polymart\docker-compose.yml                   | YAML           |         32 |          5 |          3 |         40 |
+| c:\Users\chris\Documents\GitHub\polymart\server\PolyEngine\DataWrapper.js     | JavaScript     |        125 |         90 |         34 |        249 |
+| c:\Users\chris\Documents\GitHub\polymart\server\PolyEngine\ForexSimulation.js | JavaScript     |        268 |         54 |         44 |        366 |
+| c:\Users\chris\Documents\GitHub\polymart\server\PolyEngine\StockData.js       | JavaScript     |        338 |        101 |         26 |        465 |
+| c:\Users\chris\Documents\GitHub\polymart\server\PolyEngine\StockSimulation.js | JavaScript     |        489 |         90 |         78 |        657 |
+| c:\Users\chris\Documents\GitHub\polymart\server\PolyEngine\tick.js            | JavaScript     |        148 |         73 |         36 |        257 |
+| c:\Users\chris\Documents\GitHub\polymart\server\account-api.js                | JavaScript     |          9 |          1 |          1 |         11 |
+| c:\Users\chris\Documents\GitHub\polymart\server\admin-api.js                  | JavaScript     |         29 |          3 |          6 |         38 |
+| c:\Users\chris\Documents\GitHub\polymart\server\bot-feedback-api.js           | JavaScript     |         85 |          3 |         14 |        102 |
+| c:\Users\chris\Documents\GitHub\polymart\server\communities-api.js            | JavaScript     |        112 |          5 |          9 |        126 |
+| c:\Users\chris\Documents\GitHub\polymart\server\community-api.js              | JavaScript     |         76 |          7 |          5 |         88 |
+| c:\Users\chris\Documents\GitHub\polymart\server\db.js                         | JavaScript     |         11 |          1 |          1 |         13 |
+| c:\Users\chris\Documents\GitHub\polymart\server\schema-market.sql             | MS SQL         |        158 |         11 |         11 |        180 |
+| c:\Users\chris\Documents\GitHub\polymart\server\schema-user.sql               | MS SQL         |        253 |         25 |         24 |        302 |
+| c:\Users\chris\Documents\GitHub\polymart\server\server.js                     | JavaScript     |         82 |         12 |          8 |        102 |
+| c:\Users\chris\Documents\GitHub\polymart\server\tick.js                       | JavaScript     |          0 |          1 |          1 |          2 |
+| c:\Users\chris\Documents\GitHub\polymart\server\tools-api.js                  | JavaScript     |        162 |         14 |         28 |        204 |
+| c:\Users\chris\Documents\GitHub\polymart\server\users-api.js                  | JavaScript     |         48 |          3 |          9 |         60 |
+| c:\Users\chris\Documents\GitHub\polymart\src\App.tsx                          | TypeScript JSX |         41 |          0 |          2 |         43 |
+| c:\Users\chris\Documents\GitHub\polymart\src\components\CommunitySidebar.tsx  | TypeScript JSX |          2 |          0 |          0 |          2 |
+| c:\Users\chris\Documents\GitHub\polymart\src\components\VerificationBadge.tsx | TypeScript JSX |         42 |          0 |          4 |         46 |
+| c:\Users\chris\Documents\GitHub\polymart\src\hooks\useAccount.ts              | TypeScript     |         33 |          0 |          5 |         38 |
+| c:\Users\chris\Documents\GitHub\polymart\src\pages\BotBugReportPage.tsx       | TypeScript JSX |        146 |          1 |         16 |        163 |
+| c:\Users\chris\Documents\GitHub\polymart\src\pages\BotSuggestionPage.tsx      | TypeScript JSX |        132 |          1 |         15 |        148 |
+| c:\Users\chris\Documents\GitHub\polymart\src\pages\CommunitiesPage.tsx        | TypeScript JSX |        267 |          3 |         22 |        292 |
+| c:\Users\chris\Documents\GitHub\polymart\src\pages\CommunityAdminPage.tsx     | TypeScript JSX |         99 |          2 |          6 |        107 |
+| c:\Users\chris\Documents\GitHub\polymart\src\pages\CommunityPage.tsx          | TypeScript JSX |         80 |          0 |          0 |         80 |
+| c:\Users\chris\Documents\GitHub\polymart\src\pages\CommunityPostPage.tsx      | TypeScript JSX |         32 |          0 |          0 |         32 |
+| c:\Users\chris\Documents\GitHub\polymart\src\pages\CommunityStandardsPage.tsx | TypeScript JSX |        204 |          8 |         19 |        231 |
+| c:\Users\chris\Documents\GitHub\polymart\src\pages\DashboardPage.tsx          | TypeScript JSX |         20 |          1 |          1 |         22 |
+| c:\Users\chris\Documents\GitHub\polymart\src\pages\HomePage.tsx               | TypeScript JSX |         -6 |          0 |          0 |         -6 |
+| c:\Users\chris\Documents\GitHub\polymart\src\pages\MarketPage.tsx             | TypeScript JSX |         -1 |          0 |          0 |         -1 |
+| c:\Users\chris\Documents\GitHub\polymart\src\pages\PortfolioPage.tsx          | TypeScript JSX |          6 |          0 |          0 |          6 |
+| c:\Users\chris\Documents\GitHub\polymart\src\pages\SubCommunityModPage.tsx    | TypeScript JSX |        164 |          2 |         15 |        181 |
+| c:\Users\chris\Documents\GitHub\polymart\src\pages\SubCommunityPage.tsx       | TypeScript JSX |        101 |          0 |          5 |        106 |
+| c:\Users\chris\Documents\GitHub\polymart\src\pages\TradingTerminalPage.tsx    | TypeScript JSX |      1,065 |         55 |        104 |      1,224 |
+| c:\Users\chris\Documents\GitHub\polymart\src\pages\UserProfilePage.tsx        | TypeScript JSX |        201 |          3 |         20 |        224 |
+| Total                                                                         |                |      5,053 |        575 |        572 |      6,200 |
++-------------------------------------------------------------------------------+----------------+------------+------------+------------+------------+

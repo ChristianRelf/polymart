@@ -369,7 +369,7 @@ export default function CommunityAdminPage({ onNavigate, onNavigateToCommunity }
           <Card className="bg-card border-border">
             <CardHeader className="pb-2">
               <CardTitle className="text-sm text-muted-foreground font-normal">
-                {communities.length} communities — sorted by open reports
+                {communities.length} communities - sorted by open reports
               </CardTitle>
             </CardHeader>
             <CardContent className="p-0">

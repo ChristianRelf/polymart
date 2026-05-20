@@ -434,7 +434,7 @@ router.post('/:slug/leave', async (req, res) => {
 
   const m = await getMembership(community.id, userId);
   if (!m) return res.status(400).json({ error: 'You are not a member' });
-  if (m.role === 'owner') return res.status(400).json({ error: 'Owners cannot leave — delete the community instead' });
+  if (m.role === 'owner') return res.status(400).json({ error: 'Owners cannot leave - delete the community instead' });
 
   const conn = await pool.getConnection();
   try {

@@ -5,7 +5,7 @@ import { Badge } from "@/components/ui/badge"
 import { Input } from "@/components/ui/input"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { ArrowLeft, TrendingUp, TrendingDown, Loader2, AlertCircle, RefreshCw, Search, X, BarChart2, ShoppingCart, ArrowDownLeft } from "lucide-react"
+import { ArrowLeft, TrendingUp, TrendingDown, Loader2, AlertCircle, RefreshCw, Search, X, BarChart2, ShoppingCart, ArrowDownLeft, CandlestickChart } from "lucide-react"
 import { AreaChart, Area, XAxis, YAxis, Tooltip, ResponsiveContainer } from "recharts"
 import { useAccount } from "@/hooks/useAccount"
 import { useSimulation } from "@/lib/SimulationContext"
@@ -441,9 +441,15 @@ export default function PortfolioPage({ portfolioId, onNavigate }: Props) {
             <p className="text-sm text-muted-foreground mt-0.5">{portfolio.description}</p>
           )}
         </div>
-        <Button variant="ghost" size="icon" onClick={load} title="Refresh" className="h-8 w-8 shrink-0">
-          <RefreshCw className="w-3.5 h-3.5" />
-        </Button>
+        <div className="flex items-center gap-2">
+          <Button variant="outline" size="sm" onClick={() => onNavigate("trading-terminal")} className="h-8 gap-1.5 text-xs hidden sm:flex">
+            <CandlestickChart className="w-3.5 h-3.5" />
+            Terminal
+          </Button>
+          <Button variant="ghost" size="icon" onClick={load} title="Refresh" className="h-8 w-8 shrink-0">
+            <RefreshCw className="w-3.5 h-3.5" />
+          </Button>
+        </div>
       </div>
 
       {/* Stats strip */}

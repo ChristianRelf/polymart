@@ -7,7 +7,7 @@ import { Input } from "@/components/ui/input"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog"
 import {
   Plus, TrendingUp, TrendingDown, Wallet, Loader2, AlertCircle, Eye, Trash2,
-  Trophy, Zap, Target, Flame, DollarSign, BarChart2, Users,
+  Trophy, Zap, Target, Flame, DollarSign, BarChart2, Users, CandlestickChart,
 } from "lucide-react"
 import { useAccount } from "@/hooks/useAccount"
 import { useSimulation } from "@/lib/SimulationContext"
@@ -580,6 +580,28 @@ export default function DashboardPage({ onNavigate, onNavigateToPortfolio }: Pro
 
       {/* Achievements */}
       {stats && <AchievementsStrip stats={stats} />}
+
+      {/* Trading Terminal CTA */}
+      <div
+        className="flex items-center justify-between gap-3 px-4 py-3 rounded-xl border border-border bg-gradient-to-r from-emerald-500/5 to-transparent cursor-pointer hover:border-emerald-500/30 transition-colors"
+        onClick={() => onNavigate("trading-terminal")}
+        role="button"
+        tabIndex={0}
+        onKeyDown={e => e.key === "Enter" && onNavigate("trading-terminal")}
+      >
+        <div className="flex items-center gap-3 min-w-0">
+          <div className="w-7 h-7 rounded-lg bg-emerald-500/10 flex items-center justify-center shrink-0">
+            <CandlestickChart className="w-3.5 h-3.5 text-emerald-400" />
+          </div>
+          <div className="min-w-0">
+            <p className="text-sm font-medium text-foreground">Trading Terminal</p>
+            <p className="text-xs text-muted-foreground truncate">Charts, drawing tools, R:R calculator, trade journal — all in one place</p>
+          </div>
+        </div>
+        <Button size="sm" className="text-xs h-7 shrink-0 bg-emerald-600 hover:bg-emerald-500" tabIndex={-1}>
+          Open
+        </Button>
+      </div>
 
       {/* Community nudge */}
       <div

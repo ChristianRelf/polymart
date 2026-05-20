@@ -38,6 +38,8 @@ import PortfolioPage from "@/pages/PortfolioPage"
 import AccountPage from "@/pages/AccountPage"
 import AdminPage from "@/pages/AdminPage"
 import UserProfilePage from "@/pages/UserProfilePage"
+import TradingTerminalPage from "@/pages/TradingTerminalPage"
+import CommunityStandardsPage from "@/pages/CommunityStandardsPage"
 
 // ── Routing ───────────────────────────────────────────────────────────────────
 export type Route =
@@ -48,7 +50,9 @@ export type Route =
   | "communities" | "sub-community" | "sub-community-mod" | "community-admin"
   | "user-profile"
   | "sign-in" | "sign-up" | "dashboard" | "portfolio" | "account" | "admin"
+  | "trading-terminal"
   | "bug-report" | "suggestion"
+  | "community-standards"
 
 const HASH_MAP: Record<string, Route> = {
   "": "home",
@@ -81,6 +85,8 @@ const HASH_MAP: Record<string, Route> = {
   "/account": "account",
   "/admin": "admin",
   "/community-admin": "community-admin",
+  "/terminal": "trading-terminal",
+  "/docs/community-standards": "community-standards",
 }
 
 const ROUTE_HASH: Record<Route, string> = {
@@ -116,8 +122,10 @@ const ROUTE_HASH: Record<Route, string> = {
   admin: "/admin",
   "community-admin": "/community-admin",
   "user-profile": "/u",
+  "trading-terminal": "/terminal",
   "bug-report": "/bot/bug-report",
   "suggestion": "/bot/suggestion",
+  "community-standards": "/docs/community-standards",
 }
 
 function parseHash(): { route: Route; params: Record<string, string> } {
@@ -251,6 +259,7 @@ const NAV_LINKS: [Route, string][] = [
   ["community", "Community"],
   ["help", "Help"],
   ["dashboard", "Paper Trading"],
+  ["trading-terminal", "Terminal"],
 ]
 
 function Navbar({ route, setRoute }: { route: Route; setRoute: (r: Route) => void }) {
@@ -258,7 +267,7 @@ function Navbar({ route, setRoute }: { route: Route; setRoute: (r: Route) => voi
   const { isSignedIn, isLoaded } = useAuth()
   const go = (r: Route) => { navigate(r); setRoute(r); setMobileOpen(false) }
   const isMarket = route === "market"
-  const isDashboardRoute = route === "dashboard" || route === "portfolio" || route === "account" || route === "admin"
+  const isDashboardRoute = route === "dashboard" || route === "portfolio" || route === "account" || route === "admin" || route === "trading-terminal"
 
   return (
     <header className="sticky top-0 z-50 border-b border-border bg-background/80 backdrop-blur-md">
@@ -278,11 +287,12 @@ function Navbar({ route, setRoute }: { route: Route; setRoute: (r: Route) => voi
         <nav className="hidden md:flex items-stretch h-16 gap-0">
           {NAV_LINKS.map(([r, label]) => {
             const isPaperTrading = r === "dashboard"
+            const isTerminal = r === "trading-terminal"
             const isActive = isPaperTrading ? isDashboardRoute : route === r
             return (
               <button
                 key={r}
-                onClick={() => isPaperTrading && !isSignedIn ? go("sign-up") : go(r)}
+                onClick={() => (isPaperTrading || isTerminal) && !isSignedIn ? go("sign-up") : go(r)}
                 className={cn(
                   "px-4 text-sm font-medium transition-colors cursor-pointer bg-transparent border-0 border-b-2 h-full",
                   isActive
@@ -441,11 +451,12 @@ function Footer({ setRoute }: { setRoute: (r: Route) => void }) {
           </NavCol>
 
           <NavCol title="Community">
-            <FLink label="Community Hub" route="community" />
-            <FLink label="Blog"          route="community-blog" />
-            <FExt  label="Discord"       href="https://discord.com/oauth2/authorize?client_id=1503197938027860102" />
-            <FLink label="Bug Report"    route="bug-report" />
-            <FLink label="Suggestions"   route="suggestion" />
+            <FLink label="Community Hub"      route="community" />
+            <FLink label="Blog"               route="community-blog" />
+            <FLink label="Community Standards" route="community-standards" />
+            <FExt  label="Discord"            href="https://discord.com/oauth2/authorize?client_id=1503197938027860102" />
+            <FLink label="Bug Report"         route="bug-report" />
+            <FLink label="Suggestions"        route="suggestion" />
           </NavCol>
 
           <NavCol title="Developers">
@@ -705,7 +716,7 @@ export default function App() {
     setRouteParams({ profileId })
   }
 
-  const isAccountRoute = route === "dashboard" || route === "portfolio" || route === "account" || route === "admin"
+  const isAccountRoute = route === "dashboard" || route === "portfolio" || route === "account" || route === "admin" || route === "trading-terminal"
 
   return (
     <SimulationProvider>
@@ -741,7 +752,8 @@ export default function App() {
           {route === "bot-privacy"    && <BotLegalPage     type="bot-privacy" onNavigate={go} />}
           {route === "kofi-privacy"   && <KofiLegalPage    type="kofi-privacy" onNavigate={go} />}
           {route === "kofi-terms"     && <KofiLegalPage    type="kofi-terms"  onNavigate={go} />}
-          {route === "community-blog" && <CommunityBlogPage onNavigate={go} />}
+          {route === "community-blog"       && <CommunityBlogPage        onNavigate={go} />}
+          {route === "community-standards"  && <CommunityStandardsPage   onNavigate={go} />}
           {route === "sponsor"        && <SponsorPage      onNavigate={go} />}
 
           {/* Auth pages */}
@@ -771,6 +783,9 @@ export default function App() {
             <ProtectedRoute onRedirect={() => go("sign-in")}>
               <AdminPage onNavigate={go} />
             </ProtectedRoute>
+          )}
+          {route === "trading-terminal" && (
+            <TradingTerminalPage onNavigate={go} />
           )}
         </main>
 

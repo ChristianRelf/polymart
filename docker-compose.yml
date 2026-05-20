@@ -91,14 +91,14 @@ services:
       - polymart-cdn-data:/app/server/uploads
 
 volumes:
-  # Volume 1: market simulation state — small, high-churn, culled weekly via MySQL events
+  # Volume 1: market simulation state - small, high-churn, culled weekly via MySQL events
   polymart-market-data:
     driver: local
 
-  # Volume 2: user data, portfolios, community content — persistent, full ACID
+  # Volume 2: user data, portfolios, community content - persistent, full ACID
   polymart-user-data:
     driver: local
 
-  # Volume 3: CDN image storage — immutable uploads served with 1-year cache headers
+  # Volume 3: CDN image storage - immutable uploads served with 1-year cache headers
   polymart-cdn-data:
     driver: local

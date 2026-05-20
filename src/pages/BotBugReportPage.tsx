@@ -103,7 +103,7 @@ export default function BotBugReportPage({ onNavigate }: Props) {
               <Textarea
                 value={description}
                 onChange={e => setDescription(e.target.value)}
-                placeholder="Describe the bug in detail — what you see, when it happens, which page or feature..."
+                placeholder="Describe the bug in detail - what you see, when it happens, which page or feature..."
                 maxLength={1000}
                 rows={5}
                 className="resize-none"
