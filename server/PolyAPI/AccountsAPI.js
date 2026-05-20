@@ -102,7 +102,8 @@ router.get('/me', guard(async (req, res) => {
     [req.userId, generateProfileId()]
   );
   await pool.query(
-    'UPDATE user_profiles SET profile_id = ? WHERE clerk_id = ? AND profile_id IS NULL',
+    `UPDATE user_profiles SET profile_id = ?
+     WHERE clerk_id = ? AND (profile_id IS NULL OR profile_id NOT REGEXP '^[0-9]{9,16}$')`,
     [generateProfileId(), req.userId]
   );
   const [[user]] = await pool.query(
