@@ -27,7 +27,7 @@ import { COMPANY_PROFILES, generateNews } from '../company-data.js';
 import { createRouter } from './Router.js';
 import { success, fail, guard, ERRORS } from './Protocol.js';
 
-const router = createRouter({ label: '[market-api]', logging: false });
+const router = createRouter({ label: '[market-api]', logging: false, catch404: false });
 
 // ── IP rate limiter (legacy public routes) ────────────────────────────────────
 // 400 tokens / 60s per IP. Heavy routes cost 3.
