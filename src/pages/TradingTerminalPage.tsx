@@ -1296,6 +1296,8 @@ export default function TradingTerminalPage({ onNavigate }: Props) {
   const liveChange = liveStock?.change ?? liveForex?.changePct ?? detail?.change ?? 0
 
   // Chart data: prefer detail candles, fallback to live summary history
+  const stockDetail = selectedSymbol?.assetType === "stock" ? (detail as StockDetail | null) : null
+  const forexDetail = selectedSymbol?.assetType === "forex" ? (detail as ForexPairDetail | null) : null
   const candles = detail?.candles ?? []
   const history = detail?.history ?? []
   const sma20 = detail?.sma20 ?? liveStock?.sma20 ?? 0
@@ -1303,7 +1305,7 @@ export default function TradingTerminalPage({ onNavigate }: Props) {
   const bbUpper = detail?.bbUpper ?? liveStock?.bbUpper ?? 0
   const bbMiddle = detail?.bbMiddle ?? liveStock?.bbMiddle ?? 0
   const bbLower = detail?.bbLower ?? liveStock?.bbLower ?? 0
-  const vwap = detail?.vwap ?? liveStock?.vwap ?? 0
+  const vwap = stockDetail?.vwap ?? liveStock?.vwap ?? 0
   const macd = detail?.macd ?? liveStock?.macd ?? 0
   const macdSignal = detail?.macdSignal ?? liveStock?.macdSignal ?? 0
   const macdHist = detail?.macdHist ?? liveStock?.macdHist ?? 0
@@ -1327,15 +1329,22 @@ export default function TradingTerminalPage({ onNavigate }: Props) {
           {selectedSymbol ? (
             <>
               <h2 className="text-lg font-extrabold font-mono tracking-tight">{sym}</h2>
-              {detail?.name && <span className="text-xs text-muted-foreground truncate max-w-[180px]">{detail.name}</span>}
+              {stockDetail?.name && <span className="text-xs text-muted-foreground truncate max-w-[180px]">{stockDetail.name}</span>}
+              {forexDetail && <span className="text-xs text-muted-foreground truncate max-w-[200px]">{forexDetail.baseName} / {forexDetail.quoteName}</span>}
               <span className="text-lg font-mono font-bold tabular-nums">${livePrice.toFixed(selectedSymbol.assetType === "forex" ? 4 : 2)}</span>
               <span className={`text-sm font-semibold ${liveChange >= 0 ? "text-emerald-500" : "text-red-400"}`}>
                 {liveChange >= 0 ? "+" : ""}{liveChange.toFixed(2)}%
               </span>
-              {detail?.sector && <Badge variant="secondary" className="text-[10px]">{detail.sector}</Badge>}
-              {detail?.session && (
-                <Badge variant="outline" className={`text-[10px] ${detail.session === "open" ? "text-emerald-500 border-emerald-500/30" : "text-muted-foreground"}`}>
-                  {detail.session}
+              {stockDetail?.sector && <Badge variant="secondary" className="text-[10px]">{stockDetail.sector}</Badge>}
+              {forexDetail?.category && <Badge variant="secondary" className="text-[10px] capitalize">{forexDetail.category}</Badge>}
+              {stockDetail?.session && (
+                <Badge variant="outline" className={`text-[10px] ${stockDetail.session === "open" ? "text-emerald-500 border-emerald-500/30" : "text-muted-foreground"}`}>
+                  {stockDetail.session}
+                </Badge>
+              )}
+              {forexDetail?.activeSession && (
+                <Badge variant="outline" className="text-[10px] text-muted-foreground">
+                  {forexDetail.activeSession}
                 </Badge>
               )}
               {detailLoading && <Loader2 className="w-3.5 h-3.5 animate-spin text-muted-foreground ml-auto" />}
