@@ -510,6 +510,23 @@ async function applyMigrations() {
     );
     console.log(`[polymart] Migration: backfilled profile_id for ${nullProfileCnt} user(s)`);
   }
+
+  // Fix any profile_ids that are not pure 9–16 digit strings (e.g. decimal representations
+  // like "7.30254727630181" that could result from floating-point serialization bugs).
+  const [[{ badProfileCnt }]] = await dbUser.query(
+    `SELECT COUNT(*) AS badProfileCnt FROM user_profiles
+     WHERE profile_id IS NOT NULL AND profile_id NOT REGEXP '^[0-9]{9,16}$'`
+  );
+  if (badProfileCnt > 0) {
+    await dbUser.query(
+      `UPDATE user_profiles
+       SET profile_id = LPAD(
+         MOD(CONV(SUBSTRING(MD5(CONCAT(clerk_id, 'fix')), 1, 15), 16, 10), 9000000000000000) + 1000000000000000,
+         16, '0')
+       WHERE profile_id IS NOT NULL AND profile_id NOT REGEXP '^[0-9]{9,16}$'`
+    );
+    console.log(`[polymart] Migration: fixed ${badProfileCnt} malformed profile_id(s)`);
+  }
 }
 
 async function waitForDb(retries = 30, delayMs = 2000) {

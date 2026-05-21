@@ -814,6 +814,77 @@ export default function HelpCenterPage({ onNavigate }: Props) {
         </div>
       </div>
 
+      {/* ── Support contact form ── */}
+      <div className="mb-10 border border-border rounded-xl p-6">
+        <div className="flex items-center gap-2 mb-1">
+          <UserCircle className="w-4 h-4 text-muted-foreground" />
+          <p className="text-sm font-semibold text-foreground">Contact Support</p>
+        </div>
+        <p className="text-xs text-muted-foreground mb-5">
+          Can't find what you're looking for? Send us a message and we'll get back to you.
+        </p>
+
+        {isSignedIn ? (
+          supportResult === "sent" ? (
+            <div className="flex items-center gap-2 text-emerald-400 text-sm">
+              <CheckCircle2 className="w-4 h-4" />
+              <span>Message sent - we'll be in touch soon.</span>
+            </div>
+          ) : (
+            <form onSubmit={handleSupportSubmit} className="space-y-3">
+              <div>
+                <label className="text-xs text-muted-foreground mb-1 block">Subject</label>
+                <input
+                  className="w-full h-8 rounded-md border border-border bg-background px-3 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-ring"
+                  placeholder="Brief summary of your issue"
+                  value={supportSubject}
+                  onChange={e => setSupportSubject(e.target.value)}
+                  maxLength={256}
+                  required
+                />
+              </div>
+              <div>
+                <label className="text-xs text-muted-foreground mb-1 block">Message</label>
+                <textarea
+                  className="w-full rounded-md border border-border bg-background px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-ring resize-none"
+                  rows={4}
+                  placeholder="Describe your issue in detail..."
+                  value={supportMessage}
+                  onChange={e => setSupportMessage(e.target.value)}
+                  maxLength={2000}
+                  required
+                />
+              </div>
+              {supportResult === "error" && (
+                <p className="text-xs text-destructive">Failed to send - please try again.</p>
+              )}
+              <Button
+                type="submit"
+                size="sm"
+                disabled={supportSending || !supportSubject.trim() || !supportMessage.trim()}
+              >
+                {supportSending ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : "Send Message"}
+              </Button>
+            </form>
+          )
+        ) : (
+          <div className="flex flex-col sm:flex-row sm:items-center gap-3">
+            <p className="text-xs text-muted-foreground">Sign in to send a support message, or email us directly.</p>
+            <div className="flex items-center gap-2 shrink-0">
+              <Button size="sm" variant="outline" onClick={() => onNavigate("sign-in")}>
+                Sign In
+              </Button>
+              <a
+                href="mailto:support@polymart.co"
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-muted-foreground hover:text-foreground transition-colors"
+              >
+                Email us <ArrowRight className="w-3 h-3" />
+              </a>
+            </div>
+          </div>
+        )}
+      </div>
+
       {/* ── Category cards (shown when not searching) ── */}
       {!q && (
         <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3 mb-14">
@@ -932,77 +1003,6 @@ export default function HelpCenterPage({ onNavigate }: Props) {
           })}
         </div>
       )}
-
-      {/* ── Support contact form ── */}
-      <div className="mt-16 border border-border rounded-xl p-6">
-        <div className="flex items-center gap-2 mb-1">
-          <UserCircle className="w-4 h-4 text-muted-foreground" />
-          <p className="text-sm font-semibold text-foreground">Contact Support</p>
-        </div>
-        <p className="text-xs text-muted-foreground mb-5">
-          Can't find what you're looking for? Send us a message and we'll get back to you.
-        </p>
-
-        {isSignedIn ? (
-          supportResult === "sent" ? (
-            <div className="flex items-center gap-2 text-emerald-400 text-sm">
-              <CheckCircle2 className="w-4 h-4" />
-              <span>Message sent - we'll be in touch soon.</span>
-            </div>
-          ) : (
-            <form onSubmit={handleSupportSubmit} className="space-y-3">
-              <div>
-                <label className="text-xs text-muted-foreground mb-1 block">Subject</label>
-                <input
-                  className="w-full h-8 rounded-md border border-border bg-background px-3 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-ring"
-                  placeholder="Brief summary of your issue"
-                  value={supportSubject}
-                  onChange={e => setSupportSubject(e.target.value)}
-                  maxLength={256}
-                  required
-                />
-              </div>
-              <div>
-                <label className="text-xs text-muted-foreground mb-1 block">Message</label>
-                <textarea
-                  className="w-full rounded-md border border-border bg-background px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-ring resize-none"
-                  rows={4}
-                  placeholder="Describe your issue in detail..."
-                  value={supportMessage}
-                  onChange={e => setSupportMessage(e.target.value)}
-                  maxLength={2000}
-                  required
-                />
-              </div>
-              {supportResult === "error" && (
-                <p className="text-xs text-destructive">Failed to send - please try again.</p>
-              )}
-              <Button
-                type="submit"
-                size="sm"
-                disabled={supportSending || !supportSubject.trim() || !supportMessage.trim()}
-              >
-                {supportSending ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : "Send Message"}
-              </Button>
-            </form>
-          )
-        ) : (
-          <div className="flex flex-col sm:flex-row sm:items-center gap-3">
-            <p className="text-xs text-muted-foreground">Sign in to send a support message, or email us directly.</p>
-            <div className="flex items-center gap-2 shrink-0">
-              <Button size="sm" variant="outline" onClick={() => onNavigate("sign-in")}>
-                Sign In
-              </Button>
-              <a
-                href="mailto:support@polymart.co"
-                className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-muted-foreground hover:text-foreground transition-colors"
-              >
-                Email us <ArrowRight className="w-3 h-3" />
-              </a>
-            </div>
-          </div>
-        )}
-      </div>
 
       {/* ── Footer CTA ── */}
       <div className="mt-6 border border-border rounded-xl px-6 py-5 flex flex-col sm:flex-row sm:items-center gap-4 justify-between">

@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from "react"
-import { useUser } from "@clerk/clerk-react"
+import { useUser, useAuth } from "@clerk/clerk-react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -56,21 +56,23 @@ interface Props {
 
 function useAdminFetch() {
   const { user } = useUser()
+  const { getToken } = useAuth()
   const isAdmin = user?.publicMetadata?.role === "admin"
 
   const adminFetch = useCallback(async (url: string, opts: RequestInit = {}) => {
+    const token = await getToken()
     const res = await fetch(url, {
       ...opts,
       headers: {
         "Content-Type": "application/json",
-        ...(opts.headers ?? {}),
+        Authorization: `Bearer ${token}`,
+        ...(opts.headers as Record<string, string>),
       },
-      credentials: "include",
     })
     const data = await res.json()
     if (!res.ok) throw new Error(data.error || "Request failed")
     return data
-  }, [])
+  }, [getToken])
 
   return { adminFetch, isAdmin }
 }

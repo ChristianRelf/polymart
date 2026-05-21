@@ -40,13 +40,14 @@ import AdminPage from "@/pages/AdminPage"
 import UserProfilePage from "@/pages/UserProfilePage"
 import TradingTerminalPage from "@/pages/TradingTerminalPage"
 import CommunityStandardsPage from "@/pages/CommunityStandardsPage"
+import LegalHubPage from "@/pages/LegalHubPage"
 
 // ── Routing ───────────────────────────────────────────────────────────────────
 export type Route =
   | "home" | "market" | "forex" | "api" | "terms" | "privacy" | "changelog"
   | "education" | "products" | "help" | "widgets" | "edu-tools" | "community"
   | "bot-terms" | "bot-privacy" | "community-blog" | "sponsor" | "stock-info"
-  | "kofi-terms" | "kofi-privacy" | "community-post"
+  | "kofi-terms" | "kofi-privacy" | "community-post" | "legal"
   | "communities" | "sub-community" | "sub-community-mod" | "community-admin"
   | "user-profile"
   | "sign-in" | "sign-up" | "dashboard" | "portfolio" | "account" | "admin"
@@ -87,6 +88,7 @@ const HASH_MAP: Record<string, Route> = {
   "/community-admin": "community-admin",
   "/terminal": "trading-terminal",
   "/docs/community-standards": "community-standards",
+  "/docs/legal": "legal",
 }
 
 const ROUTE_HASH: Record<Route, string> = {
@@ -126,6 +128,7 @@ const ROUTE_HASH: Record<Route, string> = {
   "bug-report": "/bot/bug-report",
   "suggestion": "/bot/suggestion",
   "community-standards": "/docs/community-standards",
+  legal: "/docs/legal",
 }
 
 function parseHash(): { route: Route; params: Record<string, string> } {
@@ -257,7 +260,7 @@ const NAV_LINKS: [Route, string][] = [
   ["products", "Products"],
   ["education", "Education"],
   ["community", "Community"],
-  ["help", "Help"],
+  ["help", "Help Center"],
   ["dashboard", "Paper Trading"],
   ["trading-terminal", "Terminal"],
 ]
@@ -285,7 +288,7 @@ function Navbar({ route, setRoute }: { route: Route; setRoute: (r: Route) => voi
 
         {/* Desktop nav links */}
         <nav className="hidden md:flex items-stretch h-16 gap-0">
-          {NAV_LINKS.map(([r, label]) => {
+          {NAV_LINKS.filter(([r]) => r !== "trading-terminal" || isSignedIn).map(([r, label]) => {
             const isPaperTrading = r === "dashboard"
             const isTerminal = r === "trading-terminal"
             const isActive = isPaperTrading ? isDashboardRoute : route === r
@@ -355,13 +358,14 @@ function Navbar({ route, setRoute }: { route: Route; setRoute: (r: Route) => voi
                   <img src="/polymartlogo.png" alt="POLYMART" className="h-8 w-auto" />
                 </div>
                 <nav className="flex flex-col p-4 gap-1">
-                  {NAV_LINKS.map(([r, label]) => {
+                  {NAV_LINKS.filter(([r]) => r !== "trading-terminal" || isSignedIn).map(([r, label]) => {
                     const isPaperTrading = r === "dashboard"
+                    const isTerminal = r === "trading-terminal"
                     const isActive = isPaperTrading ? isDashboardRoute : route === r
                     return (
                       <button
                         key={r}
-                        onClick={() => isPaperTrading && !isSignedIn ? go("sign-up") : go(r)}
+                        onClick={() => (isPaperTrading || isTerminal) && !isSignedIn ? go("sign-up") : go(r)}
                         className={cn(
                           "flex items-center px-4 py-3 rounded-lg text-sm font-medium transition-colors cursor-pointer bg-transparent border-0 text-left w-full",
                           isActive
@@ -467,6 +471,7 @@ function Footer({ setRoute }: { setRoute: (r: Route) => void }) {
           </NavCol>
 
           <NavCol title="Legal">
+            <FLink label="All Policies"     route="legal" />
             <FLink label="Terms of Service" route="terms" />
             <FLink label="Privacy Policy"   route="privacy" />
             <FLink label="Bot Terms"        route="bot-terms" />
@@ -754,6 +759,7 @@ export default function App() {
           {route === "kofi-terms"     && <KofiLegalPage    type="kofi-terms"  onNavigate={go} />}
           {route === "community-blog"       && <CommunityBlogPage        onNavigate={go} />}
           {route === "community-standards"  && <CommunityStandardsPage   onNavigate={go} />}
+          {route === "legal"               && <LegalHubPage              onNavigate={go} />}
           {route === "sponsor"        && <SponsorPage      onNavigate={go} />}
 
           {/* Auth pages */}
@@ -785,7 +791,9 @@ export default function App() {
             </ProtectedRoute>
           )}
           {route === "trading-terminal" && (
-            <TradingTerminalPage onNavigate={go} />
+            <ProtectedRoute onRedirect={() => go("sign-in")}>
+              <TradingTerminalPage onNavigate={go} />
+            </ProtectedRoute>
           )}
         </main>
 
