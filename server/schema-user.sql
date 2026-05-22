@@ -63,15 +63,35 @@ CREATE TABLE IF NOT EXISTS orders (
   symbol        VARCHAR(32)   NOT NULL,
   side          ENUM('buy','sell') NOT NULL,
   quantity      DECIMAL(18,4) NOT NULL,
-  price         DECIMAL(18,4) NOT NULL,
-  total         DECIMAL(18,4) NOT NULL,
+  price         DECIMAL(18,4) DEFAULT NULL,
+  total         DECIMAL(18,4) DEFAULT NULL,
   notes         TEXT          DEFAULT NULL,
-  executed_at   DATETIME      NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  order_type    ENUM('market','limit','stop') NOT NULL DEFAULT 'market',
+  trigger_price DECIMAL(18,4) DEFAULT NULL,
+  status        ENUM('pending','filled','cancelled') NOT NULL DEFAULT 'filled',
+  realized_pnl  DECIMAL(18,4) DEFAULT NULL,
+  created_at    DATETIME      NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  executed_at   DATETIME      DEFAULT NULL,
   PRIMARY KEY (id),
   KEY idx_orders_portfolio (portfolio_id),
   KEY idx_orders_executed  (executed_at),
+  KEY idx_orders_status    (status),
   CONSTRAINT fk_orders_portfolio FOREIGN KEY (portfolio_id) REFERENCES portfolios(id) ON DELETE CASCADE
 ) ENGINE=InnoDB;
+
+-- ── Migration: add order type columns to existing orders table ────────────────
+-- Run once against a live DB; schema above is for fresh installs.
+-- ALTER TABLE orders
+--   ADD COLUMN IF NOT EXISTS price         DECIMAL(18,4) DEFAULT NULL,  -- already exists, modify below
+--   ADD COLUMN IF NOT EXISTS order_type    ENUM('market','limit','stop') NOT NULL DEFAULT 'market' AFTER notes,
+--   ADD COLUMN IF NOT EXISTS trigger_price DECIMAL(18,4) DEFAULT NULL AFTER order_type,
+--   ADD COLUMN IF NOT EXISTS status        ENUM('pending','filled','cancelled') NOT NULL DEFAULT 'filled' AFTER trigger_price,
+--   ADD COLUMN IF NOT EXISTS realized_pnl  DECIMAL(18,4) DEFAULT NULL AFTER status,
+--   ADD COLUMN IF NOT EXISTS created_at    DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP AFTER realized_pnl,
+--   ADD INDEX IF NOT EXISTS idx_orders_status (status);
+-- ALTER TABLE orders MODIFY COLUMN price DECIMAL(18,4) DEFAULT NULL;
+-- ALTER TABLE orders MODIFY COLUMN total DECIMAL(18,4) DEFAULT NULL;
+-- ALTER TABLE orders MODIFY COLUMN executed_at DATETIME DEFAULT NULL;
 
 -- ── portfolio_snapshots ───────────────────────────────────────────────────────
 CREATE TABLE IF NOT EXISTS portfolio_snapshots (

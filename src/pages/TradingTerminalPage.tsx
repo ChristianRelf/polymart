@@ -12,7 +12,8 @@ import {
   Search, TrendingUp, Minus, Bell, MousePointer2, Eraser,
   Trash2, Loader2, ShoppingCart,
   BookOpen, Calculator, Target, Type, Square, X, Check,
-  BarChart2, ChevronRight, Layers,
+  BarChart2, ChevronRight, Layers, ArrowUpRight, AlignCenter,
+  Percent, Ruler, BarChart,
 } from "lucide-react"
 import { useAccount } from "@/hooks/useAccount"
 import { useSimulation } from "@/lib/SimulationContext"
@@ -28,17 +29,55 @@ const CARD_BG = "oklch(0.165 0.004 264)"
 const DRAW_COLORS = ["#ffffff","#4ade80","#f87171","#60a5fa","#fbbf24","#c084fc","#f97316"]
 
 // ── Types ────────────────────────────────────────────────────────────────────
-type ToolMode = "cursor" | "hline" | "trendline" | "rect" | "text" | "alert" | "erase"
+type ToolMode =
+  | "cursor" | "hline" | "vline" | "trendline" | "ray" | "channel"
+  | "rect" | "ellipse" | "arrow" | "text" | "fib" | "measure" | "alert" | "erase"
 
 interface Drawing {
   id: string
-  type: "hline" | "trendline" | "rect" | "text"
+  type: "hline" | "vline" | "trendline" | "ray" | "channel" | "rect" | "ellipse" | "arrow" | "text" | "fib"
   color: string
   price?: number
+  idxFromRight?: number
   label?: string
   p1?: { price: number; idxFromRight: number }
   p2?: { price: number; idxFromRight: number }
+  p3?: { price: number; idxFromRight: number }
   text?: string
+  fontSize?: "sm" | "md" | "lg"
+  showBg?: boolean
+  lineStyle?: "solid" | "dashed" | "dotted"
+}
+
+interface PendingOrder {
+  id: number
+  portfolio_id: number
+  asset_type: string
+  symbol: string
+  side: "buy" | "sell"
+  quantity: number
+  order_type: "limit" | "stop"
+  trigger_price: number
+  created_at: string
+}
+
+interface PortfolioSnapshot {
+  total_value: number
+  snapped_at: string
+}
+
+interface PortfolioStats {
+  total_value: number
+  total_cash: number
+  position_value: number
+  unrealised_pnl: number
+  total_orders: number
+  total_closed: number
+  winning_trades: number
+  win_rate: number | null
+  avg_pnl: number | null
+  best_trade: number | null
+  worst_trade: number | null
 }
 
 interface PriceAlert {
@@ -108,6 +147,34 @@ function useNotes(symbol: string): [string, (n: string) => void] {
     set(n); localStorage.setItem(`pm_notes_${symbol}`, n)
   }, [symbol])
   return [notes, setNotes]
+}
+
+// ── Toast ────────────────────────────────────────────────────────────────────
+interface Toast { id: number; text: string; type: "success" | "error" | "info" }
+function useToast() {
+  const [toasts, setToasts] = useState<Toast[]>([])
+  const add = useCallback((text: string, type: Toast["type"] = "success") => {
+    const id = Date.now()
+    setToasts(ts => [...ts.slice(-3), { id, text, type }])
+    setTimeout(() => setToasts(ts => ts.filter(t => t.id !== id)), 3500)
+  }, [])
+  return { toasts, add }
+}
+
+function ToastContainer({ toasts }: { toasts: Toast[] }) {
+  if (toasts.length === 0) return null
+  return (
+    <div className="fixed top-4 right-4 z-50 flex flex-col gap-2 pointer-events-none">
+      {toasts.map(t => (
+        <div key={t.id} className={`px-3 py-2 rounded-lg text-xs font-medium shadow-lg border transition-all duration-300
+          ${t.type === "success" ? "bg-emerald-900/90 border-emerald-500/40 text-emerald-200" :
+            t.type === "error" ? "bg-red-900/90 border-red-500/40 text-red-200" :
+            "bg-amber-900/90 border-amber-500/40 text-amber-200"}`}>
+          {t.text}
+        </div>
+      ))}
+    </div>
+  )
 }
 
 // ── Drawing helpers ──────────────────────────────────────────────────────────
@@ -180,10 +247,11 @@ function renderText(ctx: CanvasRenderingContext2D, g: ChartGeom, d: Drawing, alp
   ctx.restore()
 }
 
-function renderAlert(ctx: CanvasRenderingContext2D, g: ChartGeom, a: PriceAlert, alpha = 1) {
+function renderAlert(ctx: CanvasRenderingContext2D, g: ChartGeom, a: PriceAlert, currentPrice: number, alpha = 1) {
   const y = toY(g, a.price)
   if (y < g.pad.t - 10 || y > g.cssH - g.pad.b + 10) return
-  const color = a.triggered ? "rgba(251,191,36,0.35)" : "rgba(251,191,36,0.75)"
+  const pct = currentPrice > 0 ? Math.abs((a.price - currentPrice) / currentPrice) * 100 : 100
+  const color = a.triggered ? "rgba(251,191,36,0.35)" : pct < 1 ? "rgba(239,68,68,0.85)" : pct < 2 ? "rgba(251,191,36,0.85)" : "rgba(251,191,36,0.75)"
   ctx.save(); ctx.globalAlpha = alpha
   ctx.strokeStyle = color; ctx.lineWidth = 1; ctx.setLineDash([3, 3])
   ctx.beginPath(); ctx.moveTo(g.pad.l, y); ctx.lineTo(g.cssW - g.pad.r, y); ctx.stroke()
@@ -193,27 +261,151 @@ function renderAlert(ctx: CanvasRenderingContext2D, g: ChartGeom, a: PriceAlert,
   ctx.restore()
 }
 
+function renderVLine(ctx: CanvasRenderingContext2D, g: ChartGeom, d: Drawing, alpha = 1) {
+  if (d.idxFromRight === undefined) return
+  const x = idxToX(g, d.idxFromRight)
+  ctx.save(); ctx.globalAlpha = alpha
+  ctx.strokeStyle = d.color; ctx.lineWidth = 1.5; ctx.setLineDash([5, 4])
+  ctx.beginPath(); ctx.moveTo(x, g.pad.t); ctx.lineTo(x, g.cssH - g.pad.b); ctx.stroke()
+  ctx.setLineDash([])
+  if (d.label) {
+    ctx.fillStyle = d.color; ctx.font = "10px 'DM Mono',monospace"; ctx.textAlign = "center"
+    ctx.fillText(d.label, x, g.pad.t + 12)
+  }
+  ctx.restore()
+}
+
+function renderRay(ctx: CanvasRenderingContext2D, g: ChartGeom, d: Drawing, alpha = 1) {
+  if (!d.p1 || !d.p2) return
+  const x1 = idxToX(g, d.p1.idxFromRight), y1 = toY(g, d.p1.price)
+  const x2 = idxToX(g, d.p2.idxFromRight), y2 = toY(g, d.p2.price)
+  // Extend to right chart edge
+  const dx = x2 - x1, dy = y2 - y1
+  const xEnd = g.cssW - g.pad.r
+  const t = dx !== 0 ? (xEnd - x1) / dx : 1
+  const yEnd = y1 + t * dy
+  ctx.save(); ctx.globalAlpha = alpha
+  ctx.strokeStyle = d.color; ctx.lineWidth = 1.5
+  ctx.beginPath(); ctx.moveTo(x1, y1); ctx.lineTo(xEnd, yEnd); ctx.stroke()
+  ctx.beginPath(); ctx.arc(x1, y1, 3, 0, Math.PI * 2); ctx.fillStyle = d.color; ctx.fill()
+  ctx.restore()
+}
+
+function renderChannel(ctx: CanvasRenderingContext2D, g: ChartGeom, d: Drawing, alpha = 1) {
+  if (!d.p1 || !d.p2 || !d.p3) return
+  const x1 = idxToX(g, d.p1.idxFromRight), y1 = toY(g, d.p1.price)
+  const x2 = idxToX(g, d.p2.idxFromRight), y2 = toY(g, d.p2.price)
+  // Parallel line offset from p3
+  const x3 = idxToX(g, d.p3.idxFromRight), y3 = toY(g, d.p3.price)
+  const dy = y3 - y1
+  ctx.save(); ctx.globalAlpha = alpha
+  ctx.strokeStyle = d.color; ctx.lineWidth = 1.5
+  ctx.beginPath(); ctx.moveTo(x1, y1); ctx.lineTo(x2, y2); ctx.stroke()
+  ctx.beginPath(); ctx.moveTo(x1, y1 + dy); ctx.lineTo(x2, y2 + dy); ctx.stroke()
+  // Fill
+  ctx.fillStyle = d.color + "10"
+  ctx.beginPath(); ctx.moveTo(x1, y1); ctx.lineTo(x2, y2); ctx.lineTo(x2, y2 + dy); ctx.lineTo(x1, y1 + dy); ctx.closePath(); ctx.fill()
+  ctx.restore()
+}
+
+function renderEllipse(ctx: CanvasRenderingContext2D, g: ChartGeom, d: Drawing, alpha = 1) {
+  if (!d.p1 || !d.p2) return
+  const x1 = idxToX(g, d.p1.idxFromRight), y1 = toY(g, d.p1.price)
+  const x2 = idxToX(g, d.p2.idxFromRight), y2 = toY(g, d.p2.price)
+  const cx = (x1 + x2) / 2, cy = (y1 + y2) / 2, rx = Math.abs(x2 - x1) / 2, ry = Math.abs(y2 - y1) / 2
+  ctx.save(); ctx.globalAlpha = alpha
+  ctx.beginPath(); ctx.ellipse(cx, cy, Math.max(rx, 1), Math.max(ry, 1), 0, 0, Math.PI * 2)
+  ctx.fillStyle = d.color + "15"; ctx.fill()
+  ctx.strokeStyle = d.color + "80"; ctx.lineWidth = 1.5; ctx.setLineDash([4, 3]); ctx.stroke(); ctx.setLineDash([])
+  ctx.restore()
+}
+
+function renderArrow(ctx: CanvasRenderingContext2D, g: ChartGeom, d: Drawing, alpha = 1) {
+  if (!d.p1 || !d.p2) return
+  const x1 = idxToX(g, d.p1.idxFromRight), y1 = toY(g, d.p1.price)
+  const x2 = idxToX(g, d.p2.idxFromRight), y2 = toY(g, d.p2.price)
+  const angle = Math.atan2(y2 - y1, x2 - x1)
+  const headLen = 12
+  ctx.save(); ctx.globalAlpha = alpha
+  ctx.strokeStyle = d.color; ctx.fillStyle = d.color; ctx.lineWidth = 2
+  ctx.beginPath(); ctx.moveTo(x1, y1); ctx.lineTo(x2, y2); ctx.stroke()
+  ctx.beginPath()
+  ctx.moveTo(x2, y2)
+  ctx.lineTo(x2 - headLen * Math.cos(angle - Math.PI / 6), y2 - headLen * Math.sin(angle - Math.PI / 6))
+  ctx.lineTo(x2 - headLen * Math.cos(angle + Math.PI / 6), y2 - headLen * Math.sin(angle + Math.PI / 6))
+  ctx.closePath(); ctx.fill()
+  if (d.label) {
+    const mx = (x1 + x2) / 2, my = (y1 + y2) / 2
+    ctx.font = "11px 'DM Mono',monospace"; ctx.textAlign = "center"
+    ctx.fillText(d.label, mx, my - 6)
+  }
+  ctx.restore()
+}
+
+function renderFib(ctx: CanvasRenderingContext2D, g: ChartGeom, d: Drawing, alpha = 1) {
+  if (!d.p1 || !d.p2) return
+  const priceHigh = Math.max(d.p1.price, d.p2.price)
+  const priceLow  = Math.min(d.p1.price, d.p2.price)
+  const range = priceHigh - priceLow
+  const levels = [0, 0.236, 0.382, 0.5, 0.618, 0.786, 1.0]
+  const colors  = ["#4ade80","#60a5fa","#c084fc","#f97316","#c084fc","#60a5fa","#f87171"]
+  ctx.save(); ctx.globalAlpha = alpha
+  ctx.font = "10px 'DM Mono',monospace"; ctx.textAlign = "left"
+  const x1 = g.pad.l, x2 = g.cssW - g.pad.r
+  levels.forEach((lvl, i) => {
+    const price = priceHigh - lvl * range
+    const y = toY(g, price)
+    ctx.strokeStyle = colors[i]; ctx.lineWidth = 1; ctx.setLineDash([4, 3])
+    ctx.beginPath(); ctx.moveTo(x1, y); ctx.lineTo(x2, y); ctx.stroke(); ctx.setLineDash([])
+    ctx.fillStyle = colors[i]
+    ctx.fillText(`${(lvl * 100).toFixed(1)}%  ${price.toFixed(2)}`, x2 + 4, y + 4)
+  })
+  // Colored bands
+  for (let i = 0; i < levels.length - 1; i++) {
+    const p1 = priceHigh - levels[i] * range
+    const p2 = priceHigh - levels[i + 1] * range
+    const yT = toY(g, p1), yB = toY(g, p2)
+    ctx.fillStyle = colors[i] + "08"
+    ctx.fillRect(x1, yT, x2 - x1, yB - yT)
+  }
+  ctx.restore()
+}
+
+function hitTestLine(x1: number, y1: number, x2: number, y2: number, x: number, y: number, tol = 8) {
+  const len2 = (x2 - x1) ** 2 + (y2 - y1) ** 2
+  if (len2 === 0) return Math.hypot(x - x1, y - y1) < tol
+  const t = Math.max(0, Math.min(1, ((x - x1) * (x2 - x1) + (y - y1) * (y2 - y1)) / len2))
+  return Math.hypot(x - (x1 + t * (x2 - x1)), y - (y1 + t * (y2 - y1))) < tol
+}
+
 function hitTest(g: ChartGeom, d: Drawing, x: number, y: number): boolean {
   if (d.type === "hline" && d.price !== undefined) {
     const py = toY(g, d.price)
     return Math.abs(y - py) < 8 && x >= g.pad.l && x <= g.cssW - g.pad.r
   }
-  if (d.type === "trendline" && d.p1 && d.p2) {
+  if (d.type === "vline" && d.idxFromRight !== undefined) {
+    const px = idxToX(g, d.idxFromRight)
+    return Math.abs(x - px) < 8 && y >= g.pad.t && y <= g.cssH - g.pad.b
+  }
+  if ((d.type === "trendline" || d.type === "ray" || d.type === "arrow") && d.p1 && d.p2) {
     const x1 = idxToX(g, d.p1.idxFromRight), y1 = toY(g, d.p1.price)
     const x2 = idxToX(g, d.p2.idxFromRight), y2 = toY(g, d.p2.price)
-    const len2 = (x2-x1)**2 + (y2-y1)**2
-    if (len2 === 0) return Math.hypot(x-x1, y-y1) < 8
-    const t = Math.max(0, Math.min(1, ((x-x1)*(x2-x1)+(y-y1)*(y2-y1))/len2))
-    return Math.hypot(x-(x1+t*(x2-x1)), y-(y1+t*(y2-y1))) < 8
+    return hitTestLine(x1, y1, x2, y2, x, y)
   }
-  if ((d.type === "rect" || d.type === "text") && d.p1 && d.p2) {
+  if (d.type === "channel" && d.p1 && d.p2 && d.p3) {
+    const x1 = idxToX(g, d.p1.idxFromRight), y1 = toY(g, d.p1.price)
+    const x2 = idxToX(g, d.p2.idxFromRight), y2 = toY(g, d.p2.price)
+    const dy = toY(g, d.p3.price) - y1
+    return hitTestLine(x1, y1, x2, y2, x, y) || hitTestLine(x1, y1 + dy, x2, y2 + dy, x, y)
+  }
+  if ((d.type === "rect" || d.type === "ellipse" || d.type === "fib") && d.p1 && d.p2) {
     const x1 = idxToX(g, d.p1.idxFromRight), y1 = toY(g, d.p1.price)
     const x2 = idxToX(g, d.p2.idxFromRight), y2 = toY(g, d.p2.price)
     return x >= Math.min(x1,x2)-8 && x <= Math.max(x1,x2)+8 && y >= Math.min(y1,y2)-8 && y <= Math.max(y1,y2)+8
   }
   if (d.type === "text" && d.p1) {
     const ax = idxToX(g, d.p1.idxFromRight), ay = toY(g, d.p1.price)
-    return Math.abs(x-ax) < 60 && Math.abs(y-ay) < 14
+    return Math.abs(x - ax) < 60 && Math.abs(y - ay) < 14
   }
   return false
 }
@@ -264,6 +456,35 @@ function MACDChart({ candles, macd, macdSignal, macdHist }: {
   return <canvas ref={ref} className="w-full block border-t border-white/5" style={{ background: BG, height: 80 }} />
 }
 
+// ── Volume sub-chart ─────────────────────────────────────────────────────────
+function VolumeChart({ candles }: { candles: Candle[] }) {
+  const ref = useRef<HTMLCanvasElement>(null)
+  useEffect(() => {
+    const cv = ref.current
+    if (!cv || candles.length < 2) return
+    const dpr = window.devicePixelRatio || 1
+    const cssW = cv.clientWidth, cssH = cv.clientHeight
+    cv.width = Math.round(cssW * dpr); cv.height = Math.round(cssH * dpr)
+    const ctx = cv.getContext("2d")!; ctx.scale(dpr, dpr)
+    const W = cssW, H = cssH, pad = { t: 8, r: 74, b: 4, l: 8 }
+    const cW = W - pad.l - pad.r, cH = H - pad.t - pad.b, n = candles.length
+    const gap = cW / n, bw = Math.max(1, gap * 0.65)
+    const maxVol = Math.max(...candles.map(c => (c.bv ?? 0) + (c.sv ?? 0)), 1)
+    ctx.clearRect(0, 0, W, H); ctx.fillStyle = BG; ctx.fillRect(0, 0, W, H)
+    ctx.fillStyle = "rgba(255,255,255,0.25)"; ctx.font = "10px 'DM Mono',monospace"; ctx.textAlign = "left"
+    ctx.fillText("VOL", pad.l + 4, pad.t + 10)
+    candles.forEach((c, i) => {
+      const x = pad.l + i * gap + gap / 2
+      const bv = c.bv ?? Math.floor((c.v ?? 0) * 0.5), sv = c.sv ?? ((c.v ?? 0) - bv)
+      const totalH = ((bv + sv) / maxVol) * cH
+      const bvH = totalH * (bv / (bv + sv || 1))
+      ctx.fillStyle = `${GAIN}99`; ctx.fillRect(x - bw/2, pad.t + cH - totalH, bw, bvH)
+      ctx.fillStyle = `${LOSS}99`; ctx.fillRect(x - bw/2, pad.t + cH - totalH + bvH, bw, totalH - bvH)
+    })
+  }, [candles])
+  return <canvas ref={ref} className="w-full block border-t border-white/5" style={{ background: BG, height: 40 }} />
+}
+
 // ── Trading Chart (with drawing tool support) ─────────────────────────────────
 interface TradingChartProps {
   candles: Candle[]; history: number[]; price: number
@@ -274,15 +495,22 @@ interface TradingChartProps {
   drawings: Drawing[]; alerts: PriceAlert[]
   onAddDrawing: (d: Drawing) => void
   onRemoveDrawing: (id: string) => void
+  onUpdateDrawing: (d: Drawing) => void
   onAddAlert: (a: PriceAlert) => void
   currentPrice: number
+  avgCostLine?: number | null
+  showVolume?: boolean
+  selectedDrawingId: string | null
+  setSelectedDrawingId: (id: string | null) => void
 }
 
 function TradingChart({
   candles, history, price, sma20, sma50, bbUpper, bbMiddle, bbLower, vwap,
   macd, macdSignal, macdHist, chartMode,
   activeTool, drawColor, drawings, alerts,
-  onAddDrawing, onRemoveDrawing, onAddAlert, currentPrice,
+  onAddDrawing, onRemoveDrawing, onUpdateDrawing, onAddAlert, currentPrice,
+  avgCostLine, showVolume,
+  selectedDrawingId, setSelectedDrawingId,
 }: TradingChartProps) {
   const mainRef = useRef<HTMLCanvasElement>(null)
   const geomRef = useRef<ChartGeom | null>(null)

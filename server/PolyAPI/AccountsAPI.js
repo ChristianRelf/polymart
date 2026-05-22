@@ -234,7 +234,7 @@ router.post('/portfolios/:id/orders',
   rateLimit({ windowMs: 60_000, max: 10, label: 'orders', cost: 1 }),
   guard(async (req, res) => {
     const portfolioId = parseInt(req.params.id, 10);
-    const { asset_type, symbol, side, quantity: rawQty, notes } = req.body;
+    const { asset_type, symbol, side, quantity: rawQty, notes, order_type = 'market', trigger_price: rawTrigger } = req.body;
 
     if (!Number.isInteger(portfolioId) || portfolioId <= 0)
       return fail(res, ERRORS.VALIDATION_ERROR, 'Invalid portfolio ID');
@@ -244,6 +244,8 @@ router.post('/portfolios/:id/orders',
       return fail(res, ERRORS.INVALID_VALUE, 'Invalid symbol');
     if (side !== 'buy' && side !== 'sell')
       return fail(res, ERRORS.INVALID_VALUE, 'side must be "buy" or "sell"');
+    if (!['market', 'limit', 'stop'].includes(order_type))
+      return fail(res, ERRORS.INVALID_VALUE, 'order_type must be "market", "limit", or "stop"');
 
     const quantity = parseFloat(rawQty);
     if (!isFinite(quantity) || quantity <= 0)
@@ -253,11 +255,18 @@ router.post('/portfolios/:id/orders',
     if (notes && typeof notes === 'string' && notes.length > 1000)
       return fail(res, ERRORS.TOO_LONG, 'notes too long (max 1000 characters)');
 
+    let triggerPrice = null;
+    if (order_type !== 'market') {
+      triggerPrice = parseFloat(rawTrigger);
+      if (!isFinite(triggerPrice) || triggerPrice <= 0)
+        return fail(res, ERRORS.INVALID_VALUE, 'trigger_price is required and must be a positive number for limit/stop orders');
+    }
+
     const portfolio = await getOwnedPortfolio(portfolioId, req.userId);
     if (!portfolio) return fail(res, ERRORS.NOT_FOUND, 'Portfolio not found');
 
-    const tier       = await getUserTier(req.userId);
-    const limits     = TIER_CONFIG[tier] || TIER_CONFIG.basic;
+    const tier   = await getUserTier(req.userId);
+    const limits = TIER_CONFIG[tier] || TIER_CONFIG.basic;
 
     if (!limits.assets[asset_type]) {
       return fail(res, ERRORS.FORBIDDEN,
@@ -265,13 +274,28 @@ router.post('/portfolios/:id/orders',
       );
     }
 
+    // Validate symbol exists in market DB
     const currentPrice = await resolvePrice(asset_type, symbol, dbMarket);
     if (currentPrice === null) return fail(res, ERRORS.NOT_FOUND, `Symbol "${symbol}" not found`);
 
+    // ── Pending order (limit / stop) ─────────────────────────────────────────
+    if (order_type !== 'market') {
+      await pool.query(
+        `INSERT INTO orders (portfolio_id, asset_type, symbol, side, quantity, notes,
+                             order_type, trigger_price, status, executed_at)
+         VALUES (?,?,?,?,?,?,?,?,'pending',NULL)`,
+        [portfolioId, asset_type, symbol.toUpperCase(), side, quantity, notes || null, order_type, triggerPrice]
+      );
+      return success(res, { ok: true, status: 'pending', order_type, trigger_price: triggerPrice });
+    }
+
+    // ── Market order (immediate execution) ──────────────────────────────────
     const total = parseFloat((currentPrice * quantity).toFixed(4));
     const conn  = await pool.getConnection();
     try {
       await conn.beginTransaction();
+
+      let realizedPnl = null;
 
       if (side === 'buy') {
         if (Number(portfolio.cash_balance) < total) {
@@ -318,6 +342,8 @@ router.post('/portfolios/:id/orders',
           return fail(res, ERRORS.VALIDATION_ERROR, 'Insufficient position size to sell', HTTP.BAD_REQUEST);
         }
 
+        realizedPnl = parseFloat(((currentPrice - Number(existing.avg_cost)) * quantity).toFixed(4));
+
         const newQty = parseFloat((Number(existing.quantity) - quantity).toFixed(4));
         if (newQty === 0) {
           await conn.query('DELETE FROM positions WHERE id = ?', [existing.id]);
@@ -329,8 +355,10 @@ router.post('/portfolios/:id/orders',
       }
 
       await conn.query(
-        'INSERT INTO orders (portfolio_id, asset_type, symbol, side, quantity, price, total, notes) VALUES (?,?,?,?,?,?,?,?)',
-        [portfolioId, asset_type, symbol.toUpperCase(), side, quantity, currentPrice, total, notes || null]
+        `INSERT INTO orders (portfolio_id, asset_type, symbol, side, quantity, price, total, notes,
+                             order_type, status, realized_pnl, executed_at)
+         VALUES (?,?,?,?,?,?,?,?,'market','filled',?,NOW())`,
+        [portfolioId, asset_type, symbol.toUpperCase(), side, quantity, currentPrice, total, notes || null, realizedPnl]
       );
 
       await conn.commit();
@@ -346,6 +374,45 @@ router.post('/portfolios/:id/orders',
   })
 );
 
+// ── DELETE /portfolios/:id/orders/:orderId ────────────────────────────────────
+
+router.delete('/portfolios/:id/orders/:orderId', guard(async (req, res) => {
+  const portfolioId = parseInt(req.params.id, 10);
+  const orderId     = parseInt(req.params.orderId, 10);
+
+  if (!portfolioId || !orderId)
+    return fail(res, ERRORS.VALIDATION_ERROR, 'Invalid ID');
+
+  const portfolio = await getOwnedPortfolio(portfolioId, req.userId);
+  if (!portfolio) return fail(res, ERRORS.NOT_FOUND, 'Portfolio not found');
+
+  const [[order]] = await pool.query(
+    'SELECT id, status FROM orders WHERE id = ? AND portfolio_id = ?',
+    [orderId, portfolioId]
+  );
+  if (!order) return fail(res, ERRORS.NOT_FOUND, 'Order not found');
+  if (order.status !== 'pending') return fail(res, ERRORS.VALIDATION_ERROR, 'Only pending orders can be cancelled');
+
+  await pool.query('UPDATE orders SET status = ? WHERE id = ?', ['cancelled', orderId]);
+  return success(res, { ok: true });
+}));
+
+// ── GET /portfolios/:id/orders/pending ────────────────────────────────────────
+
+router.get('/portfolios/:id/orders/pending', guard(async (req, res) => {
+  const portfolioId = parseInt(req.params.id, 10);
+  if (!portfolioId) return fail(res, ERRORS.VALIDATION_ERROR, 'Invalid portfolio ID');
+
+  const portfolio = await getOwnedPortfolio(portfolioId, req.userId);
+  if (!portfolio) return fail(res, ERRORS.NOT_FOUND, 'Portfolio not found');
+
+  const [orders] = await pool.query(
+    `SELECT * FROM orders WHERE portfolio_id = ? AND status = 'pending' ORDER BY created_at DESC`,
+    [portfolioId]
+  );
+  return success(res, { orders });
+}));
+
 // ── GET /portfolios/:id/orders ────────────────────────────────────────────────
 
 router.get('/portfolios/:id/orders', guard(async (req, res) => {
@@ -357,7 +424,7 @@ router.get('/portfolios/:id/orders', guard(async (req, res) => {
   const portfolio = await getOwnedPortfolio(portfolioId, req.userId);
   if (!portfolio) return fail(res, ERRORS.NOT_FOUND, 'Portfolio not found');
 
-  let sql    = 'SELECT * FROM orders WHERE portfolio_id = ?';
+  let sql    = "SELECT * FROM orders WHERE portfolio_id = ? AND status = 'filled'";
   const params = [portfolioId];
 
   if (asset_type && isValidAssetType(asset_type)) { sql += ' AND asset_type = ?'; params.push(asset_type); }
@@ -523,15 +590,36 @@ router.get('/stats', guard(async (req, res) => {
   const total_value    = Number(total_cash) + position_value;
   const unrealised_pnl = position_value - cost_basis;
 
-  const [[{ total_orders }]] = await pool.query(
-    `SELECT COUNT(*) as total_orders FROM orders o JOIN portfolios port ON o.portfolio_id = port.id WHERE port.clerk_id = ?`,
+  const [[orderStats]] = await pool.query(
+    `SELECT
+       COUNT(*) AS total_orders,
+       COUNT(CASE WHEN o.side = 'sell' AND o.realized_pnl IS NOT NULL THEN 1 END) AS total_closed,
+       COUNT(CASE WHEN o.side = 'sell' AND o.realized_pnl > 0 THEN 1 END) AS winning_trades,
+       AVG(CASE WHEN o.side = 'sell' AND o.realized_pnl IS NOT NULL THEN o.realized_pnl END) AS avg_pnl,
+       MAX(CASE WHEN o.side = 'sell' THEN o.realized_pnl END) AS best_trade,
+       MIN(CASE WHEN o.side = 'sell' THEN o.realized_pnl END) AS worst_trade
+     FROM orders o
+     JOIN portfolios port ON o.portfolio_id = port.id
+     WHERE port.clerk_id = ? AND o.status = 'filled'`,
     [req.userId]
   );
   const [[userRow]] = await pool.query('SELECT created_at FROM user_profiles WHERE clerk_id = ?', [req.userId]);
 
+  const total_closed   = Number(orderStats.total_closed) || 0;
+  const winning_trades = Number(orderStats.winning_trades) || 0;
+  const win_rate       = total_closed > 0 ? parseFloat(((winning_trades / total_closed) * 100).toFixed(1)) : null;
+
   return success(res, {
     total_value, total_cash: Number(total_cash), position_value,
-    unrealised_pnl, total_orders: Number(total_orders), created_at: userRow?.created_at ?? null,
+    unrealised_pnl,
+    total_orders: Number(orderStats.total_orders),
+    total_closed,
+    winning_trades,
+    win_rate,
+    avg_pnl:    orderStats.avg_pnl    != null ? parseFloat(Number(orderStats.avg_pnl).toFixed(2))    : null,
+    best_trade: orderStats.best_trade != null ? parseFloat(Number(orderStats.best_trade).toFixed(2)) : null,
+    worst_trade:orderStats.worst_trade!= null ? parseFloat(Number(orderStats.worst_trade).toFixed(2)): null,
+    created_at: userRow?.created_at ?? null,
   });
 }));
 
@@ -539,11 +627,12 @@ router.get('/stats', guard(async (req, res) => {
 
 router.get('/orders/recent', guard(async (req, res) => {
   const [orders] = await pool.query(
-    `SELECT o.id, o.asset_type, o.symbol, o.side, o.quantity, o.price, o.total, o.executed_at,
+    `SELECT o.id, o.asset_type, o.symbol, o.side, o.quantity, o.price, o.total,
+            o.order_type, o.realized_pnl, o.executed_at,
             port.id as portfolio_id, port.name as portfolio_name
      FROM orders o
      JOIN portfolios port ON o.portfolio_id = port.id
-     WHERE port.clerk_id = ?
+     WHERE port.clerk_id = ? AND o.status = 'filled'
      ORDER BY o.executed_at DESC LIMIT 10`,
     [req.userId]
   );

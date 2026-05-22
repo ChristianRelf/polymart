@@ -92,6 +92,8 @@ export type Candle = {
   l: number
   c: number
   v: number
+  bv?: number
+  sv?: number
   t: number
 }
 

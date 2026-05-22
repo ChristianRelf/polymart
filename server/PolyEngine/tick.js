@@ -21,9 +21,10 @@
  *   engine.data.subscribe('events',  payload => logEvent(payload));
  */
 
-import { StockSimulation } from './StockSimulation.js';
+import { StockSimulation  } from './StockSimulation.js';
 import { ForexSimulation  } from './ForexSimulation.js';
 import { DataWrapper      } from './DataWrapper.js';
+import { matchPendingOrders } from './OrderMatcher.js';
 
 // ── Timing constants ──────────────────────────────────────────────────────────
 
@@ -41,11 +42,13 @@ export class PolyEngineTick {
    * @param {number} [options.intervalMs]  Tick interval in ms (default 10_000)
    * @param {boolean} [options.validate]   Run invariant checks each tick (default false — use in dev)
    */
-  constructor({ db = null, intervalMs = DEFAULT_INTERVAL_MS, validate = false } = {}) {
+  constructor({ db = null, dbUser = null, dbMarket = null, intervalMs = DEFAULT_INTERVAL_MS, validate = false } = {}) {
     if (intervalMs < MIN_TICK_INTERVAL_MS)
       throw new RangeError(`PolyEngineTick: intervalMs must be >= ${MIN_TICK_INTERVAL_MS}ms`);
 
     this._db          = db;
+    this._dbUser      = dbUser;
+    this._dbMarket    = dbMarket;
     this._intervalMs  = intervalMs;
     this._validateEachTick = validate;
 
@@ -163,6 +166,13 @@ export class PolyEngineTick {
 
       // ── Await async subscribers (DB writes) ────────────────────────────────
       await this._data.drain();
+
+      // ── Fill any pending limit/stop orders ─────────────────────────────────
+      if (this._dbUser && this._dbMarket) {
+        matchPendingOrders(this._dbUser, this._dbMarket).catch(err =>
+          console.error('[PolyEngine] OrderMatcher error:', err.message)
+        );
+      }
 
       const durationMs = Date.now() - t0;
       this._tickCount++;

@@ -552,7 +552,7 @@ waitForDb().then(() => applySchema()).then(() => applyMigrations()).then(async (
     console.log(`[polymart] API + frontend running on port ${PORT}`);
   });
   const dbAdapter = createDbAdapter(dbMarket);
-  const engine    = new PolyEngineTick({ db: dbAdapter, intervalMs: 10000 });
+  const engine    = new PolyEngineTick({ db: dbAdapter, dbUser, dbMarket, intervalMs: 10000 });
   registerDbSubscribers(engine.data, dbMarket, dbUser);
   await engine.init();
   engine.start();

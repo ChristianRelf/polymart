@@ -215,10 +215,12 @@ function buildInitialStockState(ticker) {
     vwap:          d.basePrice,
     session:       'open',
     halted:        false,
-    candle_open:   d.basePrice,
-    candle_high:   d.basePrice,
-    candle_low:    d.basePrice,
-    candle_ticks:  0,
+    candle_open:    d.basePrice,
+    candle_high:    d.basePrice,
+    candle_low:     d.basePrice,
+    candle_ticks:   0,
+    candle_buy_vol: 0,
+    candle_sell_vol:0,
     history:       [d.basePrice],
     candles:       [],
   };
@@ -545,8 +547,10 @@ export class StockSimulation {
       const buyVol    = Math.floor(baseVol * Math.max(0.1, Math.min(0.9, buyBias)));
       const sellVol   = baseVol - buyVol;
       updated.volume      += baseVol;
-      updated.buy_volume   = (updated.buy_volume || 0) + buyVol;
-      updated.sell_volume  = (updated.sell_volume || 0) + sellVol;
+      updated.buy_volume    = (updated.buy_volume || 0) + buyVol;
+      updated.sell_volume   = (updated.sell_volume || 0) + sellVol;
+      updated.candle_buy_vol  = (updated.candle_buy_vol || 0) + buyVol;
+      updated.candle_sell_vol = (updated.candle_sell_vol || 0) + sellVol;
 
       // VWAP
       const sessionStart = session === 'open' && m.tick_count % TICKS_PER_DAY === 54;
@@ -613,9 +617,10 @@ export class StockSimulation {
       updated.candle_low   = Math.min(updated.candle_low  || np, np);
       if (updated.candle_ticks >= CANDLE_PERIOD) {
         const candles = Array.isArray(st.candles) ? [...st.candles] : [];
-        candles.push({ o: updated.candle_open || p, h: updated.candle_high, l: updated.candle_low, c: np, v: baseVol * CANDLE_PERIOD, t: m.tick_count });
-        updated.candles     = candles.slice(-48);
-        updated.candle_open = np; updated.candle_high = np; updated.candle_low = np; updated.candle_ticks = 0;
+        candles.push({ o: updated.candle_open || p, h: updated.candle_high, l: updated.candle_low, c: np, v: baseVol * CANDLE_PERIOD, bv: updated.candle_buy_vol || 0, sv: updated.candle_sell_vol || 0, t: m.tick_count });
+        updated.candles      = candles.slice(-48);
+        updated.candle_open  = np; updated.candle_high = np; updated.candle_low = np; updated.candle_ticks = 0;
+        updated.candle_buy_vol = 0; updated.candle_sell_vol = 0;
       }
 
       indexSum += np;

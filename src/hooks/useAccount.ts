@@ -86,10 +86,26 @@ export function useAccount() {
       side: "buy" | "sell"
       quantity: number
       notes?: string
+      order_type?: "market" | "limit" | "stop"
+      trigger_price?: number
     }) =>
       withToken(t =>
         apiFetch(`/account/portfolios/${portfolioId}/orders`, t, { method: "POST", body: JSON.stringify(body) })
       ),
+    [withToken]
+  )
+
+  const cancelOrder = useCallback(
+    (portfolioId: number, orderId: number) =>
+      withToken(t =>
+        apiFetch(`/account/portfolios/${portfolioId}/orders/${orderId}`, t, { method: "DELETE" })
+      ),
+    [withToken]
+  )
+
+  const getPendingOrders = useCallback(
+    (portfolioId: number) =>
+      withToken(t => apiFetch(`/account/portfolios/${portfolioId}/orders/pending`, t)),
     [withToken]
   )
 
@@ -508,6 +524,8 @@ export function useAccount() {
     updatePortfolio,
     deletePortfolio,
     placeOrder,
+    cancelOrder,
+    getPendingOrders,
     getOrders,
     getWatchlists,
     addWatchlistItem,
