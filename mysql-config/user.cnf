@@ -2,6 +2,9 @@
 # ── Durability: full ACID for user data, portfolios, community posts ───────────
 innodb_flush_log_at_trx_commit=1
 
+# ── Binary log: 7-day retention (MySQL 8.0 default is 30 days = ~15 GB) ───────
+binlog_expire_logs_seconds=604800
+
 # ── Memory: sized for user query patterns ────────────────────────────────────
 innodb_buffer_pool_size=128M
 innodb_log_file_size=64M

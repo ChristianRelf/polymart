@@ -2,6 +2,11 @@
 # ── Event scheduler (required for purge_old_events + optimize_market_tables) ──
 event_scheduler=ON
 
+# ── Binary log: disabled — market state is fully regeneratable ────────────────
+# MySQL 8.0 enables binlog by default; at ~7 GB/day from 10s simulation ticks
+# the 30-day default retention balloons to ~200 GB. No replication needed here.
+skip-log-bin
+
 # ── Durability: relaxed for regeneratable simulation state ────────────────────
 # trx_commit=2: flush to OS buffer each second instead of every commit.
 # Safe because market state is fully regenerated on restart anyway.
