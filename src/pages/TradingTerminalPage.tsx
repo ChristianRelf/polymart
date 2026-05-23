@@ -299,7 +299,7 @@ function renderChannel(ctx: CanvasRenderingContext2D, g: ChartGeom, d: Drawing, 
   const x1 = idxToX(g, d.p1.idxFromRight), y1 = toY(g, d.p1.price)
   const x2 = idxToX(g, d.p2.idxFromRight), y2 = toY(g, d.p2.price)
   // Parallel line offset from p3
-  const x3 = idxToX(g, d.p3.idxFromRight), y3 = toY(g, d.p3.price)
+  const y3 = toY(g, d.p3.price)
   const dy = y3 - y1
   ctx.save(); ctx.globalAlpha = alpha
   ctx.strokeStyle = d.color; ctx.lineWidth = 1.5
@@ -525,7 +525,7 @@ function TradingChart({
   const channelP1Ref = useRef<{ price: number; idxFromRight: number } | null>(null)
   const channelP2Ref = useRef<{ price: number; idxFromRight: number } | null>(null)
   const channelPhaseRef = useRef<0 | 1 | 2>(0)
-  const measureRef = useRef<{ p1: { price: number; idxFromRight: number }; p2: { price: number; idxFromRight: number } } | null>(null)
+
   const dragSelectRef = useRef<{ drawingId: string; startPrice: number; startIdx: number } | null>(null)
   // Keep refs for use inside renderRef closure
   const drawingsRef = useRef(drawings)
@@ -2042,8 +2042,8 @@ export default function TradingTerminalPage({ onNavigate }: Props) {
   const [drawColor, setDrawColor] = useState("#ffffff")
   const [showVolume, setShowVolume] = useState(false)
   const [selectedDrawingId, setSelectedDrawingId] = useState<string | null>(null)
-  const [undoStack, setUndoStack] = useState<Drawing[][]>([])
-  const [redoStack, setRedoStack] = useState<Drawing[][]>([])
+  const [, setUndoStack] = useState<Drawing[][]>([])
+  const [, setRedoStack] = useState<Drawing[][]>([])
   const [panelHeight, setPanelHeight] = useState(180)
 
   const sym = selectedSymbol?.symbol ?? ""
