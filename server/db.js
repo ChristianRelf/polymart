@@ -14,7 +14,7 @@ function makePool(host, port, database) {
     queueLimit: 100,
     connectTimeout: 10000,
     typeCast(field, next) {
-      if (field.type === "JSON") { const s = field.string(); return s == null ? null : JSON.parse(s); }
+      if (field.type === "JSON") { const s = field.string("utf8"); return s == null ? null : JSON.parse(s); }
       if (field.type === "BIT" && field.length === 1) {
         const bits = field.buffer();
         return bits === null ? null : bits[0] === 1;

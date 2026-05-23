@@ -527,6 +527,26 @@ async function applyMigrations() {
     );
     console.log(`[polymart] Migration: fixed ${badProfileCnt} malformed profile_id(s)`);
   }
+
+  // Add order_type, trigger_price, status, realized_pnl, created_at to orders table
+  // (added when limit/stop order support was introduced; existing DBs need this migration).
+  const [[{ orderTypeCnt }]] = await dbUser.query(
+    `SELECT COUNT(*) AS orderTypeCnt FROM INFORMATION_SCHEMA.COLUMNS
+     WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'orders' AND COLUMN_NAME = 'order_type'`
+  );
+  if (!orderTypeCnt) {
+    await dbUser.query(`ALTER TABLE orders
+      ADD COLUMN order_type    ENUM('market','limit','stop') NOT NULL DEFAULT 'market' AFTER notes,
+      ADD COLUMN trigger_price DECIMAL(18,4) DEFAULT NULL AFTER order_type,
+      ADD COLUMN status        ENUM('pending','filled','cancelled') NOT NULL DEFAULT 'filled' AFTER trigger_price,
+      ADD COLUMN realized_pnl  DECIMAL(18,4) DEFAULT NULL AFTER status,
+      ADD COLUMN created_at    DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP AFTER realized_pnl`);
+    await dbUser.query(`ALTER TABLE orders MODIFY COLUMN price DECIMAL(18,4) DEFAULT NULL`);
+    await dbUser.query(`ALTER TABLE orders MODIFY COLUMN total DECIMAL(18,4) DEFAULT NULL`);
+    await dbUser.query(`ALTER TABLE orders MODIFY COLUMN executed_at DATETIME DEFAULT NULL`);
+    await dbUser.query(`ALTER TABLE orders ADD INDEX idx_orders_status (status)`);
+    console.log("[polymart] Migration: added order_type/status/trigger_price columns to orders");
+  }
 }
 
 async function waitForDb(retries = 30, delayMs = 2000) {
