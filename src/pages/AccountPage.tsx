@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Input } from "@/components/ui/input"
 import { Separator } from "@/components/ui/separator"
+import { Switch } from "@/components/ui/switch"
 import { Loader2, AlertCircle, CheckCircle2, Camera, CreditCard, ShieldCheck, TrendingUp, TrendingDown, Activity, Clock, Ticket, Users, Flag, Shield } from "lucide-react"
 import { useAccount } from "@/hooks/useAccount"
 import type { Route } from "@/App"
@@ -13,6 +14,7 @@ interface UserProfile {
   display_name: string | null
   email: string | null
   tier: "basic" | "premium"
+  show_on_leaderboard: number
   tierLimits: {
     label: string
     maxPortfolios: number
@@ -387,7 +389,7 @@ function CommunitySection({
 // ── Main page ──────────────────────────────────────────────────────────────────
 export default function AccountPage({ onNavigate, onNavigateToCommunity }: Props) {
   const { user } = useUser()
-  const { getMe, updateMe, getBilling, startCheckout, getStats, getRecentOrders, getSupportTickets, getMyReports, getModActionsAgainstMe, getMyJoinedCommunities } = useAccount()
+  const { getMe, updateMe, updateLeaderboardVisibility, getBilling, startCheckout, getStats, getRecentOrders, getSupportTickets, getMyReports, getModActionsAgainstMe, getMyJoinedCommunities } = useAccount()
 
   const [profile, setProfile] = useState<UserProfile | null>(null)
   const [billing, setBilling] = useState<{ portalUrl: string | null } | null>(null)
@@ -405,6 +407,10 @@ export default function AccountPage({ onNavigate, onNavigateToCommunity }: Props
   const [bio, setBio] = useState("")
   const [saving, setSaving] = useState(false)
   const [saveResult, setSaveResult] = useState<"saved" | "error" | null>(null)
+
+  // Leaderboard visibility
+  const [showOnLeaderboard, setShowOnLeaderboard] = useState(true)
+  const [leaderboardSaving, setLeaderboardSaving] = useState(false)
 
   // Avatar upload
   const [avatarUploading, setAvatarUploading] = useState(false)
@@ -427,6 +433,7 @@ export default function AccountPage({ onNavigate, onNavigateToCommunity }: Props
       setProfile(me)
       setDisplayName(me.display_name ?? "")
       setBio(me.bio ?? "")
+      setShowOnLeaderboard(me.show_on_leaderboard !== 0)
       if (bill) setBilling(bill)
       if (st) setStats(st)
       setRecentOrders(Array.isArray(orders) ? orders : [])
@@ -454,6 +461,18 @@ export default function AccountPage({ onNavigate, onNavigateToCommunity }: Props
       setSaveResult("error")
     } finally {
       setSaving(false)
+    }
+  }
+
+  async function handleLeaderboardToggle(checked: boolean) {
+    setShowOnLeaderboard(checked)
+    setLeaderboardSaving(true)
+    try {
+      await updateLeaderboardVisibility(checked)
+    } catch {
+      setShowOnLeaderboard(!checked)
+    } finally {
+      setLeaderboardSaving(false)
     }
   }
 
@@ -587,6 +606,23 @@ export default function AccountPage({ onNavigate, onNavigateToCommunity }: Props
               </span>
             )}
             {saveResult === "error" && <span className="text-xs text-destructive">Save failed</span>}
+          </div>
+
+          <Separator />
+
+          <div className="flex items-center justify-between gap-4">
+            <div>
+              <p className="text-sm font-medium">Show me on the Community Leaderboard</p>
+              <p className="text-xs text-muted-foreground">Your portfolio will appear in public rankings. Toggle off to hide yourself.</p>
+            </div>
+            <div className="flex items-center gap-2 shrink-0">
+              {leaderboardSaving && <Loader2 className="w-3.5 h-3.5 animate-spin text-muted-foreground" />}
+              <Switch
+                checked={showOnLeaderboard}
+                onCheckedChange={handleLeaderboardToggle}
+                disabled={leaderboardSaving}
+              />
+            </div>
           </div>
         </CardContent>
       </Card>

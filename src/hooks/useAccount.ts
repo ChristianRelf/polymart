@@ -515,6 +515,18 @@ export function useAccount() {
     []
   )
 
+  const getLeaderboard = useCallback(
+    (limit = 50, offset = 0) =>
+      fetch(`${API}/leaderboard?limit=${limit}&offset=${offset}`).then(unwrapJson),
+    []
+  )
+
+  const updateLeaderboardVisibility = useCallback(
+    (show: boolean) =>
+      withToken(t => apiFetch('/account/me/leaderboard', t, { method: 'PUT', body: JSON.stringify({ show }) })),
+    [withToken]
+  )
+
   return {
     getMe,
     updateMe,
@@ -584,5 +596,7 @@ export function useAccount() {
     removeFromAllowlist,
     verifyUser,
     getPublicProfile,
+    getLeaderboard,
+    updateLeaderboardVisibility,
   }
 }

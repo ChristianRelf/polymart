@@ -42,6 +42,7 @@ import UserProfilePage from "@/pages/UserProfilePage"
 import TradingTerminalPage from "@/pages/TradingTerminalPage"
 import CommunityStandardsPage from "@/pages/CommunityStandardsPage"
 import LegalHubPage from "@/pages/LegalHubPage"
+import LeaderboardPage from "@/pages/LeaderboardPage"
 
 // ── Routing ───────────────────────────────────────────────────────────────────
 export type Route =
@@ -55,6 +56,7 @@ export type Route =
   | "trading-terminal"
   | "bug-report" | "suggestion"
   | "community-standards"
+  | "leaderboard"
 
 const HASH_MAP: Record<string, Route> = {
   "": "home",
@@ -91,6 +93,7 @@ const HASH_MAP: Record<string, Route> = {
   "/terminal": "trading-terminal",
   "/docs/community-standards": "community-standards",
   "/docs/legal": "legal",
+  "/leaderboard": "leaderboard",
 }
 
 const ROUTE_HASH: Record<Route, string> = {
@@ -132,6 +135,7 @@ const ROUTE_HASH: Record<Route, string> = {
   "suggestion": "/bot/suggestion",
   "community-standards": "/docs/community-standards",
   legal: "/docs/legal",
+  leaderboard: "/leaderboard",
 }
 
 function parseHash(): { route: Route; params: Record<string, string> } {
@@ -263,6 +267,7 @@ const NAV_LINKS: [Route, string][] = [
   ["products", "Products"],
   ["education", "Education"],
   ["community", "Community"],
+  ["leaderboard", "Leaderboard"],
   ["help", "Help Center"],
   ["dashboard", "Paper Trading"],
   ["trading-terminal", "Terminal"],
@@ -766,6 +771,7 @@ export default function App() {
           {route === "community-standards"  && <CommunityStandardsPage   onNavigate={go} />}
           {route === "legal"               && <LegalHubPage              onNavigate={go} />}
           {route === "sponsor"        && <SponsorPage      onNavigate={go} />}
+          {route === "leaderboard"   && <LeaderboardPage  onNavigate={go} onNavigateToProfile={goToUserProfile} />}
 
           {/* Auth pages */}
           {route === "sign-in" && <SignInPage />}

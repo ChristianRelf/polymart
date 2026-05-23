@@ -18,6 +18,7 @@ CREATE TABLE IF NOT EXISTS user_profiles (
   avatar_url            TEXT          DEFAULT NULL,
   bio                   TEXT          DEFAULT NULL,
   is_verified           TINYINT(1)    NOT NULL DEFAULT 0,
+  show_on_leaderboard   TINYINT(1)    NOT NULL DEFAULT 1,
   stripe_customer_id    VARCHAR(64)   DEFAULT NULL,
   stripe_subscription_id VARCHAR(64)  DEFAULT NULL,
   tier_expires_at       DATETIME      DEFAULT NULL,

@@ -20,13 +20,13 @@ import {
 // ── Stochastic helpers ────────────────────────────────────────────────────────
 
 /**
- * Box-Muller normal distribution with 8% fat-tail risk.
- * Returns a random variate approximately N(0,1) with occasional large moves.
+ * Box-Muller normal distribution with 15% fat-tail risk.
+ * Returns a random variate approximately N(0,1) with frequent large moves.
  */
 function gaussian() {
   const u1 = Math.random(), u2 = Math.random();
   const z  = Math.sqrt(-2 * Math.log(Math.max(u1, 1e-10))) * Math.cos(2 * Math.PI * u2);
-  return Math.random() < 0.08 ? z * (2.5 + Math.random() * 1.5) : z;
+  return Math.random() < 0.15 ? z * (3 + Math.random() * 2.5) : z;
 }
 
 // ── Technical indicator helpers ───────────────────────────────────────────────
@@ -394,22 +394,22 @@ export class StockSimulation {
 
     // ── Event ──────────────────────────────────────────────────────────────────
     let newEvent = null;
-    const eventProb = session === 'closed' ? 0.02 : 0.03;
+    const eventProb = session === 'closed' ? 0.04 : 0.06;
     if (Math.random() < eventProb) {
       newEvent = sampleEvent();
-      m.fear_greed = Math.max(0, Math.min(100, m.fear_greed + newEvent.effect * 20));
+      m.fear_greed = Math.max(0, Math.min(100, m.fear_greed + newEvent.effect * 30));
       if (newEvent.sector && sec[newEvent.sector]) {
-        sec[newEvent.sector].news_stack += newEvent.effect * .6;
+        sec[newEvent.sector].news_stack += newEvent.effect * 1.0;
       }
     }
 
     // ── Sector momentum ────────────────────────────────────────────────────────
     for (const k of Object.keys(sec)) {
       const s     = sec[k];
-      s.news_stack *= .92;
-      s.momentum   = s.momentum * .96 + (Math.random() - .5) * .002;
-      s.trend      = Math.max(-.06, Math.min(.06,
-        (s.trend + s.momentum + gs * .05 + s.news_stack * .02) * .99
+      s.news_stack *= .85;
+      s.momentum   = s.momentum * .96 + (Math.random() - .5) * .003;
+      s.trend      = Math.max(-.12, Math.min(.12,
+        (s.trend + s.momentum + gs * .05 + s.news_stack * .04) * .99
       ));
     }
 
@@ -417,13 +417,13 @@ export class StockSimulation {
     if (m.crash_cooldown > 0) m.crash_cooldown--;
     if (m.boom_cooldown  > 0) m.boom_cooldown--;
     let cm = 1;
-    if (!m.crash_cooldown && m.fear_greed < 8 && Math.random() < .015) {
-      cm = -2.5; m.crash_cooldown = 80; m.fear_greed = 3;
-      newEvent = { text: 'MARKET CRASH - Circuit breakers triggered', effect: -.18, weight: 3, category: 'macro' };
+    if (!m.crash_cooldown && m.fear_greed < 22 && Math.random() < .030) {
+      cm = -4.0; m.crash_cooldown = 50; m.fear_greed = 2;
+      newEvent = { text: 'MARKET CRASH - Circuit breakers triggered, trading halted', effect: -.28, weight: 3, category: 'macro' };
     }
-    if (!m.boom_cooldown && m.fear_greed > 92 && Math.random() < .015) {
-      cm = 1.8; m.boom_cooldown = 80; m.fear_greed = 95;
-      newEvent = { text: 'MARKET BOOM - Historic rally day', effect: .14, weight: 3, category: 'macro' };
+    if (!m.boom_cooldown && m.fear_greed > 88 && Math.random() < .018) {
+      cm = 2.2; m.boom_cooldown = 50; m.fear_greed = 96;
+      newEvent = { text: 'MARKET BOOM - Historic rally day, all sectors ripping', effect: .18, weight: 3, category: 'macro' };
     }
 
     // ── Per-stock evolution ────────────────────────────────────────────────────
@@ -457,9 +457,9 @@ export class StockSimulation {
       // Event impact
       let ee = 0;
       if (newEvent) {
-        if (newEvent.sector === def.sector) ee = newEvent.effect * .18 * mcm;
-        else if (!newEvent.sector)          ee = newEvent.effect * .12;
-        else                                ee = newEvent.effect * .02;
+        if (newEvent.sector === def.sector) ee = newEvent.effect * .32 * mcm;
+        else if (!newEvent.sector)          ee = newEvent.effect * .22;
+        else                                ee = newEvent.effect * .06;
       }
 
       // News stack bleed-through
@@ -503,15 +503,15 @@ export class StockSimulation {
         }
         recentVol = Math.sqrt(sumSq / lookback);
       }
-      const clusterMult = def.sector === 'meme' ? 20 : 35;
-      const volCluster  = 1 + recentVol * clusterMult;
+      const clusterMult = def.sector === 'meme' ? 28 : 45;
+      const volCluster  = Math.min(def.sector === 'meme' ? 6 : 4, 1 + recentVol * clusterMult);
 
       // Fair value / mean reversion
       const trendDrift = Math.min(1 + def.trend * (updated.earnings_cycle / 300), 10);
       const fairValue  = def.basePrice * Math.max(0.1, trendDrift);
 
       // New price
-      const tv = def.volatility * .03 * mcm * sesVolatMult * volCluster;
+      const tv = def.volatility * .05 * mcm * sesVolatMult * volCluster;
       let np   = p + p * (
         def.trend * .02
         + tv * n * Math.abs(cm)
@@ -527,10 +527,10 @@ export class StockSimulation {
         + rp + ip + gb
       ) * (cm < 0 ? -1 : 1);
 
-      np += -(np - fairValue) * 0.002;
+      np += -(np - fairValue) * 0.0008;
       // NaN/Inf guard — any corrupted input in the expression above falls back to prev price
       if (!isFinite(np)) np = p;
-      np  = Math.round(Math.max(0.10, Math.min(np, def.basePrice * 10)) * 100) / 100;
+      np  = Math.round(Math.max(0.05, Math.min(np, def.basePrice * 6)) * 100) / 100;
 
       // Opening gap shock
       if (session === 'open' && m.tick_count % TICKS_PER_DAY === 54) {
@@ -672,8 +672,8 @@ export class StockSimulation {
     for (const st of this._stocks) {
       if (!isFinite(st.price) || st.price <= 0)
         throw new RangeError(`Stock ${st.ticker} has invalid price: ${st.price}`);
-      if (st.price > (STOCK_DEFS[st.ticker]?.basePrice || 1) * 15)
-        throw new RangeError(`Stock ${st.ticker} price ${st.price} exceeds 15x base — possible runaway`);
+      if (st.price > (STOCK_DEFS[st.ticker]?.basePrice || 1) * 8)
+        throw new RangeError(`Stock ${st.ticker} price ${st.price} exceeds 8x base — possible runaway`);
     }
     return true;
   }

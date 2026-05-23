@@ -108,7 +108,7 @@ router.get('/me', guard(async (req, res) => {
   );
   const [[user]] = await pool.query(
     `SELECT clerk_id, profile_id, display_name, email, tier, avatar_url, bio,
-            stripe_subscription_id, tier_expires_at, created_at
+            stripe_subscription_id, tier_expires_at, created_at, show_on_leaderboard
      FROM user_profiles WHERE clerk_id = ?`,
     [req.userId]
   );
@@ -133,6 +133,18 @@ router.put('/me', guard(async (req, res) => {
     [display_name || null, bio !== undefined ? bio : null, req.userId]
   );
   return success(res, { ok: true });
+}));
+
+// ── PUT /me/leaderboard ───────────────────────────────────────────────────────
+
+router.put('/me/leaderboard', guard(async (req, res) => {
+  const { show } = req.body;
+  if (typeof show !== 'boolean') return fail(res, ERRORS.VALIDATION_ERROR, 'show must be a boolean');
+  await pool.query(
+    'UPDATE user_profiles SET show_on_leaderboard = ? WHERE clerk_id = ?',
+    [show ? 1 : 0, req.userId]
+  );
+  return success(res, { show_on_leaderboard: show });
 }));
 
 // ── GET /portfolios ───────────────────────────────────────────────────────────

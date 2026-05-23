@@ -14,6 +14,7 @@ import adminRouter from "./PolyAPI/AdminAPI.js";
 import communityRouter from "./PolyAPI/CommunityAPI.js";
 import communitiesRouter from "./PolyAPI/CommunitiesAPI.js";
 import usersRouter from "./PolyAPI/UsersAPI.js";
+import leaderboardRouter from "./PolyAPI/LeaderboardAPI.js";
 import botFeedbackRouter from "./PolyAPI/BotFeedbackAPI.js";
 import toolsRouter from "./PolyAPI/ToolsAPI.js";
 import { PolyEngineTick } from "./PolyEngine/tick.js";
@@ -76,6 +77,7 @@ app.use("/api/v1/community", restrictedCors, communityRouter);
 // ── Communities API (sub-communities, memberships, mod tools) ─────────────────
 app.use("/api/v1/communities", restrictedCors, communitiesRouter);
 app.use("/api/v1/users", usersRouter);
+app.use("/api/v1/leaderboard", leaderboardRouter);
 
 // ── Bot feedback (bug reports & suggestions) ──────────────────────────────────
 app.use("/api/v1/bot-feedback", botFeedbackRouter);
@@ -526,6 +528,16 @@ async function applyMigrations() {
        WHERE profile_id IS NOT NULL AND profile_id NOT REGEXP '^[0-9]{9,16}$'`
     );
     console.log(`[polymart] Migration: fixed ${badProfileCnt} malformed profile_id(s)`);
+  }
+
+  // Add show_on_leaderboard to user_profiles.
+  const [[{ leaderCnt }]] = await dbUser.query(
+    `SELECT COUNT(*) AS leaderCnt FROM INFORMATION_SCHEMA.COLUMNS
+     WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'user_profiles' AND COLUMN_NAME = 'show_on_leaderboard'`
+  );
+  if (!leaderCnt) {
+    await dbUser.query(`ALTER TABLE user_profiles ADD COLUMN show_on_leaderboard TINYINT(1) NOT NULL DEFAULT 1`);
+    console.log("[polymart] Migration: added show_on_leaderboard to user_profiles");
   }
 
   // Add order_type, trigger_price, status, realized_pnl, created_at to orders table
