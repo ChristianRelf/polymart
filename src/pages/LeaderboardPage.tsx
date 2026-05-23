@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback } from "react"
 import { Card, CardContent } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
-import { Loader2, Trophy, CheckCircle2 } from "lucide-react"
+import { Trophy, CheckCircle2 } from "lucide-react"
 import { useAccount } from "@/hooks/useAccount"
 import type { Route } from "@/App"
 
