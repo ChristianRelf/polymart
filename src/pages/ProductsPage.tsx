@@ -3,7 +3,7 @@ import { Separator } from "@/components/ui/separator"
 import { TrendingUp, Bitcoin, ChartBar as BarChart2, DollarSign, LayoutGrid, Bot, Globe, ArrowRight, Clock, Layers, MonitorSmartphone, Code as Code2, Rss } from "lucide-react"
 import { cn } from "@/lib/utils"
 
-type Route = "home" | "market" | "forex" | "api" | "terms" | "privacy" | "education" | "changelog" | "products" | "help" | "widgets"
+type Route = "home" | "market" | "forex" | "crypto" | "api" | "terms" | "privacy" | "education" | "changelog" | "products" | "help" | "widgets"
 
 interface Props {
   onNavigate: (r: Route) => void
@@ -158,7 +158,7 @@ export default function ProductsPage({ onNavigate }: Props) {
         </h1>
         <p className="text-lg text-muted-foreground leading-relaxed max-w-2xl">
           Polymart is a growing suite of financial market simulations.
-          The stock exchange and forex market are live today - more markets are on the way.
+          Stocks, forex, and crypto are live today — more markets are on the way.
         </p>
       </div>
 
@@ -182,10 +182,13 @@ export default function ProductsPage({ onNavigate }: Props) {
             onNavigate={onNavigate}
             route="market"
           />
-          <ComingSoonProduct
+          <ActiveProduct
             icon={Bitcoin}
             title="Cryptocurrency Simulation"
-            desc="A simulated crypto exchange with fictional tokens, 24/7 price feeds, order book depth, and on-chain style metrics. High volatility profiles and cross-asset correlations."
+            desc="132 fictional coins across 12 categories — Layer 1, DeFi, Meme, GameFi, AI, and more. 24/7 price engine with BTC dominance correlation, RSI, MACD, Bollinger Bands, and whale events. Open REST API, no auth required."
+            badge="Live"
+            onNavigate={onNavigate}
+            route="crypto"
           />
           <ComingSoonProduct
             icon={BarChart2}

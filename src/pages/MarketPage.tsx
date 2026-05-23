@@ -1036,7 +1036,7 @@ function SimPicker({ simType, onSelect, onNavigate }: { simType: SimType; onSele
       {SIM_CONFIGS.map(sim => {
         const active = sim.id === simType && sim.id === "stocks"
         const live   = sim.status === "live"
-        const navTarget: import("@/lib/routes").Route | null = sim.id === "forex" ? "forex" : null
+        const navTarget: import("@/lib/routes").Route | null = sim.id === "forex" ? "forex" : sim.id === "crypto" ? "crypto" : null
         return (
           <button
             key={sim.id}
