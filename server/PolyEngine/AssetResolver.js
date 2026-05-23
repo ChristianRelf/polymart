@@ -35,8 +35,9 @@ export function isValidSymbol(symbol) {
 // ── Price resolution ──────────────────────────────────────────────────────────
 
 const PRICE_QUERIES = {
-  stock: 'SELECT price FROM stocks_state WHERE ticker = ?',
-  forex: 'SELECT price FROM forex_state WHERE pair = ?',
+  stock:  'SELECT price FROM stocks_state WHERE ticker = ?',
+  forex:  'SELECT price FROM forex_state WHERE pair = ?',
+  crypto: 'SELECT price FROM crypto_state WHERE symbol = ?',
 };
 
 /**

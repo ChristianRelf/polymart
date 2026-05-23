@@ -1,7 +1,7 @@
 // src/lib/routes.ts
 
 export type Route =
-  | "home" | "market" | "forex" | "api" | "terms" | "privacy" | "changelog"
+  | "home" | "market" | "forex" | "crypto" | "api" | "terms" | "privacy" | "changelog"
   | "education" | "products" | "help" | "widgets" | "edu-tools" | "community"
   | "bot-terms" | "bot-privacy" | "community-blog" | "sponsor" | "stock-info"
   | "kofi-terms" | "kofi-privacy" | "community-post" | "legal"

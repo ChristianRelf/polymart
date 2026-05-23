@@ -20,7 +20,7 @@ export const SIM_CONFIGS: {
 }[] = [
   { id: "stocks", label: "Stocks", icon: "📈", status: "live",        description: "132 simulated equities across 20 sectors. Prices update every 5 seconds." },
   { id: "forex",  label: "Forex",  icon: "💱", status: "live",        description: "40 currency pairs (major, minor, exotic) with live technical indicators." },
-  { id: "crypto", label: "Crypto", icon: "₿",  status: "coming_soon", description: "Simulated cryptocurrency market with volatile assets and 24/7 trading." },
+  { id: "crypto", label: "Crypto", icon: "₿",  status: "live",        description: "132 simulated cryptocurrencies across 12 categories. Prices update every 10 seconds, 24/7." },
 ]
 
 // ── Stock types ───────────────────────────────────────────────────────────────
@@ -167,6 +167,78 @@ export type MarketEvent = {
   firedAt: string
 }
 
+// ── Crypto types ──────────────────────────────────────────────────────────────
+
+export type CryptoSummary = {
+  symbol: string
+  name: string
+  category: string
+  mcapTier: string
+  blockchain: string
+  consensus: string
+  circulatingSupply: number
+  totalSupply: number
+  price: number
+  prevPrice: number
+  change: number
+  changePct: number
+  bid: number
+  ask: number
+  spreadPct: number
+  hi24h: number
+  lo24h: number
+  hi52w: number
+  lo52w: number
+  ath: number
+  marketCap: number
+  dominance: number
+  volume: number
+  buyVolume: number
+  sellVolume: number
+  rsi: number
+  momentum: number
+  atr: number
+  ema12: number
+  ema26: number
+  macd: number
+  macdSignal: number
+  macdHist: number
+  stochK: number
+  stochD: number
+  cci: number
+  bbUpper: number
+  bbMiddle: number
+  bbLower: number
+  bbBw: number
+  sma20: number
+  sma50: number
+  streak: number
+  pctFrom52wHigh: number
+  pctFromAth: number
+  volatility: number | null
+  trend: number | null
+  description: string
+  updatedAt: string
+}
+
+export type CryptoDetail = CryptoSummary & {
+  history: number[]
+  candles: Candle[]
+  categoryPeers: string[]
+}
+
+export type CryptoCategoryInfo = {
+  label: string
+  icon: string
+  avgChange: number
+  avgRsi: number
+  avgDominance: number
+  newsStack: number
+  momentum: number
+  symbols: string[]
+  coinCount: number
+}
+
 // ── Forex types ───────────────────────────────────────────────────────────────
 
 export type ForexPairSummary = {
@@ -237,18 +309,23 @@ type SimCtx = {
   sectors: Record<string, SectorInfo>
   events: MarketEvent[]
   forexPairs: Record<string, ForexPairSummary>
+  cryptoCoins: Record<string, CryptoSummary>
+  cryptoCategories: Record<string, CryptoCategoryInfo>
   tickCount: number
   loading: boolean
   lastRefresh: number
   getDetail: (ticker: string) => Promise<StockDetail | null>
   getForexPair: (pair: string) => Promise<ForexPairDetail | null>
+  getCryptoDetail: (symbol: string) => Promise<CryptoDetail | null>
 }
 
 const SimContext = createContext<SimCtx>({
   market: null, stocks: {}, sectors: {}, events: [], forexPairs: {},
+  cryptoCoins: {}, cryptoCategories: {},
   tickCount: 0, loading: true, lastRefresh: 0,
   getDetail: async () => null,
   getForexPair: async () => null,
+  getCryptoDetail: async () => null,
 })
 
 export function useSimulation() {
@@ -258,23 +335,27 @@ export function useSimulation() {
 // ── Provider ──────────────────────────────────────────────────────────────────
 
 export function SimulationProvider({ children }: { children: React.ReactNode }) {
-  const [market,     setMarket]     = useState<MarketOverview | null>(null)
-  const [stocks,     setStocks]     = useState<Record<string, StockSummary>>({})
-  const [sectors,    setSectors]    = useState<Record<string, SectorInfo>>({})
-  const [events,     setEvents]     = useState<MarketEvent[]>([])
-  const [forexPairs, setForexPairs] = useState<Record<string, ForexPairSummary>>({})
-  const [tickCount,  setTickCount]  = useState(0)
-  const [loading,    setLoading]    = useState(true)
-  const [lastRefresh,setLastRefresh]= useState(0)
+  const [market,           setMarket]           = useState<MarketOverview | null>(null)
+  const [stocks,           setStocks]           = useState<Record<string, StockSummary>>({})
+  const [sectors,          setSectors]          = useState<Record<string, SectorInfo>>({})
+  const [events,           setEvents]           = useState<MarketEvent[]>([])
+  const [forexPairs,       setForexPairs]       = useState<Record<string, ForexPairSummary>>({})
+  const [cryptoCoins,      setCryptoCoins]      = useState<Record<string, CryptoSummary>>({})
+  const [cryptoCategories, setCryptoCategories] = useState<Record<string, CryptoCategoryInfo>>({})
+  const [tickCount,        setTickCount]        = useState(0)
+  const [loading,          setLoading]          = useState(true)
+  const [lastRefresh,      setLastRefresh]      = useState(0)
 
   const refresh = useCallback(async () => {
     try {
-      const [mkt, stks, secs, evts, forex] = await Promise.all([
+      const [mkt, stks, secs, evts, forex, crypto, cryptoCats] = await Promise.all([
         apiFetch("/api/v1/getMarket"),
         apiFetch("/api/v1/getStocks"),
         apiFetch("/api/v1/getSectors"),
         apiFetch("/api/v1/getEvents?limit=20"),
         apiFetch("/api/v1/forex/getPairs"),
+        apiFetch("/api/v1/crypto/getCoins"),
+        apiFetch("/api/v1/crypto/getCategories"),
       ])
 
       if (mkt && !mkt.error) { setMarket(mkt); setTickCount(mkt.tickCount) }
@@ -282,6 +363,8 @@ export function SimulationProvider({ children }: { children: React.ReactNode }) 
       if (secs && !secs.error) setSectors(secs)
       if (Array.isArray(evts)) setEvents(evts)
       if (forex && !forex.error) setForexPairs(forex)
+      if (crypto && !crypto.error) setCryptoCoins(crypto)
+      if (cryptoCats && !cryptoCats.error) setCryptoCategories(cryptoCats)
       setLoading(false)
       setLastRefresh(Date.now())
     } catch {
@@ -307,8 +390,14 @@ export function SimulationProvider({ children }: { children: React.ReactNode }) 
     return data as ForexPairDetail
   }, [])
 
+  const getCryptoDetail = useCallback(async (symbol: string): Promise<CryptoDetail | null> => {
+    const data = await apiFetch(`/api/v1/crypto/getCoin?symbol=${encodeURIComponent(symbol)}`)
+    if (!data || data.error) return null
+    return data as CryptoDetail
+  }, [])
+
   return (
-    <SimContext.Provider value={{ market, stocks, sectors, events, forexPairs, tickCount, loading, lastRefresh, getDetail, getForexPair }}>
+    <SimContext.Provider value={{ market, stocks, sectors, events, forexPairs, cryptoCoins, cryptoCategories, tickCount, loading, lastRefresh, getDetail, getForexPair, getCryptoDetail }}>
       {children}
     </SimContext.Provider>
   )

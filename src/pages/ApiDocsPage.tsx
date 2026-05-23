@@ -4,7 +4,7 @@ import { Separator } from "@/components/ui/separator"
 import { cn } from "@/lib/utils"
 import {
   TrendingUp, Puzzle, Webhook, Bot, BookOpen, ChevronRight,
-  Circle, ArrowUpRight, Package, Zap, Brain, Rss,
+  Circle, ArrowUpRight, Package, Zap, Brain, Rss, Coins,
 } from "lucide-react"
 
 const BASE = "https://polymart.co"
@@ -573,14 +573,198 @@ const PRODUCTS: Product[] = [
     ],
   },
 
-  // ── Future simulations ─────────────────────────────────────────────────────
   {
-    id: "crypto-sim",
-    label: "Crypto Simulation",
-    icon: Circle,
-    status: "coming-soon" as ProductStatus,
-    desc: "Simulated cryptocurrency market with real-time prices, 24/7 trading, and volatile assets across DeFi, Layer 1s, and meme coins.",
-    comingSoonNote: "The crypto simulation will share the same engine architecture as the stock market with crypto-specific mechanics: funding rates, liquidation cascades, whale accumulation patterns, and sentiment-driven pumps.",
+    id: "crypto-api",
+    label: "Crypto API",
+    icon: Coins,
+    status: "stable" as ProductStatus,
+    version: "v1",
+    desc: "Open REST API for the Polymart simulated cryptocurrency market. 132 fictional coins across 12 categories (Layer 1, DeFi, Meme, GameFi, AI, and more) with 24/7 simulated trading, BTC dominance correlation, whale events, and stablecoin mean-reversion. Prices update every ~10 seconds.",
+    baseUrl: BASE,
+    endpoints: [
+      {
+        id: "crypto-getCoins",
+        method: "GET",
+        path: "/api/v1/crypto/getCoins",
+        summary: "All coins - summary",
+        desc: "Returns all 132 simulated coins keyed by symbol. Includes price, 24h change, market cap, dominance, volume, and all technical indicators. Optionally filter by category.",
+        params: [
+          { name: "category", type: "string", required: false, desc: "Filter by category key", example: "defi" },
+        ],
+        response: [
+          { name: "<SYMBOL>", type: "object", desc: "Keyed by symbol (e.g. SOLX)" },
+          { name: "  symbol", type: "string", desc: "Coin symbol" },
+          { name: "  name", type: "string", desc: "Coin name" },
+          { name: "  category", type: "string", desc: "Category key (l1 | l2 | defi | meme | gamefi | ai | privacy | infra | oracle | exchange | metaverse | stablecoin)" },
+          { name: "  mcapTier", type: "string", desc: "large | mid | small" },
+          { name: "  blockchain / consensus", type: "string", desc: "Underlying chain and consensus mechanism" },
+          { name: "  price", type: "number", desc: "Current price (USD)" },
+          { name: "  prevPrice", type: "number", desc: "Price at previous tick" },
+          { name: "  changePct", type: "number", desc: "% change from previous tick" },
+          { name: "  bid / ask / spreadPct", type: "number", desc: "Simulated order book spread" },
+          { name: "  hi24h / lo24h", type: "number", desc: "24-hour simulated high/low (resets every 1440 ticks)" },
+          { name: "  hi52w / lo52w / ath", type: "number", desc: "52-week high/low and all-time high" },
+          { name: "  marketCap", type: "number", desc: "Market capitalisation: price × circulating supply" },
+          { name: "  dominance", type: "number", desc: "% of total simulated crypto market cap" },
+          { name: "  volume / buyVolume / sellVolume", type: "number", desc: "Cumulative volume split by direction" },
+          { name: "  rsi", type: "number", desc: "RSI (0–100)" },
+          { name: "  macd / macdSignal / macdHist", type: "number", desc: "MACD components" },
+          { name: "  stochK / stochD", type: "number", desc: "Stochastic oscillator %K and %D" },
+          { name: "  cci", type: "number", desc: "Commodity Channel Index" },
+          { name: "  bbUpper / bbMiddle / bbLower / bbBw", type: "number", desc: "Bollinger Band values and bandwidth" },
+          { name: "  sma20 / sma50 / ema12 / ema26", type: "number", desc: "Moving averages" },
+          { name: "  atr", type: "number", desc: "Average True Range" },
+          { name: "  streak", type: "number", desc: "Consecutive up(+) or down(−) ticks" },
+          { name: "  pctFrom52wHigh / pctFromAth", type: "number", desc: "Distance from key price levels (%)" },
+          { name: "  updatedAt", type: "ISO 8601", desc: "Timestamp of last tick" },
+        ],
+        example: `${BASE}/api/v1/crypto/getCoins`,
+      },
+      {
+        id: "crypto-getCoin",
+        method: "GET",
+        path: "/api/v1/crypto/getCoin",
+        summary: "Single coin - full detail",
+        desc: "Full data for one coin including price history (up to 400 data points), OHLCV candles, description, supply figures, and category peers.",
+        params: [
+          { name: "symbol", type: "string", required: true, desc: "Coin symbol (case-insensitive)", example: "SOLX" },
+        ],
+        response: [
+          { name: "...all getCoins fields", type: "object", desc: "All fields from getCoins plus:" },
+          { name: "description", type: "string", desc: "Short description of the coin's purpose" },
+          { name: "circulatingSupply / totalSupply", type: "number", desc: "Token supply figures" },
+          { name: "history", type: "number[]", desc: "Price history (up to 400 entries, oldest first)" },
+          { name: "candles", type: "object[]", desc: "OHLCV candles: { o, h, l, c, v, t } — each candle spans 18 ticks (~3 min)" },
+          { name: "categoryPeers", type: "string[]", desc: "Symbols of other coins in the same category" },
+        ],
+        example: `${BASE}/api/v1/crypto/getCoin?symbol=SOLX`,
+      },
+      {
+        id: "crypto-getCategories",
+        method: "GET",
+        path: "/api/v1/crypto/getCategories",
+        summary: "All categories - summary",
+        desc: "Returns all 12 coin categories with aggregate stats: average change, RSI, dominance, and news impact score.",
+        response: [
+          { name: "<category_key>", type: "object", desc: "Keyed by category key (e.g. defi)" },
+          { name: "  label", type: "string", desc: "Human-readable category name" },
+          { name: "  icon", type: "string", desc: "Emoji icon" },
+          { name: "  avgChange", type: "number", desc: "Average % change across category coins" },
+          { name: "  avgRsi", type: "number", desc: "Average RSI across category coins" },
+          { name: "  avgDominance", type: "number", desc: "Average dominance % across category coins" },
+          { name: "  newsStack", type: "number", desc: "Accumulated news/event impact (decays over time)" },
+          { name: "  momentum", type: "number", desc: "Category price momentum" },
+          { name: "  symbols", type: "string[]", desc: "All coin symbols in this category" },
+          { name: "  coinCount", type: "number", desc: "Number of coins in category" },
+        ],
+        example: `${BASE}/api/v1/crypto/getCategories`,
+      },
+      {
+        id: "crypto-getCategory",
+        method: "GET",
+        path: "/api/v1/crypto/getCategory",
+        summary: "Single category - full detail",
+        desc: "Full data for one category including all constituent coins with current prices and indicators.",
+        params: [
+          { name: "category", type: "string", required: true, desc: "Category key", example: "defi" },
+        ],
+        response: [
+          { name: "...all getCategories fields", type: "object", desc: "All fields from getCategories plus:" },
+          { name: "coins", type: "object[]", desc: "All coins in category with full summary data" },
+        ],
+        example: `${BASE}/api/v1/crypto/getCategory?category=defi`,
+      },
+      {
+        id: "crypto-getMarketOverview",
+        method: "GET",
+        path: "/api/v1/crypto/getMarketOverview",
+        summary: "Crypto market overview",
+        desc: "Returns total crypto market cap, Bitcoin dominance (BTCX), 24h volume, top gainer/loser, and bullish/bearish coin counts.",
+        response: [
+          { name: "totalMarketCap", type: "number", desc: "Sum of all coin market caps (USD)" },
+          { name: "btcDominance", type: "number", desc: "BTCX market cap as % of total" },
+          { name: "totalVolume24h", type: "number", desc: "24-hour total volume across all coins" },
+          { name: "bullishCoins", type: "number", desc: "Coins with positive tick change" },
+          { name: "bearishCoins", type: "number", desc: "Coins with negative tick change" },
+          { name: "topGainer", type: "{ symbol, changePct }", desc: "Biggest gaining coin this tick" },
+          { name: "topLoser", type: "{ symbol, changePct }", desc: "Biggest losing coin this tick" },
+          { name: "updatedAt", type: "ISO 8601", desc: "Timestamp of last tick" },
+        ],
+        example: `${BASE}/api/v1/crypto/getMarketOverview`,
+      },
+      {
+        id: "crypto-getTopMovers",
+        method: "GET",
+        path: "/api/v1/crypto/getTopMovers",
+        summary: "Top gaining and losing coins",
+        desc: "Returns the top N gainers and top N losers by tick-over-tick % change across all 132 coins.",
+        params: [
+          { name: "limit", type: "number", required: false, desc: "Coins per list (1–20, default 5)", example: "5" },
+        ],
+        response: [
+          { name: "gainers", type: "object[]", desc: "{ symbol, name, category, price, changePct, marketCap }" },
+          { name: "losers", type: "object[]", desc: "Same shape, ordered worst-to-best" },
+        ],
+        example: `${BASE}/api/v1/crypto/getTopMovers?limit=5`,
+      },
+      {
+        id: "crypto-getHistory",
+        method: "GET",
+        path: "/api/v1/crypto/getHistory",
+        summary: "Price history for a coin",
+        desc: "Returns raw price history and OHLCV candles for one coin. Up to 400 data points, each representing one simulation tick (10 seconds).",
+        params: [
+          { name: "symbol", type: "string", required: true, desc: "Coin symbol", example: "DOGO" },
+          { name: "limit", type: "number", required: false, desc: "Data points to return (1–400, default 100)", example: "100" },
+        ],
+        response: [
+          { name: "symbol", type: "string", desc: "Coin symbol" },
+          { name: "name", type: "string", desc: "Coin name" },
+          { name: "count", type: "number", desc: "Number of data points returned" },
+          { name: "history", type: "number[]", desc: "Ordered price array, oldest first" },
+          { name: "candles", type: "object[]", desc: "OHLCV candles: { o, h, l, c, v, t }" },
+          { name: "updatedAt", type: "ISO 8601", desc: "Timestamp of last update" },
+        ],
+        example: `${BASE}/api/v1/crypto/getHistory?symbol=DOGO&limit=100`,
+      },
+      {
+        id: "crypto-search",
+        method: "GET",
+        path: "/api/v1/crypto/search",
+        summary: "Search coins",
+        desc: "Full-text search across coin symbols, names, blockchain, and category keys.",
+        params: [
+          { name: "q", type: "string", required: true, desc: "Search query (matches symbol, name, blockchain, or category)", example: "layer" },
+        ],
+        response: [
+          { name: "query", type: "string", desc: "The search query" },
+          { name: "count", type: "number", desc: "Number of results" },
+          { name: "results", type: "object[]", desc: "{ symbol, name, category, price, changePct, marketCap }" },
+        ],
+        example: `${BASE}/api/v1/crypto/search?q=layer`,
+      },
+      {
+        id: "crypto-getLeaderboard",
+        method: "GET",
+        path: "/api/v1/crypto/getLeaderboard",
+        summary: "Ranked coin leaderboard",
+        desc: "Returns coins ranked by any numeric field. Optionally filter by category. Ideal for Discord bot leaderboard commands.",
+        params: [
+          { name: "by", type: "string", required: false, desc: "Sort field: changePct | marketCap | dominance | volume | rsi | atr | bbBw (default: changePct)", example: "marketCap" },
+          { name: "dir", type: "string", required: false, desc: "asc | desc (default: desc)", example: "desc" },
+          { name: "limit", type: "number", required: false, desc: "Max results (1–132, default 10)", example: "10" },
+          { name: "category", type: "string", required: false, desc: "Filter to a specific category", example: "meme" },
+        ],
+        response: [
+          { name: "sortedBy", type: "string", desc: "Sort field used" },
+          { name: "direction", type: "string", desc: "asc or desc" },
+          { name: "category", type: "string", desc: "Category filter applied (or 'all')" },
+          { name: "count", type: "number", desc: "Total coins before limit" },
+          { name: "coins", type: "object[]", desc: "All getCoins fields for each ranked coin" },
+        ],
+        example: `${BASE}/api/v1/crypto/getLeaderboard?by=marketCap&limit=10`,
+      },
+    ],
   },
 
   // ── Future integrations - add new entries here ────────────────────────────
@@ -697,6 +881,11 @@ const SECTOR_KEYS = [
   "tech", "food", "space", "meme", "green", "finance", "gaming",
   "health", "crypto", "defence", "retail", "media", "auto",
   "realty", "travel", "ai", "bio", "energy", "logistics", "agri",
+]
+
+const CRYPTO_CATEGORY_KEYS = [
+  "l1", "l2", "defi", "meme", "gamefi", "ai",
+  "privacy", "infra", "oracle", "exchange", "metaverse", "stablecoin",
 ]
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
@@ -971,8 +1160,18 @@ function ProductPanel({ product }: { product: Product }) {
         </div>
       )}
 
-      {/* Quick start snippet - stocks + forex APIs only */}
-      {(product.id === "polymart-api" || product.id === "forex-api") && (
+      {/* Category reference - crypto API only */}
+      {product.id === "crypto-api" && (
+        <div className="mb-10">
+          <p className="text-[10px] text-muted-foreground uppercase tracking-widest mb-4">Valid Category Keys</p>
+          <div className="flex flex-wrap gap-2">
+            {CRYPTO_CATEGORY_KEYS.map(k => <MonoTag key={k}>{k}</MonoTag>)}
+          </div>
+        </div>
+      )}
+
+      {/* Quick start snippet - stocks, forex, and crypto APIs */}
+      {(product.id === "polymart-api" || product.id === "forex-api" || product.id === "crypto-api") && (
       <div className="bg-card border border-border rounded-xl p-6">
         <p className="text-[10px] text-muted-foreground uppercase tracking-widest mb-4">Quick Start</p>
         <pre className="text-xs font-mono text-foreground bg-background border border-border rounded-lg p-4 overflow-x-auto whitespace-pre">{`// Get current price of a stock (both paths work)
@@ -1007,7 +1206,24 @@ console.log(\`EUR/USD ~ GBP/USD correlation: \${corr.matrix.EURUSD.GBPUSD}\`);
 
 // Active trading sessions
 const sess = await fetch('${BASE}/api/v1/forex/getSessions').then(r => r.json());
-console.log(\`Open sessions: \${sess.openSessions.join(', ')}\`);`}</pre>
+console.log(\`Open sessions: \${sess.openSessions.join(', ')}\`);
+
+// Get all crypto coins
+const coins = await fetch('${BASE}/api/v1/crypto/getCoins').then(r => r.json());
+const solx = coins['SOLX'];
+console.log(\`SOLX: $\${solx.price.toFixed(2)} (\${solx.changePct > 0 ? '+' : ''}\${solx.changePct.toFixed(2)}%) MCap: $\${(solx.marketCap/1e9).toFixed(1)}B\`);
+
+// Crypto market overview
+const cMkt = await fetch('${BASE}/api/v1/crypto/getMarketOverview').then(r => r.json());
+console.log(\`Total MCap: $\${(cMkt.totalMarketCap/1e12).toFixed(2)}T | BTC Dominance: \${cMkt.btcDominance.toFixed(1)}%\`);
+
+// Top meme coin movers
+const meme = await fetch('${BASE}/api/v1/crypto/getLeaderboard?by=changePct&category=meme&limit=3').then(r => r.json());
+meme.coins.forEach(c => console.log(\`\${c.symbol}: \${c.changePct > 0 ? '+' : ''}\${c.changePct.toFixed(2)}%\`));
+
+// Search for DeFi coins
+const srch = await fetch('${BASE}/api/v1/crypto/search?q=defi').then(r => r.json());
+console.log(\`Found \${srch.count} coins matching 'defi'\`);`}</pre>
       </div>
       )}
     </div>

@@ -150,6 +150,72 @@ CREATE TABLE IF NOT EXISTS forex_state (
   PRIMARY KEY (pair)
 ) ENGINE=InnoDB ROW_FORMAT=COMPRESSED;
 
+-- ── crypto_state (one row per coin, 132 rows) ────────────────────────────────
+CREATE TABLE IF NOT EXISTS crypto_state (
+  symbol              VARCHAR(10)  NOT NULL,
+  name                VARCHAR(120) NOT NULL DEFAULT '',
+  category            VARCHAR(20)  NOT NULL DEFAULT '',
+  mcap_tier           VARCHAR(10)  NOT NULL DEFAULT 'mid',
+  blockchain          VARCHAR(60)  NOT NULL DEFAULT '',
+  consensus           VARCHAR(10)  NOT NULL DEFAULT 'PoS',
+  circulating_supply  DOUBLE       NOT NULL DEFAULT 0,
+  total_supply        DOUBLE       NOT NULL DEFAULT 0,
+  price               DOUBLE       NOT NULL DEFAULT 0,
+  prev_price          DOUBLE       NOT NULL DEFAULT 0,
+  open_price          DOUBLE       NOT NULL DEFAULT 0,
+  hi24h               DOUBLE       NOT NULL DEFAULT 0,
+  lo24h               DOUBLE       NOT NULL DEFAULT 0,
+  hi52w               DOUBLE       NOT NULL DEFAULT 0,
+  lo52w               DOUBLE       NOT NULL DEFAULT 0,
+  ath                 DOUBLE       NOT NULL DEFAULT 0,
+  market_cap          DOUBLE       NOT NULL DEFAULT 0,
+  dominance           DOUBLE       NOT NULL DEFAULT 0,
+  volume              BIGINT       NOT NULL DEFAULT 0,
+  buy_volume          BIGINT       NOT NULL DEFAULT 0,
+  sell_volume         BIGINT       NOT NULL DEFAULT 0,
+  bid                 DOUBLE       NOT NULL DEFAULT 0,
+  ask                 DOUBLE       NOT NULL DEFAULT 0,
+  spread_pct          DOUBLE       NOT NULL DEFAULT 0.25,
+  rsi                 DOUBLE       NOT NULL DEFAULT 50,
+  momentum            DOUBLE       NOT NULL DEFAULT 0,
+  atr                 DOUBLE       NOT NULL DEFAULT 0,
+  ema12               DOUBLE       NOT NULL DEFAULT 0,
+  ema26               DOUBLE       NOT NULL DEFAULT 0,
+  macd                DOUBLE       NOT NULL DEFAULT 0,
+  macd_signal         DOUBLE       NOT NULL DEFAULT 0,
+  macd_hist           DOUBLE       NOT NULL DEFAULT 0,
+  stoch_k             DOUBLE       NOT NULL DEFAULT 50,
+  stoch_d             DOUBLE       NOT NULL DEFAULT 50,
+  cci                 DOUBLE       NOT NULL DEFAULT 0,
+  bb_upper            DOUBLE       NOT NULL DEFAULT 0,
+  bb_middle           DOUBLE       NOT NULL DEFAULT 0,
+  bb_lower            DOUBLE       NOT NULL DEFAULT 0,
+  bb_bw               DOUBLE       NOT NULL DEFAULT 0,
+  sma20               DOUBLE       NOT NULL DEFAULT 0,
+  sma50               DOUBLE       NOT NULL DEFAULT 0,
+  streak              INT          NOT NULL DEFAULT 0,
+  candle_open         DOUBLE       NOT NULL DEFAULT 0,
+  candle_high         DOUBLE       NOT NULL DEFAULT 0,
+  candle_low          DOUBLE       NOT NULL DEFAULT 0,
+  candle_ticks        INT          NOT NULL DEFAULT 0,
+  history             JSON         NOT NULL DEFAULT (JSON_ARRAY()),
+  candles             JSON         NOT NULL DEFAULT (JSON_ARRAY()),
+  updated_at          DATETIME(3)  NOT NULL DEFAULT CURRENT_TIMESTAMP(3) ON UPDATE CURRENT_TIMESTAMP(3),
+  PRIMARY KEY (symbol)
+) ENGINE=InnoDB ROW_FORMAT=COMPRESSED;
+
+-- ── crypto_category_state (12 rows) ──────────────────────────────────────────
+CREATE TABLE IF NOT EXISTS crypto_category_state (
+  category_key  VARCHAR(20)  NOT NULL,
+  label         VARCHAR(60)  NOT NULL DEFAULT '',
+  icon          VARCHAR(10)  NOT NULL DEFAULT '',
+  momentum      DOUBLE       NOT NULL DEFAULT 0,
+  trend         DOUBLE       NOT NULL DEFAULT 0,
+  news_stack    DOUBLE       NOT NULL DEFAULT 0,
+  updated_at    DATETIME(3)  NOT NULL DEFAULT CURRENT_TIMESTAMP(3) ON UPDATE CURRENT_TIMESTAMP(3),
+  PRIMARY KEY (category_key)
+) ENGINE=InnoDB ROW_FORMAT=COMPRESSED;
+
 -- ── 24-hour cull event ────────────────────────────────────────────────────────
 DROP EVENT IF EXISTS purge_old_events;
 CREATE EVENT purge_old_events
@@ -177,3 +243,9 @@ CREATE EVENT optimize_forex_state
   ON SCHEDULE EVERY 7 DAY
   STARTS CURRENT_TIMESTAMP
   DO OPTIMIZE TABLE forex_state;
+
+DROP EVENT IF EXISTS optimize_crypto_state;
+CREATE EVENT optimize_crypto_state
+  ON SCHEDULE EVERY 7 DAY
+  STARTS CURRENT_TIMESTAMP
+  DO OPTIMIZE TABLE crypto_state;

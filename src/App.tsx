@@ -31,6 +31,7 @@ import CommunityBlogPage from "@/pages/CommunityBlogPage"
 import SponsorPage from "@/pages/SponsorPage"
 import StockInfoPage from "@/pages/StockInfoPage"
 import ForexPage from "@/pages/ForexPage"
+import CryptoPage from "@/pages/CryptoPage"
 import SignInPage from "@/pages/SignInPage"
 import SignUpPage from "@/pages/SignUpPage"
 import DashboardPage from "@/pages/DashboardPage"
@@ -44,7 +45,7 @@ import LegalHubPage from "@/pages/LegalHubPage"
 
 // ── Routing ───────────────────────────────────────────────────────────────────
 export type Route =
-  | "home" | "market" | "forex" | "api" | "terms" | "privacy" | "changelog"
+  | "home" | "market" | "forex" | "crypto" | "api" | "terms" | "privacy" | "changelog"
   | "education" | "products" | "help" | "widgets" | "edu-tools" | "community"
   | "bot-terms" | "bot-privacy" | "community-blog" | "sponsor" | "stock-info"
   | "kofi-terms" | "kofi-privacy" | "community-post" | "legal"
@@ -60,6 +61,7 @@ const HASH_MAP: Record<string, Route> = {
   "/": "home",
   "/market": "market",
   "/forex": "forex",
+  "/crypto": "crypto",
   "/docs/api": "api",
   "/api": "api",
   "/docs/terms": "terms",
@@ -95,6 +97,7 @@ const ROUTE_HASH: Record<Route, string> = {
   home: "/",
   market: "/market",
   forex: "/forex",
+  crypto: "/crypto",
   api: "/docs/api",
   terms: "/docs/terms",
   privacy: "/docs/privacy",
@@ -441,6 +444,7 @@ function Footer({ setRoute }: { setRoute: (r: Route) => void }) {
             <FLink label="Home"          route="home" />
             <FLink label="Market"        route="market" />
             <FLink label="Forex"         route="forex" />
+            <FLink label="Crypto"        route="crypto" />
             <FLink label="Paper Trading" route="dashboard" />
             <FLink label="Products"      route="products" />
             <FLink label="Widgets"       route="widgets" />
@@ -734,6 +738,7 @@ export default function App() {
           {route === "home"       && <HomePage    onNavigate={go} />}
           {route === "market"     && <MarketPage  onNavigateToInfo={goToInfo} onNavigate={go} />}
           {route === "forex"      && <ForexPage   onNavigate={go} />}
+          {route === "crypto"     && <CryptoPage  onNavigate={go} />}
           {route === "stock-info" && <StockInfoPage ticker={routeParams.ticker ?? ""} onNavigate={go} onNavigateToInfo={goToInfo} />}
           {route === "api"            && <ApiDocsPage />}
           {route === "terms"          && <LegalPage        type="terms"       onNavigate={go} />}

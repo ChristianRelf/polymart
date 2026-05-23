@@ -14,7 +14,8 @@
  * Replaces the write/read functions in the old server/tick.js.
  */
 
-import { SECTORS } from './StockData.js';
+import { SECTORS }           from './StockData.js';
+import { CRYPTO_CATEGORIES } from './CryptoData.js';
 
 // ── Stock + market_state write ────────────────────────────────────────────────
 
@@ -137,6 +138,65 @@ async function writeForex(db, pairs) {
   }
 }
 
+// ── Crypto write ──────────────────────────────────────────────────────────────
+
+async function writeCrypto(db, coins, categories) {
+  if (!coins || coins.length === 0) return;
+  const conn = await db.getConnection();
+  try {
+    const CHUNK = 22;
+    const COLS  = 'symbol,name,category,mcap_tier,blockchain,consensus,circulating_supply,total_supply,price,prev_price,open_price,hi24h,lo24h,hi52w,lo52w,ath,market_cap,dominance,volume,buy_volume,sell_volume,bid,ask,spread_pct,rsi,momentum,atr,ema12,ema26,macd,macd_signal,macd_hist,stoch_k,stoch_d,cci,bb_upper,bb_middle,bb_lower,bb_bw,sma20,sma50,streak,candle_open,candle_high,candle_low,candle_ticks,history,candles';
+    const UPD   = 'name=VALUES(name),category=VALUES(category),mcap_tier=VALUES(mcap_tier),blockchain=VALUES(blockchain),consensus=VALUES(consensus),circulating_supply=VALUES(circulating_supply),total_supply=VALUES(total_supply),price=VALUES(price),prev_price=VALUES(prev_price),open_price=VALUES(open_price),hi24h=VALUES(hi24h),lo24h=VALUES(lo24h),hi52w=VALUES(hi52w),lo52w=VALUES(lo52w),ath=VALUES(ath),market_cap=VALUES(market_cap),dominance=VALUES(dominance),volume=VALUES(volume),buy_volume=VALUES(buy_volume),sell_volume=VALUES(sell_volume),bid=VALUES(bid),ask=VALUES(ask),spread_pct=VALUES(spread_pct),rsi=VALUES(rsi),momentum=VALUES(momentum),atr=VALUES(atr),ema12=VALUES(ema12),ema26=VALUES(ema26),macd=VALUES(macd),macd_signal=VALUES(macd_signal),macd_hist=VALUES(macd_hist),stoch_k=VALUES(stoch_k),stoch_d=VALUES(stoch_d),cci=VALUES(cci),bb_upper=VALUES(bb_upper),bb_middle=VALUES(bb_middle),bb_lower=VALUES(bb_lower),bb_bw=VALUES(bb_bw),sma20=VALUES(sma20),sma50=VALUES(sma50),streak=VALUES(streak),candle_open=VALUES(candle_open),candle_high=VALUES(candle_high),candle_low=VALUES(candle_low),candle_ticks=VALUES(candle_ticks),history=VALUES(history),candles=VALUES(candles),updated_at=NOW(3)';
+
+    for (let i = 0; i < coins.length; i += CHUNK) {
+      const chunk = coins.slice(i, i + CHUNK);
+      const vals  = chunk.map(c => [
+        c.symbol, c.name, c.category, c.mcap_tier, c.blockchain, c.consensus,
+        c.circulating_supply, c.total_supply,
+        c.price, c.prev_price, c.open_price,
+        c.hi24h, c.lo24h, c.hi52w, c.lo52w, c.ath,
+        c.market_cap, c.dominance,
+        c.volume, c.buy_volume ?? 0, c.sell_volume ?? 0,
+        c.bid, c.ask, c.spread_pct,
+        c.rsi, c.momentum, c.atr,
+        c.ema12, c.ema26, c.macd, c.macd_signal, c.macd_hist,
+        c.stoch_k ?? 50, c.stoch_d ?? 50, c.cci ?? 0,
+        c.bb_upper, c.bb_middle, c.bb_lower, c.bb_bw,
+        c.sma20, c.sma50, c.streak ?? 0,
+        c.candle_open, c.candle_high, c.candle_low, c.candle_ticks ?? 0,
+        JSON.stringify(c.history),
+        JSON.stringify(c.candles),
+      ]);
+      const ph = vals.map(() => `(${Array(48).fill('?').join(',')})`).join(',');
+      await conn.query(
+        `INSERT INTO crypto_state (${COLS}) VALUES ${ph} ON DUPLICATE KEY UPDATE ${UPD}`,
+        vals.flat()
+      );
+    }
+
+    if (Array.isArray(categories)) {
+      for (const cat of categories) {
+        await conn.query(
+          `INSERT INTO crypto_category_state (category_key,label,icon,momentum,trend,news_stack,updated_at)
+           VALUES (?,?,?,?,?,?,NOW(3))
+           ON DUPLICATE KEY UPDATE
+             label=VALUES(label), icon=VALUES(icon),
+             momentum=VALUES(momentum), trend=VALUES(trend),
+             news_stack=VALUES(news_stack), updated_at=NOW(3)`,
+          [
+            cat.category_key,
+            CRYPTO_CATEGORIES[cat.category_key]?.label || cat.label || cat.category_key,
+            CRYPTO_CATEGORIES[cat.category_key]?.icon  || cat.icon  || '',
+            cat.momentum, cat.trend, cat.news_stack,
+          ]
+        );
+      }
+    }
+  } finally {
+    conn.release();
+  }
+}
+
 // ── Events write ──────────────────────────────────────────────────────────────
 
 async function writeEvent(db, event) {
@@ -153,7 +213,7 @@ async function writeEvent(db, event) {
 
 // ── Portfolio snapshots ───────────────────────────────────────────────────────
 
-async function snapshotPortfolios(stockPrices, forexPrices, dbUser) {
+async function snapshotPortfolios(stockPrices, forexPrices, cryptoPrices, dbUser) {
   try {
     const [portfolios] = await dbUser.query('SELECT id FROM portfolios');
     if (!portfolios.length) return;
@@ -168,8 +228,8 @@ async function snapshotPortfolios(stockPrices, forexPrices, dbUser) {
         [port.id]
       );
       const posValue = positions.reduce((sum, p) => {
-        const price = p.asset_type === 'stock'
-          ? (stockPrices.get(p.symbol) ?? Number(p.avg_cost))
+        const price = p.asset_type === 'stock'  ? (stockPrices.get(p.symbol)  ?? Number(p.avg_cost))
+          : p.asset_type === 'crypto' ? (cryptoPrices.get(p.symbol) ?? Number(p.avg_cost))
           : (forexPrices.get(p.symbol) ?? Number(p.avg_cost));
         return sum + Number(p.quantity) * price;
       }, 0);
@@ -252,6 +312,31 @@ async function loadForexStateFromDb(db) {
   }));
 }
 
+async function loadCryptoStateFromDb(db) {
+  try {
+    const [[coinRows], [catRows]] = await Promise.all([
+      db.query('SELECT * FROM crypto_state'),
+      db.query('SELECT * FROM crypto_category_state'),
+    ]);
+    if (!coinRows.length) return null;
+    const coins = coinRows.map(c => ({
+      ...c,
+      history:    Array.isArray(c.history) ? c.history : [],
+      candles:    Array.isArray(c.candles) ? c.candles : [],
+      buy_volume:  c.buy_volume  ?? 0,
+      sell_volume: c.sell_volume ?? 0,
+      stoch_k:    c.stoch_k  ?? 50,
+      stoch_d:    c.stoch_d  ?? 50,
+      cci:        c.cci      ?? 0,
+      streak:     c.streak   ?? 0,
+      dominance:  c.dominance ?? 0,
+    }));
+    return { coins, categories: catRows };
+  } catch {
+    return null;
+  }
+}
+
 // ── Public API ────────────────────────────────────────────────────────────────
 
 /**
@@ -260,8 +345,9 @@ async function loadForexStateFromDb(db) {
  */
 export function createDbAdapter(dbMarket) {
   return {
-    loadStockState: () => loadStockStateFromDb(dbMarket),
-    loadForexState: () => loadForexStateFromDb(dbMarket),
+    loadStockState:  () => loadStockStateFromDb(dbMarket),
+    loadForexState:  () => loadForexStateFromDb(dbMarket),
+    loadCryptoState: () => loadCryptoStateFromDb(dbMarket),
   };
 }
 
@@ -275,7 +361,8 @@ export function createDbAdapter(dbMarket) {
  */
 export function registerDbSubscribers(dataWrapper, dbMarket, dbUser) {
   let lastSnapshotRun = 0;
-  let latestForexPrices = new Map();
+  let latestForexPrices  = new Map();
+  let latestCryptoPrices = new Map();
 
   dataWrapper.subscribe('stocks', async ({ stocks, marketState, sectors }) => {
     await writeMarketAndStocks(dbMarket, marketState, stocks, sectors);
@@ -284,13 +371,18 @@ export function registerDbSubscribers(dataWrapper, dbMarket, dbUser) {
     if (now - lastSnapshotRun >= 5 * 60 * 1000) {
       lastSnapshotRun = now;
       const stockPrices = new Map(stocks.map(s => [s.ticker, Number(s.price)]));
-      snapshotPortfolios(stockPrices, latestForexPrices, dbUser);
+      snapshotPortfolios(stockPrices, latestForexPrices, latestCryptoPrices, dbUser);
     }
   });
 
   dataWrapper.subscribe('forex', async ({ pairs }) => {
     await writeForex(dbMarket, pairs);
     latestForexPrices = new Map(pairs.map(p => [p.pair, Number(p.price)]));
+  });
+
+  dataWrapper.subscribe('crypto', async ({ coins, categories }) => {
+    await writeCrypto(dbMarket, coins, categories);
+    latestCryptoPrices = new Map(coins.map(c => [c.symbol, Number(c.price)]));
   });
 
   dataWrapper.subscribe('events', async event => {

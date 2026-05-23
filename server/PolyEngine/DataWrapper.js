@@ -88,6 +88,22 @@ function validateEventPayload(payload) {
     throw new TypeError('DataWrapper[events]: event.effect must be a finite number');
 }
 
+function validateCryptoPayload(payload) {
+  if (!payload || typeof payload !== 'object')
+    throw new TypeError('DataWrapper[crypto]: payload must be an object');
+  if (!Array.isArray(payload.coins))
+    throw new TypeError('DataWrapper[crypto]: payload.coins must be an array');
+  if (!Array.isArray(payload.categories))
+    throw new TypeError('DataWrapper[crypto]: payload.categories must be an array');
+
+  for (const c of payload.coins) {
+    if (typeof c.symbol !== 'string')
+      throw new TypeError(`DataWrapper[crypto]: coin entry missing .symbol`);
+    if (!isFiniteNumber(c.price) || c.price <= 0)
+      throw new RangeError(`DataWrapper[crypto]: coin ${c.symbol} has invalid price ${c.price}`);
+  }
+}
+
 // ── Channel registry ──────────────────────────────────────────────────────────
 
 /** @type {Record<string, (payload: unknown) => void>} */
@@ -96,6 +112,7 @@ const VALIDATORS = {
   forex:  validateForexPayload,
   market: validateMarketPayload,
   events: validateEventPayload,
+  crypto: validateCryptoPayload,
 };
 
 const KNOWN_CHANNELS = new Set(Object.keys(VALIDATORS));
@@ -233,12 +250,13 @@ export class DataWrapper {
 
   /**
    * Publish a complete tick result in one call — convenience wrapper that
-   * publishes to all four channels atomically (before drain).
+   * publishes to all channels atomically (before drain).
    *
-   * @param {{ stocks: object[]; marketState: object; sectors: object[]; event: object|null }} stockResult
+   * @param {{ stocks: object[]; marketState: object; sectors: object[]; newEvent: object|null }} stockResult
    * @param {{ pairs: object[] }} forexResult
+   * @param {{ coins: object[]; categories: object[]; newEvent: object|null }} cryptoResult
    */
-  publishTick(stockResult, forexResult) {
+  publishTick(stockResult, forexResult, cryptoResult) {
     this.publish('stocks', {
       stocks:      stockResult.stocks,
       marketState: stockResult.marketState,
@@ -248,6 +266,12 @@ export class DataWrapper {
     this.publish('market', stockResult.marketState);
     if (stockResult.newEvent !== undefined) {
       this.publish('events', stockResult.newEvent);
+    }
+    if (cryptoResult) {
+      this.publish('crypto', { coins: cryptoResult.coins, categories: cryptoResult.categories });
+      if (cryptoResult.newEvent) {
+        this.publish('events', cryptoResult.newEvent);
+      }
     }
   }
 

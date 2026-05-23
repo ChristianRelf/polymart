@@ -23,6 +23,7 @@
 import { dbMarket as pool } from '../db.js';
 import { STOCK_DEFS, SECTORS } from '../PolyEngine/StockData.js';
 import { PAIR_DEFS, COUNTRY_FLAGS } from '../PolyEngine/ForexSimulation.js';
+import { CRYPTO_DEFS, CRYPTO_CATEGORIES } from '../PolyEngine/CryptoData.js';
 import { COMPANY_PROFILES, generateNews } from '../company-data.js';
 import { createRouter } from './Router.js';
 import { success, fail, guard, ERRORS } from './Protocol.js';
@@ -137,6 +138,33 @@ function formatPairRow(p, def) {
     pctFrom52wHigh: p.hi52w > 0 ? +((+p.price / +p.hi52w - 1) * 100).toFixed(2) : 0,
     pctFrom52wLow:  p.lo52w > 0 ? +((+p.price / +p.lo52w - 1) * 100).toFixed(2) : 0,
     activeSession: getActiveSession(),
+  };
+}
+
+function formatCoinRow(c, def) {
+  const pct = c.prev_price > 0 ? ((c.price - c.prev_price) / c.prev_price) * 100 : 0;
+  return {
+    symbol: c.symbol, name: c.name, category: c.category,
+    mcapTier: c.mcap_tier, blockchain: c.blockchain, consensus: c.consensus,
+    circulatingSupply: +c.circulating_supply, totalSupply: +c.total_supply,
+    price: +c.price, prevPrice: +c.prev_price,
+    change: +pct.toFixed(4), changePct: +pct.toFixed(4),
+    bid: +c.bid, ask: +c.ask, spreadPct: +c.spread_pct,
+    hi24h: +c.hi24h, lo24h: +c.lo24h,
+    hi52w: +c.hi52w, lo52w: +c.lo52w, ath: +c.ath,
+    marketCap: +c.market_cap, dominance: +c.dominance,
+    volume: c.volume, buyVolume: c.buy_volume || 0, sellVolume: c.sell_volume || 0,
+    rsi: +c.rsi, momentum: +c.momentum, atr: +c.atr,
+    ema12: +c.ema12, ema26: +c.ema26,
+    macd: +c.macd, macdSignal: +c.macd_signal, macdHist: +c.macd_hist,
+    stochK: +(c.stoch_k ?? 50), stochD: +(c.stoch_d ?? 50), cci: +(c.cci ?? 0),
+    bbUpper: +c.bb_upper, bbMiddle: +c.bb_middle, bbLower: +c.bb_lower, bbBw: +c.bb_bw,
+    sma20: +c.sma20, sma50: +c.sma50, streak: c.streak ?? 0,
+    pctFrom52wHigh: c.hi52w > 0 ? +((+c.price / +c.hi52w - 1) * 100).toFixed(2) : 0,
+    pctFromAth:     c.ath    > 0 ? +((+c.price / +c.ath    - 1) * 100).toFixed(2) : 0,
+    volatility: def?.volatility ?? null, trend: def?.trend ?? null,
+    description: def?.description ?? '',
+    updatedAt: c.updated_at,
   };
 }
 
@@ -402,7 +430,7 @@ router.get('/sims', (req, res) => {
   res.json([
     { id: 'stocks', label: 'Stock Market', icon: '📈', status: 'live', description: '132 simulated equities across 20 sectors. Prices update every 10 seconds.', assets: Object.keys(STOCK_DEFS).length, sectors: Object.keys(SECTORS).length, tickInterval: 10 },
     { id: 'forex',  label: 'Forex',        icon: '💱', status: 'live', description: '28 currency pairs (major, minor, exotic) with live technical indicators.', assets: Object.keys(PAIR_DEFS).length, categories: ['major', 'minor', 'exotic'], tickInterval: 10 },
-    { id: 'crypto', label: 'Crypto Market',icon: '₿',  status: 'coming_soon', description: 'Simulated cryptocurrency market with volatile assets and 24/7 trading.' },
+    { id: 'crypto', label: 'Crypto Market',icon: '₿',  status: 'live', description: '132 simulated cryptocurrencies across 12 categories. Prices update every 10 seconds, 24/7.', assets: Object.keys(CRYPTO_DEFS).length, categories: Object.keys(CRYPTO_CATEGORIES).length, tickInterval: 10 },
   ]);
 });
 
@@ -688,6 +716,185 @@ router.get('/forex/getCurrencies', async (req, res) => {
     }
     const currencies = Object.values(currMap).map(c => ({ code: c.code, country: c.country, flag: c.flag, strength: +(c.sum / c.count).toFixed(4), pairsCount: c.count })).sort((a, b) => b.strength - a.strength);
     res.json({ count: currencies.length, currencies });
+  } catch (e) { res.status(500).json({ error: String(e) }); }
+});
+
+// ════════════════════════════════════════════════════════════════════════════
+// CRYPTO ROUTES  (/crypto/*)
+// ════════════════════════════════════════════════════════════════════════════
+
+router.get('/crypto/getCoins', async (req, res) => {
+  setCors(res);
+  try {
+    const category = req.query.category?.toLowerCase();
+    let sql = 'SELECT * FROM crypto_state';
+    const params = [];
+    if (category && CRYPTO_CATEGORIES[category]) { sql += ' WHERE category = ?'; params.push(category); }
+    sql += ' ORDER BY symbol';
+    const [rows] = await pool.query(sql, params);
+    const result = {};
+    for (const c of rows) result[c.symbol] = formatCoinRow(c, CRYPTO_DEFS[c.symbol]);
+    res.json(result);
+  } catch (e) { res.status(500).json({ error: String(e) }); }
+});
+
+router.get('/crypto/getCoin', async (req, res) => {
+  setCors(res);
+  try {
+    const symbol = (req.query.symbol || '').toUpperCase();
+    if (!symbol) return res.status(400).json({ error: 'Missing ?symbol= parameter' });
+    const [[c]] = await pool.query('SELECT * FROM crypto_state WHERE symbol = ? LIMIT 1', [symbol]);
+    if (!c) return res.status(404).json({ error: `Coin not found: ${symbol}` });
+    const def  = CRYPTO_DEFS[symbol];
+    const cat  = def?.category;
+    const peers = cat ? Object.keys(CRYPTO_DEFS).filter(k => CRYPTO_DEFS[k].category === cat && k !== symbol) : [];
+    res.json({
+      ...formatCoinRow(c, def),
+      history: Array.isArray(c.history) ? c.history : [],
+      candles: Array.isArray(c.candles) ? c.candles : [],
+      categoryPeers: peers,
+    });
+  } catch (e) { res.status(500).json({ error: String(e) }); }
+});
+
+router.get('/crypto/getCategories', async (req, res) => {
+  setCors(res);
+  try {
+    const [catRows] = await pool.query('SELECT * FROM crypto_category_state');
+    const [coinRows] = await pool.query('SELECT symbol, category, price, prev_price, rsi, dominance FROM crypto_state');
+    const result = {};
+    for (const key of Object.keys(CRYPTO_CATEGORIES)) {
+      const meta  = CRYPTO_CATEGORIES[key];
+      const catRow = catRows.find(r => r.category_key === key);
+      const symbols = Object.keys(CRYPTO_DEFS).filter(s => CRYPTO_DEFS[s].category === key);
+      let totalChange = 0, totalRsi = 0, totalDominance = 0, cnt = 0;
+      for (const sym of symbols) {
+        const c = coinRows.find(r => r.symbol === sym);
+        if (c && c.prev_price > 0) {
+          totalChange    += (c.price - c.prev_price) / c.prev_price * 100;
+          totalRsi       += +(c.rsi || 50);
+          totalDominance += +(c.dominance || 0);
+          cnt++;
+        }
+      }
+      result[key] = {
+        label: meta.label, icon: meta.icon,
+        avgChange:    cnt > 0 ? +(totalChange    / cnt).toFixed(4) : 0,
+        avgRsi:       cnt > 0 ? +(totalRsi       / cnt).toFixed(1) : 50,
+        avgDominance: cnt > 0 ? +(totalDominance / cnt).toFixed(4) : 0,
+        newsStack: catRow ? +catRow.news_stack : 0,
+        momentum:  catRow ? +catRow.trend      : 0,
+        symbols, coinCount: symbols.length,
+      };
+    }
+    res.json(result);
+  } catch (e) { res.status(500).json({ error: String(e) }); }
+});
+
+router.get('/crypto/getCategory', async (req, res) => {
+  setCors(res);
+  try {
+    const categoryKey = (req.query.category || '').toLowerCase();
+    if (!categoryKey) return res.status(400).json({ error: 'Missing ?category= parameter' });
+    const meta = CRYPTO_CATEGORIES[categoryKey];
+    if (!meta) return res.status(404).json({ error: `Unknown category: ${categoryKey}` });
+    const symbols = Object.keys(CRYPTO_DEFS).filter(s => CRYPTO_DEFS[s].category === categoryKey);
+    const ph = symbols.map(() => '?').join(',');
+    const [[catRow], coins] = await Promise.all([
+      pool.query('SELECT * FROM crypto_category_state WHERE category_key = ? LIMIT 1', [categoryKey]).then(([r]) => r),
+      pool.query(`SELECT symbol,name,price,prev_price,volume,rsi,bid,ask,spread_pct,market_cap,dominance,atr FROM crypto_state WHERE symbol IN (${ph})`, symbols).then(([r]) => r),
+    ]);
+    let totalChange = 0, cnt = 0;
+    const coinList = coins.map(c => {
+      const pct = c.prev_price > 0 ? (c.price - c.prev_price) / c.prev_price * 100 : 0;
+      totalChange += pct; cnt++;
+      return { symbol: c.symbol, name: c.name, price: +c.price, change: +pct.toFixed(4), volume: c.volume, rsi: +c.rsi, marketCap: +c.market_cap, dominance: +c.dominance, atr: +c.atr };
+    });
+    res.json({ key: categoryKey, label: meta.label, icon: meta.icon, avgChange: cnt > 0 ? +(totalChange / cnt).toFixed(4) : 0, newsStack: catRow ? +catRow.news_stack : 0, momentum: catRow ? +catRow.trend : 0, coins: coinList, updatedAt: catRow?.updated_at ?? null });
+  } catch (e) { res.status(500).json({ error: String(e) }); }
+});
+
+router.get('/crypto/getMarketOverview', async (req, res) => {
+  setCors(res);
+  try {
+    const [coins] = await pool.query('SELECT symbol, price, prev_price, market_cap, dominance, volume FROM crypto_state');
+    let totalMarketCap = 0, total24hVolume = 0, bullish = 0, bearish = 0;
+    let tG = { symbol: '', pct: -Infinity };
+    let tL = { symbol: '', pct:  Infinity };
+    for (const c of coins) {
+      const pct = c.prev_price > 0 ? ((c.price - c.prev_price) / c.prev_price) * 100 : 0;
+      totalMarketCap  += +c.market_cap;
+      total24hVolume  += +c.volume;
+      if (pct > 0) bullish++; else if (pct < 0) bearish++;
+      if (pct > tG.pct) tG = { symbol: c.symbol, pct: +pct.toFixed(4) };
+      if (pct < tL.pct) tL = { symbol: c.symbol, pct: +pct.toFixed(4) };
+    }
+    const btcRow = coins.find(c => c.symbol === 'BTCX');
+    res.json({ totalMarketCap: +totalMarketCap.toFixed(0), total24hVolume, btcDominance: btcRow ? +btcRow.dominance : 0, bullishCount: bullish, bearishCount: bearish, unchanged: coins.length - bullish - bearish, totalCoins: coins.length, topGainer: tG.symbol ? tG : null, topLoser: tL.symbol ? tL : null });
+  } catch (e) { res.status(500).json({ error: String(e) }); }
+});
+
+router.get('/crypto/getTopMovers', async (req, res) => {
+  setCors(res);
+  try {
+    const limit = Math.min(parseInt(req.query.limit || '5', 10), 20);
+    const [rows] = await pool.query('SELECT symbol,name,category,price,prev_price,volume,rsi,atr,market_cap,dominance FROM crypto_state');
+    const withChange = rows.map(c => {
+      const pct = c.prev_price > 0 ? ((c.price - c.prev_price) / c.prev_price) * 100 : 0;
+      return { symbol: c.symbol, name: c.name, category: c.category, price: +c.price, changePct: +pct.toFixed(4), volume: c.volume, rsi: +c.rsi, atr: +c.atr, marketCap: +c.market_cap, dominance: +c.dominance };
+    }).sort((a, b) => b.changePct - a.changePct);
+    res.json({ gainers: withChange.slice(0, limit), losers: withChange.slice(-limit).reverse() });
+  } catch (e) { res.status(500).json({ error: String(e) }); }
+});
+
+router.get('/crypto/getHistory', async (req, res) => {
+  setCors(res);
+  try {
+    const symbol = (req.query.symbol || '').toUpperCase();
+    if (!symbol) return res.status(400).json({ error: 'Missing ?symbol= parameter' });
+    const limit = Math.min(parseInt(req.query.limit || '60', 10), 400);
+    const [[c]] = await pool.query('SELECT symbol, name, history, candles, updated_at FROM crypto_state WHERE symbol = ? LIMIT 1', [symbol]);
+    if (!c) return res.status(404).json({ error: `Coin not found: ${symbol}` });
+    const history = Array.isArray(c.history) ? c.history.slice(-limit) : [];
+    res.json({ symbol: c.symbol, name: c.name, count: history.length, history, candles: Array.isArray(c.candles) ? c.candles : [], updatedAt: c.updated_at });
+  } catch (e) { res.status(500).json({ error: String(e) }); }
+});
+
+router.get('/crypto/search', async (req, res) => {
+  setCors(res);
+  try {
+    const q = (req.query.q || '').toLowerCase().trim();
+    if (!q) return res.status(400).json({ error: 'Missing ?q= parameter' });
+    const [rows] = await pool.query('SELECT symbol, name, category, price, prev_price, rsi, blockchain FROM crypto_state ORDER BY symbol');
+    const results = rows.filter(c => {
+      const def = CRYPTO_DEFS[c.symbol];
+      return c.symbol.toLowerCase().includes(q) || c.name.toLowerCase().includes(q) || c.category.toLowerCase().includes(q) || (c.blockchain || '').toLowerCase().includes(q);
+    }).map(c => {
+      const pct = c.prev_price > 0 ? ((c.price - c.prev_price) / c.prev_price) * 100 : 0;
+      return { symbol: c.symbol, name: c.name, category: c.category, blockchain: c.blockchain, price: +c.price, changePct: +pct.toFixed(4), rsi: +c.rsi };
+    });
+    res.json({ query: q, count: results.length, results });
+  } catch (e) { res.status(500).json({ error: String(e) }); }
+});
+
+router.get('/crypto/getLeaderboard', async (req, res) => {
+  setCors(res);
+  try {
+    const validKeys = ['changePct','marketCap','dominance','volume','rsi','atr','bbBw'];
+    const by       = validKeys.includes(req.query.by) ? req.query.by : 'changePct';
+    const dir      = req.query.dir === 'asc' ? 'asc' : 'desc';
+    const limit    = Math.min(parseInt(req.query.limit || '10', 10), 132);
+    const category = req.query.category?.toLowerCase();
+    let sql = 'SELECT symbol,name,category,mcap_tier,price,prev_price,volume,rsi,atr,market_cap,dominance,bb_bw FROM crypto_state';
+    const params = [];
+    if (category && CRYPTO_CATEGORIES[category]) { sql += ' WHERE category = ?'; params.push(category); }
+    const [rows] = await pool.query(sql, params);
+    const mapped = rows.map(c => {
+      const pct = c.prev_price > 0 ? ((c.price - c.prev_price) / c.prev_price) * 100 : 0;
+      return { symbol: c.symbol, name: c.name, category: c.category, mcapTier: c.mcap_tier, price: +c.price, changePct: +pct.toFixed(4), volume: c.volume, rsi: +c.rsi, atr: +c.atr, marketCap: +c.market_cap, dominance: +c.dominance, bbBw: +c.bb_bw };
+    });
+    mapped.sort((a, b) => dir === 'desc' ? b[by] - a[by] : a[by] - b[by]);
+    res.json({ sortedBy: by, direction: dir, category: category ?? 'all', count: mapped.length, coins: mapped.slice(0, limit) });
   } catch (e) { res.status(500).json({ error: String(e) }); }
 });
 

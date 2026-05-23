@@ -23,6 +23,7 @@
 
 import { StockSimulation  } from './StockSimulation.js';
 import { ForexSimulation  } from './ForexSimulation.js';
+import { CryptoSimulation } from './CryptoSimulation.js';
 import { DataWrapper      } from './DataWrapper.js';
 import { matchPendingOrders } from './OrderMatcher.js';
 
@@ -31,6 +32,7 @@ import { matchPendingOrders } from './OrderMatcher.js';
 const DEFAULT_INTERVAL_MS  = 10_000;
 const STOCK_WARMUP_TICKS   = 60;
 const FOREX_WARMUP_TICKS   = 40;
+const CRYPTO_WARMUP_TICKS  = 60;
 const MIN_TICK_INTERVAL_MS = 1_000;  // safety floor — never tick faster than 1s
 
 // ── PolyEngineTick ────────────────────────────────────────────────────────────
@@ -54,6 +56,7 @@ export class PolyEngineTick {
 
     this._stocks      = new StockSimulation();
     this._forex       = new ForexSimulation();
+    this._crypto      = new CryptoSimulation();
     this._data        = new DataWrapper();
 
     this._running     = false;
@@ -78,6 +81,9 @@ export class PolyEngineTick {
   /** Underlying forex simulation (read-only access for tests/admin). */
   get forexSim() { return this._forex; }
 
+  /** Underlying crypto simulation (read-only access for tests/admin). */
+  get cryptoSim() { return this._crypto; }
+
   // ── Initialisation ───────────────────────────────────────────────────────────
 
   /**
@@ -90,14 +96,15 @@ export class PolyEngineTick {
     } else {
       this._coldStart();
     }
-    console.log('[PolyEngine] Initialised — stocks:', this._stocks.stocks.length, '| forex:', this._forex.pairs.length);
+    console.log('[PolyEngine] Initialised — stocks:', this._stocks.stocks.length, '| forex:', this._forex.pairs.length, '| crypto:', this._crypto.coins.length);
   }
 
   _coldStart() {
     console.log('[PolyEngine] Cold start — running warm-up ticks...');
     this._stocks.warmUp(STOCK_WARMUP_TICKS);
     this._forex.warmUp(FOREX_WARMUP_TICKS);
-    console.log(`[PolyEngine] Warm-up complete (stocks: ${STOCK_WARMUP_TICKS} ticks, forex: ${FOREX_WARMUP_TICKS} ticks)`);
+    this._crypto.warmUp(CRYPTO_WARMUP_TICKS);
+    console.log(`[PolyEngine] Warm-up complete (stocks: ${STOCK_WARMUP_TICKS}, forex: ${FOREX_WARMUP_TICKS}, crypto: ${CRYPTO_WARMUP_TICKS} ticks)`);
   }
 
   async _loadFromDB() {
@@ -106,9 +113,10 @@ export class PolyEngineTick {
       return this._coldStart();
     }
     try {
-      const [stockState, forexState] = await Promise.all([
+      const [stockState, forexState, cryptoState] = await Promise.all([
         this._db.loadStockState(),
         this._db.loadForexState(),
+        this._db.loadCryptoState?.() ?? Promise.resolve(null),
       ]);
 
       if (stockState) {
@@ -125,6 +133,14 @@ export class PolyEngineTick {
       } else {
         this._forex.warmUp(FOREX_WARMUP_TICKS);
         console.log('[PolyEngine] No forex state in DB — warm-up complete');
+      }
+
+      if (cryptoState?.coins?.length > 0) {
+        this._crypto.loadState(cryptoState.coins, cryptoState.categories);
+        console.log('[PolyEngine] Crypto state loaded from DB');
+      } else {
+        this._crypto.warmUp(CRYPTO_WARMUP_TICKS);
+        console.log('[PolyEngine] No crypto state in DB — warm-up complete');
       }
     } catch (err) {
       console.error('[PolyEngine] DB load failed — falling back to cold start:', err.message);
@@ -152,17 +168,19 @@ export class PolyEngineTick {
 
     try {
       // ── Simulate ───────────────────────────────────────────────────────────
-      const stockResult = this._stocks.tick();
-      const forexResult = this._forex.tick();
+      const stockResult  = this._stocks.tick();
+      const forexResult  = this._forex.tick();
+      const cryptoResult = this._crypto.tick();
 
       // ── Optional validation ────────────────────────────────────────────────
       if (this._validateEachTick) {
         this._stocks.validate();
         this._forex.validate();
+        this._crypto.validate();
       }
 
       // ── Publish ────────────────────────────────────────────────────────────
-      this._data.publishTick(stockResult, forexResult);
+      this._data.publishTick(stockResult, forexResult, cryptoResult);
 
       // ── Await async subscribers (DB writes) ────────────────────────────────
       await this._data.drain();
@@ -189,14 +207,15 @@ export class PolyEngineTick {
           `exceeds 80% of ${this._intervalMs}ms interval (budget: ${budgetMs}ms)`
         );
       }
+      const cryptoEvt = cryptoResult.newEvent;
       console.log(
         `[PolyEngine] #${ms.tick_count} session=${ms.market_session} ` +
         `vix=${ms.vix.toFixed(1)} fg=${Math.round(ms.fear_greed)} ` +
-        `stocks=${this._stocks.stocks.length} forex=${this._forex.pairs.length} ` +
-        `${evt ? '| EVENT: ' + evt.text.slice(0, 40) : ''} (${durationMs}ms)`
+        `stocks=${this._stocks.stocks.length} forex=${this._forex.pairs.length} crypto=${this._crypto.coins.length} ` +
+        `${evt ? '| EVT: ' + evt.text.slice(0, 30) : ''} ${cryptoEvt ? '| CRYPTO: ' + cryptoEvt.text.slice(0, 30) : ''} (${durationMs}ms)`
       );
 
-      return { stockResult, forexResult, durationMs };
+      return { stockResult, forexResult, cryptoResult, durationMs };
     } catch (err) {
       this._errorCount++;
       this._consecutiveErrors++;
@@ -208,7 +227,7 @@ export class PolyEngineTick {
       if (this._consecutiveErrors >= this._maxConsecutiveErrors) {
         console.error('[PolyEngine] Too many consecutive errors — triggering cold reinit');
         this._consecutiveErrors = 0;
-        try { this._coldStart(); } catch (e) {
+        try { this._coldStart(); } catch (e) {  // eslint-disable-line
           console.error('[PolyEngine] Cold reinit also failed:', e.message);
         }
       }

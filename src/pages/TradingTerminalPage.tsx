@@ -17,7 +17,7 @@ import {
 } from "lucide-react"
 import { useAccount } from "@/hooks/useAccount"
 import { useSimulation } from "@/lib/SimulationContext"
-import type { StockDetail, ForexPairDetail, Candle } from "@/lib/SimulationContext"
+import type { StockDetail, ForexPairDetail, CryptoDetail, Candle } from "@/lib/SimulationContext"
 import type { Route } from "@/App"
 
 // ── Chart palette (matches MarketPage) ───────────────────────────────────────
@@ -235,14 +235,17 @@ function renderRect(ctx: CanvasRenderingContext2D, g: ChartGeom, d: Drawing, alp
 function renderText(ctx: CanvasRenderingContext2D, g: ChartGeom, d: Drawing, alpha = 1) {
   if (!d.p1 || !d.text) return
   const x = idxToX(g, d.p1.idxFromRight), y = toY(g, d.p1.price)
+  const fsPx = d.fontSize === "lg" ? 16 : d.fontSize === "sm" ? 10 : 12
   ctx.save(); ctx.globalAlpha = alpha
-  ctx.font = "bold 12px 'DM Mono',monospace"
+  ctx.font = `bold ${fsPx}px 'DM Mono',monospace`
   const tw = ctx.measureText(d.text).width
-  ctx.fillStyle = d.color + "22"; ctx.strokeStyle = d.color + "88"; ctx.lineWidth = 1
-  ctx.beginPath()
-  if (ctx.roundRect) ctx.roundRect(x - 4, y - 17, tw + 16, 22, 4)
-  else ctx.rect(x - 4, y - 17, tw + 16, 22)
-  ctx.fill(); ctx.stroke()
+  if (d.showBg !== false) {
+    ctx.fillStyle = d.color + "22"; ctx.strokeStyle = d.color + "88"; ctx.lineWidth = 1
+    ctx.beginPath()
+    if (ctx.roundRect) ctx.roundRect(x - 4, y - fsPx - 5, tw + 16, fsPx + 10, 4)
+    else ctx.rect(x - 4, y - fsPx - 5, tw + 16, fsPx + 10)
+    ctx.fill(); ctx.stroke()
+  }
   ctx.fillStyle = d.color; ctx.textAlign = "left"; ctx.fillText(d.text, x + 4, y - 1)
   ctx.restore()
 }
@@ -519,15 +522,26 @@ function TradingChart({
   const dragCurrentRef = useRef<{ price: number; idxFromRight: number } | null>(null)
   const isDraggingRef = useRef(false)
   const hoverRef = useRef<{ x: number; y: number; price: number } | null>(null)
+  const channelP1Ref = useRef<{ price: number; idxFromRight: number } | null>(null)
+  const channelP2Ref = useRef<{ price: number; idxFromRight: number } | null>(null)
+  const channelPhaseRef = useRef<0 | 1 | 2>(0)
+  const measureRef = useRef<{ p1: { price: number; idxFromRight: number }; p2: { price: number; idxFromRight: number } } | null>(null)
+  const dragSelectRef = useRef<{ drawingId: string; startPrice: number; startIdx: number } | null>(null)
   // Keep refs for use inside renderRef closure
   const drawingsRef = useRef(drawings)
   const alertsRef = useRef(alerts)
   const activeToolRef = useRef(activeTool)
   const drawColorRef = useRef(drawColor)
+  const selectedIdRef = useRef(selectedDrawingId)
+  const currentPriceRef = useRef(currentPrice)
+  const avgCostRef = useRef(avgCostLine)
   useEffect(() => { drawingsRef.current = drawings }, [drawings])
   useEffect(() => { alertsRef.current = alerts }, [alerts])
   useEffect(() => { activeToolRef.current = activeTool }, [activeTool])
   useEffect(() => { drawColorRef.current = drawColor }, [drawColor])
+  useEffect(() => { selectedIdRef.current = selectedDrawingId }, [selectedDrawingId])
+  useEffect(() => { currentPriceRef.current = currentPrice }, [currentPrice])
+  useEffect(() => { avgCostRef.current = avgCostLine ?? null }, [avgCostLine])
 
   useEffect(() => {
     const cv = mainRef.current
@@ -630,32 +644,94 @@ function TradingChart({
       ctx.fillStyle = "rgba(255,255,255,0.9)"; ctx.font = `bold ${fontSize}px 'DM Mono',monospace`; ctx.textAlign = "left"
       ctx.fillText(price.toFixed(2), W - pad.r + 5, py + fontSize * 0.38)
 
+      // ── Avg cost line ───────────────────────────────────────────────────────
+      const avgC = avgCostRef.current
+      if (avgC && avgC > 0) {
+        const ay = tYLocal(avgC)
+        if (ay >= pad.t && ay <= H - pad.b) {
+          ctx.save(); ctx.strokeStyle = "rgba(251,191,36,0.7)"; ctx.lineWidth = 1; ctx.setLineDash([5, 4])
+          ctx.beginPath(); ctx.moveTo(pad.l, ay); ctx.lineTo(W - pad.r - 2, ay); ctx.stroke(); ctx.setLineDash([])
+          ctx.fillStyle = "rgba(251,191,36,0.8)"; ctx.font = "10px 'DM Mono',monospace"; ctx.textAlign = "left"
+          ctx.fillText(`Avg $${avgC.toFixed(2)}`, W - pad.r + 4, ay + 4)
+          ctx.restore()
+        }
+      }
+
       // ── Drawings ────────────────────────────────────────────────────────────
       for (const d of drawingsRef.current) {
-        if (d.type === "hline") renderHLine(ctx, geom, d)
-        else if (d.type === "trendline") renderTrendLine(ctx, geom, d)
-        else if (d.type === "rect") renderRect(ctx, geom, d)
-        else if (d.type === "text") renderText(ctx, geom, d)
+        const isSelected = d.id === selectedIdRef.current
+        const alpha = isSelected ? 1 : 0.85
+        if (d.type === "hline") renderHLine(ctx, geom, d, alpha)
+        else if (d.type === "vline") renderVLine(ctx, geom, d, alpha)
+        else if (d.type === "trendline") renderTrendLine(ctx, geom, d, alpha)
+        else if (d.type === "ray") renderRay(ctx, geom, d, alpha)
+        else if (d.type === "channel") renderChannel(ctx, geom, d, alpha)
+        else if (d.type === "rect") renderRect(ctx, geom, d, alpha)
+        else if (d.type === "ellipse") renderEllipse(ctx, geom, d, alpha)
+        else if (d.type === "arrow") renderArrow(ctx, geom, d, alpha)
+        else if (d.type === "text") renderText(ctx, geom, d, alpha)
+        else if (d.type === "fib") renderFib(ctx, geom, d, alpha)
+        // Highlight selected drawing
+        if (isSelected && d.p1) {
+          ctx.save()
+          const pts: [number, number][] = []
+          if (d.p1) pts.push([idxToX(geom, d.p1.idxFromRight), toY(geom, d.p1.price)])
+          if (d.p2) pts.push([idxToX(geom, d.p2.idxFromRight), toY(geom, d.p2.price)])
+          if (d.p3) pts.push([idxToX(geom, d.p3.idxFromRight), toY(geom, d.p3.price)])
+          if (d.type === "hline" && d.price !== undefined) pts.push([pad.l + (W - pad.r - pad.l) / 2, toY(geom, d.price)])
+          if (d.type === "vline" && d.idxFromRight !== undefined) pts.push([idxToX(geom, d.idxFromRight), pad.t + (H - pad.b - pad.t) / 2])
+          pts.forEach(([px, py]) => {
+            ctx.beginPath(); ctx.arc(px, py, 5, 0, Math.PI * 2)
+            ctx.fillStyle = "rgba(255,255,255,0.9)"; ctx.fill()
+            ctx.strokeStyle = d.color; ctx.lineWidth = 2; ctx.stroke()
+          })
+          ctx.restore()
+        }
       }
-      for (const a of alertsRef.current) renderAlert(ctx, geom, a)
+      for (const a of alertsRef.current) renderAlert(ctx, geom, a, currentPriceRef.current)
 
       // In-progress drawing
       if (isDraggingRef.current && dragStartRef.current && dragCurrentRef.current) {
         const col = drawColorRef.current
         const tool = activeToolRef.current
-        if (tool === "trendline") {
-          renderTrendLine(ctx, geom, {
-            id: "_", type: "trendline", color: col,
-            p1: { price: dragStartRef.current.price, idxFromRight: dragStartRef.current.idxFromRight },
-            p2: { price: dragCurrentRef.current.price, idxFromRight: dragCurrentRef.current.idxFromRight },
-          }, 0.55)
-        } else if (tool === "rect") {
-          renderRect(ctx, geom, {
-            id: "_", type: "rect", color: col,
-            p1: { price: dragStartRef.current.price, idxFromRight: dragStartRef.current.idxFromRight },
-            p2: { price: dragCurrentRef.current.price, idxFromRight: dragCurrentRef.current.idxFromRight },
-          }, 0.55)
+        const p1 = { price: dragStartRef.current.price, idxFromRight: dragStartRef.current.idxFromRight }
+        const p2 = { price: dragCurrentRef.current.price, idxFromRight: dragCurrentRef.current.idxFromRight }
+        if (tool === "trendline")
+          renderTrendLine(ctx, geom, { id: "_", type: "trendline", color: col, p1, p2 }, 0.55)
+        else if (tool === "ray")
+          renderRay(ctx, geom, { id: "_", type: "ray", color: col, p1, p2 }, 0.55)
+        else if (tool === "rect")
+          renderRect(ctx, geom, { id: "_", type: "rect", color: col, p1, p2 }, 0.55)
+        else if (tool === "ellipse")
+          renderEllipse(ctx, geom, { id: "_", type: "ellipse", color: col, p1, p2 }, 0.55)
+        else if (tool === "arrow")
+          renderArrow(ctx, geom, { id: "_", type: "arrow", color: col, p1, p2 }, 0.55)
+        else if (tool === "fib")
+          renderFib(ctx, geom, { id: "_", type: "fib", color: col, p1, p2 }, 0.55)
+        else if (tool === "measure") {
+          // Ephemeral measure overlay
+          const x1 = idxToX(geom, p1.idxFromRight), x2 = idxToX(geom, p2.idxFromRight)
+          const y1 = tYLocal(p1.price), y2 = tYLocal(p2.price)
+          ctx.save(); ctx.globalAlpha = 0.8
+          ctx.strokeStyle = "#fbbf24"; ctx.lineWidth = 1; ctx.setLineDash([3, 3])
+          ctx.beginPath(); ctx.moveTo(x1, y1); ctx.lineTo(x2, y2); ctx.stroke(); ctx.setLineDash([])
+          const dp = p2.price - p1.price, pct = p1.price > 0 ? (dp / p1.price) * 100 : 0
+          const bars = Math.abs(p2.idxFromRight - p1.idxFromRight)
+          const label = `${dp >= 0 ? "+" : ""}${dp.toFixed(2)} (${pct >= 0 ? "+" : ""}${pct.toFixed(2)}%)  ${bars} bars`
+          const mx = (x1 + x2) / 2, my = (y1 + y2) / 2
+          ctx.font = "11px 'DM Mono',monospace"; ctx.textAlign = "center"
+          const tw = ctx.measureText(label).width
+          ctx.fillStyle = "rgba(30,30,50,0.88)"; ctx.fillRect(mx - tw/2 - 6, my - 16, tw + 12, 20)
+          ctx.fillStyle = "#fbbf24"; ctx.fillText(label, mx, my - 2)
+          ctx.restore()
         }
+      }
+      // Channel in-progress (phase 1: showing first line)
+      if (channelPhaseRef.current === 1 && channelP1Ref.current && channelP2Ref.current) {
+        renderTrendLine(ctx, geom, {
+          id: "_", type: "trendline", color: drawColorRef.current,
+          p1: channelP1Ref.current, p2: channelP2Ref.current,
+        }, 0.55)
       }
 
       // Crosshair
@@ -673,7 +749,7 @@ function TradingChart({
 
     renderRef.current = renderAll
     renderAll()
-  }, [candles, history, price, sma20, sma50, bbUpper, bbMiddle, bbLower, vwap, chartMode, drawings, alerts])
+  }, [candles, history, price, sma20, sma50, bbUpper, bbMiddle, bbLower, vwap, chartMode, drawings, alerts, selectedDrawingId, avgCostLine])
 
   function getCoords(e: React.MouseEvent) {
     const cv = mainRef.current, g = geomRef.current
@@ -686,7 +762,28 @@ function TradingChart({
   function handleMouseMove(e: React.MouseEvent) {
     const c = getCoords(e); if (!c) return
     hoverRef.current = { x: c.x, y: c.y, price: c.price }
-    if (isDraggingRef.current) dragCurrentRef.current = { price: c.price, idxFromRight: c.idxFromRight }
+    if (isDraggingRef.current) {
+      dragCurrentRef.current = { price: c.price, idxFromRight: c.idxFromRight }
+      // Drag-to-move selected drawing
+      if (activeToolRef.current === "cursor" && dragSelectRef.current) {
+        const { drawingId, startPrice, startIdx } = dragSelectRef.current
+        const dp = c.price - startPrice
+        const di = c.idxFromRight - startIdx
+        const d = drawingsRef.current.find(d => d.id === drawingId)
+        if (d) {
+          const updated: Drawing = { ...d }
+          if (d.type === "hline" && d.price !== undefined) updated.price = d.price + dp
+          else if (d.type === "vline" && d.idxFromRight !== undefined) updated.idxFromRight = d.idxFromRight + di
+          else {
+            if (d.p1) updated.p1 = { price: d.p1.price + dp, idxFromRight: d.p1.idxFromRight + di }
+            if (d.p2) updated.p2 = { price: d.p2.price + dp, idxFromRight: d.p2.idxFromRight + di }
+            if (d.p3) updated.p3 = { price: d.p3.price + dp, idxFromRight: d.p3.idxFromRight + di }
+          }
+          onUpdateDrawing(updated)
+          dragSelectRef.current = { drawingId, startPrice: c.price, startIdx: c.idxFromRight }
+        }
+      }
+    }
     renderRef.current()
   }
 
@@ -694,16 +791,48 @@ function TradingChart({
     const c = getCoords(e); if (!c) return
     const { x, y, price: clickPrice, idxFromRight } = c
     const g = geomRef.current
+
     switch (activeTool) {
+      case "cursor": {
+        if (!g) break
+        const hit = drawings.find(d => hitTest(g, d, x, y))
+        if (hit) {
+          setSelectedDrawingId(hit.id)
+          isDraggingRef.current = true
+          dragSelectRef.current = { drawingId: hit.id, startPrice: clickPrice, startIdx: idxFromRight }
+        } else {
+          setSelectedDrawingId(null)
+          dragSelectRef.current = null
+        }
+        break
+      }
       case "hline":
         onAddDrawing({ id: Date.now().toString(), type: "hline", color: drawColor, price: clickPrice })
         break
-      case "trendline":
-      case "rect":
+      case "vline":
+        onAddDrawing({ id: Date.now().toString(), type: "vline", color: drawColor, idxFromRight })
+        break
+      case "trendline": case "ray": case "rect": case "ellipse": case "arrow": case "fib": case "measure":
         isDraggingRef.current = true
         dragStartRef.current = { price: clickPrice, idxFromRight }
         dragCurrentRef.current = { price: clickPrice, idxFromRight }
         break
+      case "channel": {
+        if (channelPhaseRef.current === 0) {
+          channelP1Ref.current = { price: clickPrice, idxFromRight }
+          channelPhaseRef.current = 1
+        } else if (channelPhaseRef.current === 1) {
+          channelP2Ref.current = { price: clickPrice, idxFromRight }
+          channelPhaseRef.current = 2
+        } else {
+          if (channelP1Ref.current && channelP2Ref.current) {
+            onAddDrawing({ id: Date.now().toString(), type: "channel", color: drawColor,
+              p1: channelP1Ref.current, p2: channelP2Ref.current, p3: { price: clickPrice, idxFromRight } })
+          }
+          channelP1Ref.current = null; channelP2Ref.current = null; channelPhaseRef.current = 0
+        }
+        break
+      }
       case "alert": {
         const dir: "above" | "below" = clickPrice >= currentPrice ? "above" : "below"
         onAddAlert({ id: Date.now().toString(), price: clickPrice, direction: dir, label: "", triggered: false, createdAt: new Date().toISOString() })
@@ -712,45 +841,77 @@ function TradingChart({
       case "erase": {
         if (!g) break
         const hit = drawings.find(d => hitTest(g, d, x, y))
-        if (hit) onRemoveDrawing(hit.id)
+        if (hit) { onRemoveDrawing(hit.id); if (selectedDrawingId === hit.id) setSelectedDrawingId(null) }
         break
       }
     }
+    renderRef.current()
   }
 
   const [pendingText, setPendingText] = useState<{ price: number; idxFromRight: number } | null>(null)
   const [textInput, setTextInput] = useState("")
+  const [textFontSize, setTextFontSize] = useState<"sm" | "md" | "lg">("md")
+  const [textShowBg, setTextShowBg] = useState(true)
 
   function handleMouseUp(e: React.MouseEvent) {
     const c = getCoords(e)
     if (activeTool === "text" && c) {
       setPendingText({ price: c.price, idxFromRight: c.idxFromRight })
+      isDraggingRef.current = false; dragStartRef.current = null; dragCurrentRef.current = null
+      dragSelectRef.current = null
       return
     }
-    if (isDraggingRef.current && c && dragStartRef.current) {
+    if (isDraggingRef.current && c && dragStartRef.current && activeTool !== "cursor") {
       const { price: clickPrice, idxFromRight } = c
-      if (activeTool === "trendline") {
-        onAddDrawing({ id: Date.now().toString(), type: "trendline", color: drawColor,
-          p1: dragStartRef.current, p2: { price: clickPrice, idxFromRight } })
-      } else if (activeTool === "rect") {
-        onAddDrawing({ id: Date.now().toString(), type: "rect", color: drawColor,
-          p1: dragStartRef.current, p2: { price: clickPrice, idxFromRight } })
-      }
+      const p1 = dragStartRef.current, p2 = { price: clickPrice, idxFromRight }
+      if (activeTool === "trendline")
+        onAddDrawing({ id: Date.now().toString(), type: "trendline", color: drawColor, p1, p2 })
+      else if (activeTool === "ray")
+        onAddDrawing({ id: Date.now().toString(), type: "ray", color: drawColor, p1, p2 })
+      else if (activeTool === "rect")
+        onAddDrawing({ id: Date.now().toString(), type: "rect", color: drawColor, p1, p2 })
+      else if (activeTool === "ellipse")
+        onAddDrawing({ id: Date.now().toString(), type: "ellipse", color: drawColor, p1, p2 })
+      else if (activeTool === "arrow")
+        onAddDrawing({ id: Date.now().toString(), type: "arrow", color: drawColor, p1, p2 })
+      else if (activeTool === "fib")
+        onAddDrawing({ id: Date.now().toString(), type: "fib", color: drawColor, p1, p2 })
     }
     isDraggingRef.current = false; dragStartRef.current = null; dragCurrentRef.current = null
+    dragSelectRef.current = null
     renderRef.current()
   }
 
   function handleMouseLeave() {
     hoverRef.current = null; isDraggingRef.current = false
-    dragStartRef.current = null; dragCurrentRef.current = null
+    dragStartRef.current = null; dragCurrentRef.current = null; dragSelectRef.current = null
     renderRef.current()
   }
 
+  function handleDoubleClick(e: React.MouseEvent) {
+    if (activeTool !== "cursor") return
+    const c = getCoords(e); if (!c) return
+    const g = geomRef.current; if (!g) return
+    const hit = drawings.find(d => d.type === "text" && hitTest(g, d, c.x, c.y))
+    if (hit && hit.type === "text") {
+      setTextInput(hit.text ?? "")
+      setTextFontSize(hit.fontSize ?? "md")
+      setTextShowBg(hit.showBg ?? true)
+      setPendingText({ ...hit.p1!, _editId: hit.id } as { price: number; idxFromRight: number; _editId?: string })
+    }
+  }
+
   function confirmText() {
-    if (pendingText && textInput.trim()) {
-      onAddDrawing({ id: Date.now().toString(), type: "text", color: drawColor,
-        p1: pendingText, text: textInput.trim() })
+    const pt = pendingText as (typeof pendingText & { _editId?: string }) | null
+    if (pt && textInput.trim()) {
+      if (pt._editId) {
+        const d = drawings.find(d => d.id === pt._editId)
+        if (d) onUpdateDrawing({ ...d, text: textInput.trim(), fontSize: textFontSize, showBg: textShowBg })
+      } else {
+        onAddDrawing({ id: Date.now().toString(), type: "text", color: drawColor,
+          p1: { price: pt.price, idxFromRight: pt.idxFromRight },
+          text: textInput.trim(), fontSize: textFontSize, showBg: textShowBg })
+      }
     }
     setPendingText(null); setTextInput("")
   }
@@ -765,21 +926,40 @@ function TradingChart({
         onMouseDown={handleMouseDown}
         onMouseUp={handleMouseUp}
         onMouseLeave={handleMouseLeave}
+        onDoubleClick={handleDoubleClick}
         className="w-full block select-none"
         style={{ background: BG, height: 380, cursor }}
       />
       <MACDChart candles={candles} macd={macd} macdSignal={macdSignal} macdHist={macdHist} />
+      {showVolume && <VolumeChart candles={candles} />}
 
-      {/* Text annotation dialog */}
+      {/* Label / text dialog */}
       <Dialog open={!!pendingText} onOpenChange={() => { setPendingText(null); setTextInput("") }}>
         <DialogContent className="sm:max-w-xs">
-          <DialogHeader><DialogTitle>Add Annotation</DialogTitle></DialogHeader>
-          <Input
-            autoFocus placeholder="Annotation text..."
-            value={textInput} onChange={e => setTextInput(e.target.value)}
-            onKeyDown={e => e.key === "Enter" && confirmText()}
-            maxLength={80}
-          />
+          <DialogHeader><DialogTitle>Label</DialogTitle></DialogHeader>
+          <div className="space-y-3">
+            <Input
+              autoFocus placeholder="Label text..."
+              value={textInput} onChange={e => setTextInput(e.target.value)}
+              onKeyDown={e => e.key === "Enter" && confirmText()}
+              maxLength={80}
+            />
+            <div className="flex items-center gap-2">
+              <span className="text-xs text-muted-foreground">Size</span>
+              <div className="flex gap-1">
+                {(["sm","md","lg"] as const).map(s => (
+                  <button key={s} onClick={() => setTextFontSize(s)}
+                    className={`px-2 py-0.5 rounded text-xs border-0 cursor-pointer transition-colors ${textFontSize === s ? "bg-foreground text-background" : "bg-muted text-muted-foreground hover:text-foreground"}`}>
+                    {s.toUpperCase()}
+                  </button>
+                ))}
+              </div>
+              <button onClick={() => setTextShowBg(b => !b)}
+                className={`ml-auto px-2 py-0.5 rounded text-xs border-0 cursor-pointer transition-colors ${textShowBg ? "bg-foreground/20 text-foreground" : "bg-transparent text-muted-foreground"}`}>
+                Box
+              </button>
+            </div>
+          </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => { setPendingText(null); setTextInput("") }}>Cancel</Button>
             <Button onClick={confirmText} disabled={!textInput.trim()}>Add</Button>
@@ -791,74 +971,116 @@ function TradingChart({
 }
 
 // ── Drawing toolbar ──────────────────────────────────────────────────────────
-const TOOLS: { id: ToolMode; icon: React.ReactNode; label: string }[] = [
-  { id: "cursor",    icon: <MousePointer2 className="w-3.5 h-3.5" />, label: "Select" },
-  { id: "hline",     icon: <Minus className="w-3.5 h-3.5" />,         label: "H-Line" },
-  { id: "trendline", icon: <TrendingUp className="w-3.5 h-3.5" />,    label: "Trend" },
-  { id: "rect",      icon: <Square className="w-3.5 h-3.5" />,        label: "Zone" },
-  { id: "text",      icon: <Type className="w-3.5 h-3.5" />,          label: "Label" },
-  { id: "alert",     icon: <Bell className="w-3.5 h-3.5" />,          label: "Alert" },
-  { id: "erase",     icon: <Eraser className="w-3.5 h-3.5" />,        label: "Erase" },
+const TOOL_GROUPS: { label: string; tools: { id: ToolMode; icon: React.ReactNode; title: string; key?: string }[] }[] = [
+  {
+    label: "Navigate",
+    tools: [
+      { id: "cursor",    icon: <MousePointer2 className="w-3.5 h-3.5" />, title: "Select (Esc)",  key: "Esc" },
+      { id: "erase",     icon: <Eraser className="w-3.5 h-3.5" />,        title: "Erase (X)",    key: "X" },
+    ],
+  },
+  {
+    label: "Lines",
+    tools: [
+      { id: "hline",     icon: <Minus className="w-3.5 h-3.5" />,         title: "H-Line (1)",   key: "1" },
+      { id: "vline",     icon: <AlignCenter className="w-3.5 h-3.5" />,   title: "V-Line (2)",   key: "2" },
+      { id: "trendline", icon: <TrendingUp className="w-3.5 h-3.5" />,    title: "Trendline (3)",key: "3" },
+      { id: "ray",       icon: <ArrowUpRight className="w-3.5 h-3.5" />,  title: "Ray (4)",      key: "4" },
+      { id: "channel",   icon: <Layers className="w-3.5 h-3.5" />,        title: "Channel (5)",  key: "5" },
+    ],
+  },
+  {
+    label: "Shapes",
+    tools: [
+      { id: "rect",      icon: <Square className="w-3.5 h-3.5" />,        title: "Zone (6)",     key: "6" },
+      { id: "ellipse",   icon: <BarChart className="w-3.5 h-3.5" />,      title: "Ellipse (7)",  key: "7" },
+      { id: "arrow",     icon: <ChevronRight className="w-3.5 h-3.5" />,  title: "Arrow (8)",    key: "8" },
+    ],
+  },
+  {
+    label: "Annotate",
+    tools: [
+      { id: "text",      icon: <Type className="w-3.5 h-3.5" />,          title: "Label (9)",    key: "9" },
+      { id: "fib",       icon: <Percent className="w-3.5 h-3.5" />,       title: "Fibonacci (0)",key: "0" },
+      { id: "measure",   icon: <Ruler className="w-3.5 h-3.5" />,         title: "Measure (M)",  key: "M" },
+      { id: "alert",     icon: <Bell className="w-3.5 h-3.5" />,          title: "Alert (A)",    key: "A" },
+    ],
+  },
 ]
 
 function DrawingToolbar({
-  tool, setTool, color, setColor, onClear, chartMode, setChartMode,
+  tool, setTool, color, setColor, onClear, chartMode, setChartMode, showVolume, setShowVolume,
 }: {
   tool: ToolMode; setTool: (t: ToolMode) => void
   color: string; setColor: (c: string) => void
   onClear: () => void
   chartMode: "candle" | "line"; setChartMode: (m: "candle" | "line") => void
+  showVolume: boolean; setShowVolume: (v: boolean) => void
 }) {
   return (
-    <div className="flex items-center gap-1.5 px-3 py-1.5 border-b border-white/5 bg-[oklch(0.15_0.004_264)] flex-wrap">
-      {/* Chart type */}
-      <div className="flex items-center gap-0.5 bg-black/30 rounded p-0.5 mr-1">
-        {([["candle", <BarChart2 className="w-3 h-3" />], ["line", <Layers className="w-3 h-3" />]] as const).map(([m, icon]) => (
-          <button key={m} onClick={() => setChartMode(m)}
-            className={`flex items-center gap-1 px-2 py-1 rounded text-[10px] font-medium transition-colors cursor-pointer border-0 ${chartMode === m ? "bg-foreground/90 text-background" : "text-muted-foreground hover:text-foreground bg-transparent"}`}>
-            {icon}
+    <div className="border-b border-white/5 bg-[oklch(0.15_0.004_264)]">
+      <div className="flex items-center gap-1 px-2 py-1.5 flex-wrap">
+        {/* Chart type */}
+        <div className="flex items-center gap-0.5 bg-black/30 rounded p-0.5 mr-1">
+          {([["candle", <BarChart2 key="c" className="w-3 h-3" />, "T"], ["line", <Layers key="l" className="w-3 h-3" />, "T"]] as const).map(([m, icon]) => (
+            <button type="button" key={m} onClick={() => setChartMode(m)}
+              className={`flex items-center gap-1 px-2 py-1 rounded text-[10px] font-medium transition-colors cursor-pointer border-0 ${chartMode === m ? "bg-foreground/90 text-background" : "text-muted-foreground hover:text-foreground bg-transparent"}`}>
+              {icon}
+            </button>
+          ))}
+          <button type="button" onClick={() => setShowVolume(!showVolume)} title="Toggle volume (V)"
+            className={`flex items-center px-2 py-1 rounded text-[10px] font-medium transition-colors cursor-pointer border-0 ${showVolume ? "bg-foreground/90 text-background" : "text-muted-foreground hover:text-foreground bg-transparent"}`}>
+            <BarChart className="w-3 h-3" />
           </button>
+        </div>
+
+        {/* Tool groups */}
+        {TOOL_GROUPS.map((group, gi) => (
+          <div key={group.label} className={`flex items-center gap-0.5 ${gi > 0 ? "border-l border-white/10 pl-1 ml-0.5" : ""}`}>
+            {group.tools.map(t => (
+              <button type="button" key={t.id} onClick={() => setTool(t.id)} title={t.title}
+                className={`flex items-center gap-1 px-1.5 py-1 rounded text-[10px] font-medium transition-colors cursor-pointer border-0 ${tool === t.id ? "bg-foreground/90 text-background" : "text-muted-foreground hover:text-foreground bg-transparent hover:bg-white/5"}`}>
+                {t.icon}
+              </button>
+            ))}
+          </div>
         ))}
-      </div>
 
-      {/* Drawing tools */}
-      {TOOLS.map(t => (
-        <button key={t.id} onClick={() => setTool(t.id)} title={t.label}
-          className={`flex items-center gap-1 px-2 py-1 rounded text-[10px] font-medium transition-colors cursor-pointer border-0 ${tool === t.id ? "bg-foreground/90 text-background" : "text-muted-foreground hover:text-foreground bg-transparent hover:bg-white/5"}`}>
-          {t.icon}
-          <span className="hidden sm:inline">{t.label}</span>
+        {/* Separator */}
+        <div className="w-px h-4 bg-white/10 mx-1" />
+
+        {/* Color palette */}
+        {DRAW_COLORS.map(c => (
+          <button type="button" key={c} onClick={() => setColor(c)} title={c}
+            className={`w-3.5 h-3.5 rounded-full border-2 cursor-pointer transition-transform hover:scale-110 ${color === c ? "border-white scale-110" : "border-transparent"}`}
+            style={{ background: c }} />
+        ))}
+
+        {/* Clear all */}
+        <button type="button" onClick={onClear} title="Clear all drawings"
+          className="ml-auto flex items-center gap-1 px-2 py-1 rounded text-[10px] text-muted-foreground hover:text-red-400 transition-colors cursor-pointer bg-transparent border-0">
+          <Trash2 className="w-3 h-3" />
         </button>
-      ))}
-
-      {/* Separator */}
-      <div className="w-px h-4 bg-white/10 mx-0.5" />
-
-      {/* Color palette */}
-      {DRAW_COLORS.map(c => (
-        <button key={c} onClick={() => setColor(c)} title={c}
-          className={`w-4 h-4 rounded-full border-2 cursor-pointer transition-transform hover:scale-110 ${color === c ? "border-white scale-110" : "border-transparent"}`}
-          style={{ background: c }} />
-      ))}
-
-      {/* Clear all */}
-      <button onClick={onClear} title="Clear all drawings"
-        className="ml-auto flex items-center gap-1 px-2 py-1 rounded text-[10px] text-muted-foreground hover:text-red-400 transition-colors cursor-pointer bg-transparent border-0">
-        <Trash2 className="w-3 h-3" />
-        <span className="hidden sm:inline">Clear</span>
-      </button>
+      </div>
     </div>
   )
 }
 
 // ── Symbol list (left panel) ─────────────────────────────────────────────────
-interface SymbolEntry { symbol: string; name: string; price: number; change: number; assetType: "stock" | "forex" }
+interface SymbolEntry { symbol: string; name: string; price: number; change: number; assetType: "stock" | "forex" | "crypto" }
+
+function fmtSymbolPrice(price: number, assetType: string): string {
+  if (assetType === "forex") return price.toFixed(4)
+  if (assetType === "crypto") return price >= 1 ? price.toFixed(2) : price >= 0.01 ? price.toFixed(4) : price.toFixed(6)
+  return price.toFixed(2)
+}
 
 function SymbolListPanel({
   selected, onSelect,
 }: { selected: { symbol: string; assetType: string } | null; onSelect: (s: SymbolEntry) => void }) {
-  const { stocks, forexPairs } = useSimulation()
+  const { stocks, forexPairs, cryptoCoins } = useSimulation()
   const [query, setQuery] = useState("")
-  const [tab, setTab] = useState<"stock" | "forex">("stock")
+  const [tab, setTab] = useState<"stock" | "forex" | "crypto">("stock")
 
   const list = useMemo<SymbolEntry[]>(() => {
     const q = query.trim().toUpperCase()
@@ -868,11 +1090,17 @@ function SymbolListPanel({
         .sort((a, b) => a[0].localeCompare(b[0]))
         .map(([t, s]) => ({ symbol: t, name: s.name, price: s.price, change: s.change, assetType: "stock" as const }))
     }
-    return Object.entries(forexPairs)
-      .filter(([p]) => !q || p.includes(q))
-      .sort((a, b) => a[0].localeCompare(b[0]))
-      .map(([p, d]) => ({ symbol: p, name: `${d.baseName}/${d.quoteName}`, price: d.price, change: d.changePct, assetType: "forex" as const }))
-  }, [query, tab, stocks, forexPairs])
+    if (tab === "forex") {
+      return Object.entries(forexPairs)
+        .filter(([p]) => !q || p.includes(q))
+        .sort((a, b) => a[0].localeCompare(b[0]))
+        .map(([p, d]) => ({ symbol: p, name: `${d.baseName}/${d.quoteName}`, price: d.price, change: d.changePct, assetType: "forex" as const }))
+    }
+    return Object.entries(cryptoCoins)
+      .filter(([s, c]) => !q || s.includes(q) || c.name.toUpperCase().includes(q))
+      .sort((a, b) => b[1].marketCap - a[1].marketCap)
+      .map(([s, c]) => ({ symbol: s, name: c.name, price: c.price, change: c.changePct, assetType: "crypto" as const }))
+  }, [query, tab, stocks, forexPairs, cryptoCoins])
 
   return (
     <div className="flex flex-col h-full border-r border-border bg-card/40">
@@ -886,10 +1114,10 @@ function SymbolListPanel({
       </div>
       {/* Tabs */}
       <div className="flex border-b border-border">
-        {(["stock","forex"] as const).map(t => (
+        {(["stock","forex","crypto"] as const).map(t => (
           <button key={t} onClick={() => setTab(t)}
             className={`flex-1 py-1.5 text-[10px] font-semibold uppercase tracking-wider cursor-pointer border-0 transition-colors ${tab === t ? "bg-foreground/8 text-foreground border-b-2 border-foreground" : "text-muted-foreground hover:text-foreground bg-transparent"}`}>
-            {t === "stock" ? "Stocks" : "Forex"}
+            {t === "stock" ? "Stocks" : t === "forex" ? "Forex" : "Crypto"}
           </button>
         ))}
       </div>
@@ -907,7 +1135,7 @@ function SymbolListPanel({
                   <p className="text-[10px] text-muted-foreground truncate max-w-[90px]">{s.name}</p>
                 </div>
                 <div className="text-right shrink-0 ml-1">
-                  <p className="text-[11px] font-mono tabular-nums">{s.price.toFixed(tab === "forex" ? 4 : 2)}</p>
+                  <p className="text-[11px] font-mono tabular-nums">{fmtSymbolPrice(s.price, s.assetType)}</p>
                   <p className={`text-[10px] font-medium tabular-nums ${up ? "text-emerald-500" : "text-red-400"}`}>
                     {up ? "+" : ""}{s.change.toFixed(2)}%
                   </p>
@@ -925,24 +1153,26 @@ function SymbolListPanel({
 
 function RightPanel({
   symbol, assetType, currentPrice, portfolios, selectedPortfolio, setSelectedPortfolio,
-  positions, onTradeComplete,
+  positions, onTradeComplete, onToast,
   alerts, setAlerts, notes, setNotes,
 }: {
   symbol: string; assetType: string; currentPrice: number
   portfolios: PortfolioSummary[]; selectedPortfolio: number | null; setSelectedPortfolio: (id: number) => void
   positions: Position[]; onTradeComplete: () => void
+  onToast: (text: string, type: "success" | "error" | "info") => void
   alerts: PriceAlert[]; setAlerts: (a: PriceAlert[]) => void
   notes: string; setNotes: (n: string) => void
 }) {
   const { isSignedIn } = useAuth()
   const { placeOrder } = useAccount()
-  const { stocks, forexPairs } = useSimulation()
+  const { stocks, forexPairs, cryptoCoins } = useSimulation()
 
   const [side, setSide] = useState<"buy" | "sell">("buy")
   const [qty, setQty] = useState("")
+  const [orderType, setOrderType] = useState<"market" | "limit" | "stop">("market")
+  const [triggerPrice, setTriggerPrice] = useState("")
   const [orderNotes, setOrderNotes] = useState("")
   const [placing, setPlacing] = useState(false)
-  const [orderMsg, setOrderMsg] = useState<{ ok: boolean; text: string } | null>(null)
 
   // Pip / Point value calculator
   const [lotSize, setLotSize] = useState("1000")
@@ -958,7 +1188,7 @@ function RightPanel({
     if (currentPrice > 0) setEntry(currentPrice.toFixed(2))
   }, [symbol, currentPrice])
 
-  const livePriceData = assetType === "stock" ? stocks[symbol] : forexPairs[symbol]
+  const livePriceData = assetType === "stock" ? stocks[symbol] : assetType === "forex" ? forexPairs[symbol] : cryptoCoins[symbol]
   const livePrice = livePriceData?.price ?? currentPrice
   const previewCost = qty && parseFloat(qty) > 0 ? livePrice * parseFloat(qty) : null
 
@@ -967,19 +1197,31 @@ function RightPanel({
 
   async function handleTrade() {
     if (!selectedPortfolio || !symbol || !qty || parseFloat(qty) <= 0) return
-    setPlacing(true); setOrderMsg(null)
+    if (orderType !== "market" && (!triggerPrice || parseFloat(triggerPrice) <= 0)) {
+      onToast("Enter a trigger price for limit/stop orders", "error"); return
+    }
+    setPlacing(true)
     try {
-      const r = await placeOrder(selectedPortfolio, { asset_type: assetType, symbol, side, quantity: parseFloat(qty), notes: orderNotes || undefined })
-      setOrderMsg({ ok: true, text: `${side === "buy" ? "Bought" : "Sold"} ${qty} ${symbol} @ $${r.executedPrice?.toFixed(2) ?? "?"}` })
-      setQty(""); setOrderNotes("")
+      const r = await placeOrder(selectedPortfolio, {
+        asset_type: assetType, symbol, side, quantity: parseFloat(qty),
+        notes: orderNotes || undefined,
+        order_type: orderType,
+        trigger_price: orderType !== "market" ? parseFloat(triggerPrice) : undefined,
+      })
+      if (orderType === "market") {
+        onToast(`${side === "buy" ? "Bought" : "Sold"} ${qty} ${symbol} @ $${r.executedPrice?.toFixed(2) ?? "?"}`, "success")
+      } else {
+        onToast(`${orderType.charAt(0).toUpperCase() + orderType.slice(1)} ${side} placed — ${qty} ${symbol} @ $${triggerPrice}`, "info")
+      }
+      setQty(""); setOrderNotes(""); setTriggerPrice("")
       onTradeComplete()
     } catch (e: unknown) {
-      setOrderMsg({ ok: false, text: e instanceof Error ? e.message : "Order failed" })
+      onToast(e instanceof Error ? e.message : "Order failed", "error")
     } finally { setPlacing(false) }
   }
 
   // Live technical data
-  const liveData = assetType === "stock" ? stocks[symbol] : forexPairs[symbol]
+  const liveData = assetType === "stock" ? stocks[symbol] : assetType === "forex" ? forexPairs[symbol] : cryptoCoins[symbol]
   const rsi = liveData?.rsi ?? 0
   const macdHist = liveData?.macdHist ?? 0
   const sma20 = liveData?.sma20 ?? 0
@@ -1086,6 +1328,32 @@ function RightPanel({
                     ))}
                   </div>
 
+                  {/* Order type */}
+                  <div className="flex items-center gap-0.5 bg-black/30 rounded p-0.5">
+                    {(["market","limit","stop"] as const).map(t => (
+                      <button key={t} type="button" onClick={() => {
+                        setOrderType(t)
+                        if (t !== "market" && !triggerPrice && currentPrice > 0) {
+                          setTriggerPrice(currentPrice.toFixed(currentPrice < 10 ? 4 : 2))
+                        }
+                      }}
+                        className={`flex-1 py-1 rounded text-[10px] font-semibold uppercase transition-colors cursor-pointer border-0 ${orderType === t ? "bg-foreground/90 text-background" : "text-muted-foreground hover:text-foreground bg-transparent"}`}>
+                        {t}
+                      </button>
+                    ))}
+                  </div>
+
+                  {/* Trigger price (limit / stop only) */}
+                  {orderType !== "market" && (
+                    <div>
+                      <label className="text-[10px] text-muted-foreground uppercase tracking-wider mb-1 block">
+                        Trigger Price {orderType === "limit" ? "(limit)" : "(stop)"}
+                      </label>
+                      <Input type="number" placeholder="0.00" min={0} step="any" value={triggerPrice}
+                        onChange={e => setTriggerPrice(e.target.value)} className="h-8 text-sm font-mono" />
+                    </div>
+                  )}
+
                   {/* Quantity */}
                   <div>
                     <label className="text-[10px] text-muted-foreground uppercase tracking-wider mb-1 block">Quantity</label>
@@ -1116,10 +1384,6 @@ function RightPanel({
                   {/* Notes */}
                   <Input placeholder="Trade rationale (optional)" value={orderNotes}
                     onChange={e => setOrderNotes(e.target.value)} className="h-8 text-xs" maxLength={500} />
-
-                  {orderMsg && (
-                    <p className={`text-xs ${orderMsg.ok ? "text-emerald-500" : "text-destructive"}`}>{orderMsg.text}</p>
-                  )}
 
                   <Button className={`w-full text-sm font-bold h-9 ${side === "buy" ? "bg-emerald-600 hover:bg-emerald-500" : "bg-red-600 hover:bg-red-500"}`}
                     disabled={placing || !symbol || !qty || parseFloat(qty) <= 0 || !selectedPortfolio}
@@ -1456,30 +1720,105 @@ function timeAgo(dateStr: string) {
   return `${Math.floor(h / 24)}d ago`
 }
 
+function EquityCurveChart({ snapshots }: { snapshots: PortfolioSnapshot[] }) {
+  const ref = useRef<HTMLCanvasElement>(null)
+  useEffect(() => {
+    const cv = ref.current
+    if (!cv || snapshots.length < 2) return
+    const dpr = window.devicePixelRatio || 1
+    const cssW = cv.clientWidth, cssH = cv.clientHeight
+    cv.width = Math.round(cssW * dpr); cv.height = Math.round(cssH * dpr)
+    const ctx = cv.getContext("2d")!; ctx.scale(dpr, dpr)
+    const W = cssW, H = cssH, pad = { t: 4, r: 4, b: 4, l: 4 }
+    const cW = W - pad.l - pad.r, cH = H - pad.t - pad.b
+    const values = snapshots.map(s => Number(s.total_value))
+    const mn = Math.min(...values), mx = Math.max(...values)
+    const rng = mx - mn || 1
+    const pts = values.map((v, i) => ({
+      x: pad.l + (i / Math.max(values.length - 1, 1)) * cW,
+      y: pad.t + ((mx - v) / rng) * cH,
+    }))
+    const up = values[values.length - 1] >= values[0]
+    const accent = up ? GAIN : LOSS
+    ctx.clearRect(0, 0, W, H); ctx.fillStyle = BG; ctx.fillRect(0, 0, W, H)
+    const g = ctx.createLinearGradient(0, pad.t, 0, pad.t + cH)
+    g.addColorStop(0, up ? "rgba(74,222,128,.15)" : "rgba(248,113,113,.10)"); g.addColorStop(1, "transparent")
+    ctx.beginPath(); ctx.moveTo(pts[0].x, pad.t + cH)
+    pts.forEach(p => ctx.lineTo(p.x, p.y))
+    ctx.lineTo(pts[pts.length - 1].x, pad.t + cH); ctx.closePath(); ctx.fillStyle = g; ctx.fill()
+    ctx.beginPath(); ctx.moveTo(pts[0].x, pts[0].y)
+    for (let j = 1; j < pts.length; j++) ctx.lineTo(pts[j].x, pts[j].y)
+    ctx.strokeStyle = accent; ctx.lineWidth = 1.5; ctx.lineJoin = "round"; ctx.stroke()
+  }, [snapshots])
+  return <canvas ref={ref} className="w-full block rounded" style={{ background: BG, height: 56 }} />
+}
+
 function BottomPanel({
-  positions, orders,
+  positions, orders, pendingOrders, portfolioStats, portfolioSnapshots,
+  onSymbolSelect, onCancelOrder, height, onHeightChange,
 }: {
   positions: Position[]
   orders: RecentOrder[]
+  pendingOrders: PendingOrder[]
+  portfolioStats: PortfolioStats | null
+  portfolioSnapshots: PortfolioSnapshot[]
+  onSymbolSelect: (symbol: string, assetType: string) => void
+  onCancelOrder: (orderId: number) => void
+  height: number
+  onHeightChange: (h: number) => void
 }) {
   const { stocks, forexPairs } = useSimulation()
-  const [tab, setTab] = useState<"positions" | "orders">("positions")
+  const [tab, setTab] = useState<"positions" | "orders" | "pending" | "performance">("positions")
+  const dragRef = useRef(false)
+  const dragStartYRef = useRef(0)
+  const dragStartHRef = useRef(0)
+
+  useEffect(() => {
+    function onMove(e: MouseEvent) {
+      if (!dragRef.current) return
+      const dy = dragStartYRef.current - e.clientY
+      onHeightChange(Math.min(420, Math.max(120, dragStartHRef.current + dy)))
+    }
+    function onUp() { dragRef.current = false }
+    window.addEventListener("mousemove", onMove)
+    window.addEventListener("mouseup", onUp)
+    return () => { window.removeEventListener("mousemove", onMove); window.removeEventListener("mouseup", onUp) }
+  }, [onHeightChange])
 
   return (
-    <div className="shrink-0 border-t border-border bg-card/20 flex flex-col h-[180px]">
+    <div className="shrink-0 border-t border-border bg-card/20 flex flex-col" style={{ height }}>
+      {/* Drag handle */}
+      <div
+        className="h-1.5 cursor-row-resize bg-transparent hover:bg-white/10 transition-colors shrink-0 flex items-center justify-center"
+        onMouseDown={e => {
+          dragRef.current = true
+          dragStartYRef.current = e.clientY
+          dragStartHRef.current = height
+          e.preventDefault()
+        }}
+      >
+        <div className="w-8 h-0.5 rounded-full bg-white/20" />
+      </div>
+
       {/* Tab bar */}
       <div className="flex border-b border-border shrink-0">
-        {(["positions", "orders"] as const).map(t => (
+        {([
+          ["positions", `Positions (${positions.length})`],
+          ["orders",    `Orders (${orders.length})`],
+          ["pending",   `Pending (${pendingOrders.length})`],
+          ["performance", "Performance"],
+        ] as const).map(([t, label]) => (
           <button key={t} type="button" onClick={() => setTab(t)}
             className={`px-3 py-1.5 text-[10px] font-semibold uppercase tracking-wider cursor-pointer border-0 transition-colors ${tab === t ? "text-foreground border-b-2 border-foreground bg-foreground/5" : "text-muted-foreground hover:text-foreground bg-transparent"}`}>
-            {t === "positions" ? `Positions (${positions.length})` : `Orders (${orders.length})`}
+            {label}
           </button>
         ))}
       </div>
 
       {/* Content */}
       <div className="flex-1 overflow-y-auto">
-        {tab === "positions" ? (
+
+        {tab === "positions" && (
           positions.length === 0 ? (
             <div className="flex items-center justify-center h-full text-[11px] text-muted-foreground/50">No open positions</div>
           ) : (
@@ -1502,7 +1841,8 @@ function BottomPanel({
                   const pnlPct = p.avg_cost > 0 ? ((current - p.avg_cost) / p.avg_cost) * 100 : 0
                   const up = pnl >= 0
                   return (
-                    <tr key={p.id} className="border-t border-border/30 hover:bg-muted/20">
+                    <tr key={p.id} className="border-t border-border/30 hover:bg-muted/20 cursor-pointer"
+                      onClick={() => onSymbolSelect(p.symbol, p.asset_type)}>
                       <td className="px-3 py-1.5">
                         <span className="font-mono font-semibold">{p.symbol}</span>
                         <span className="ml-1.5 text-[9px] text-muted-foreground/60 uppercase">{p.asset_type}</span>
@@ -1522,7 +1862,9 @@ function BottomPanel({
               </tbody>
             </table>
           )
-        ) : (
+        )}
+
+        {tab === "orders" && (
           orders.length === 0 ? (
             <div className="flex items-center justify-center h-full text-[11px] text-muted-foreground/50">No recent orders</div>
           ) : (
@@ -1558,6 +1900,117 @@ function BottomPanel({
             </table>
           )
         )}
+
+        {tab === "pending" && (
+          pendingOrders.length === 0 ? (
+            <div className="flex items-center justify-center h-full text-[11px] text-muted-foreground/50">No pending orders</div>
+          ) : (
+            <table className="w-full text-[11px]">
+              <thead className="sticky top-0 bg-card/80">
+                <tr className="text-muted-foreground/60 text-[10px]">
+                  <th className="text-left px-3 py-1 font-medium">Symbol</th>
+                  <th className="text-left px-2 py-1 font-medium">Side</th>
+                  <th className="text-left px-2 py-1 font-medium">Type</th>
+                  <th className="text-right px-2 py-1 font-medium">Qty</th>
+                  <th className="text-right px-2 py-1 font-medium">Trigger</th>
+                  <th className="text-right px-2 py-1 font-medium">Age</th>
+                  <th className="px-3 py-1 font-medium"></th>
+                </tr>
+              </thead>
+              <tbody>
+                {pendingOrders.map(o => (
+                  <tr key={o.id} className="border-t border-border/30 hover:bg-muted/20">
+                    <td className="px-3 py-1.5">
+                      <span className="font-mono font-semibold">{o.symbol}</span>
+                      <span className="ml-1.5 text-[9px] text-muted-foreground/60 uppercase">{o.asset_type}</span>
+                    </td>
+                    <td className="px-2 py-1.5">
+                      <span className={`text-[9px] font-bold uppercase px-1.5 py-0.5 rounded ${o.side === "buy" ? "bg-emerald-500/15 text-emerald-500" : "bg-red-500/15 text-red-400"}`}>
+                        {o.side}
+                      </span>
+                    </td>
+                    <td className="px-2 py-1.5">
+                      <span className="text-[9px] font-bold uppercase px-1.5 py-0.5 rounded bg-amber-500/15 text-amber-400">
+                        {o.order_type}
+                      </span>
+                    </td>
+                    <td className="px-2 py-1.5 text-right font-mono tabular-nums">{Number(o.quantity)}</td>
+                    <td className="px-2 py-1.5 text-right font-mono tabular-nums text-amber-400">
+                      ${Number(o.trigger_price).toFixed(o.asset_type === "forex" ? 4 : 2)}
+                    </td>
+                    <td className="px-2 py-1.5 text-right text-muted-foreground/70">{timeAgo(o.created_at)}</td>
+                    <td className="px-3 py-1.5">
+                      <button type="button" onClick={() => onCancelOrder(o.id)}
+                        className="text-[9px] text-muted-foreground hover:text-red-400 transition-colors cursor-pointer bg-transparent border-0 px-1.5 py-0.5 rounded hover:bg-red-500/10">
+                        Cancel
+                      </button>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          )
+        )}
+
+        {tab === "performance" && (
+          <div className="p-3 space-y-3">
+            {portfolioSnapshots.length >= 2 && (
+              <div>
+                <p className="text-[10px] text-muted-foreground uppercase tracking-wider mb-1.5">Equity Curve</p>
+                <EquityCurveChart snapshots={portfolioSnapshots} />
+              </div>
+            )}
+            {portfolioStats ? (
+              <div>
+                <p className="text-[10px] text-muted-foreground uppercase tracking-wider mb-1.5">Statistics</p>
+                <div className="grid grid-cols-3 gap-2">
+                  {[
+                    {
+                      label: "Total Value",
+                      val: `$${Number(portfolioStats.total_value).toLocaleString("en-US", { maximumFractionDigits: 0 })}`,
+                      color: "text-foreground",
+                    },
+                    {
+                      label: "Win Rate",
+                      val: portfolioStats.win_rate != null ? `${portfolioStats.win_rate.toFixed(1)}%` : "—",
+                      color: portfolioStats.win_rate != null && portfolioStats.win_rate >= 50 ? "text-emerald-500" : "text-red-400",
+                    },
+                    {
+                      label: "Avg P&L",
+                      val: portfolioStats.avg_pnl != null
+                        ? `${portfolioStats.avg_pnl >= 0 ? "+" : ""}$${portfolioStats.avg_pnl.toFixed(2)}`
+                        : "—",
+                      color: portfolioStats.avg_pnl != null && portfolioStats.avg_pnl >= 0 ? "text-emerald-500" : "text-red-400",
+                    },
+                    {
+                      label: "Best Trade",
+                      val: portfolioStats.best_trade != null ? `+$${portfolioStats.best_trade.toFixed(2)}` : "—",
+                      color: "text-emerald-500",
+                    },
+                    {
+                      label: "Worst Trade",
+                      val: portfolioStats.worst_trade != null ? `-$${Math.abs(portfolioStats.worst_trade).toFixed(2)}` : "—",
+                      color: "text-red-400",
+                    },
+                    {
+                      label: "Trades",
+                      val: String(portfolioStats.total_closed ?? portfolioStats.total_orders ?? 0),
+                      color: "text-foreground",
+                    },
+                  ].map(({ label, val, color }) => (
+                    <div key={label} className="bg-muted/30 rounded px-2 py-1.5 text-center">
+                      <p className="text-[9px] text-muted-foreground mb-0.5">{label}</p>
+                      <p className={`text-xs font-mono font-bold ${color}`}>{val}</p>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            ) : (
+              <div className="flex items-center justify-center py-6 text-[11px] text-muted-foreground/50">No performance data yet</div>
+            )}
+          </div>
+        )}
+
       </div>
     </div>
   )
@@ -1568,26 +2021,41 @@ interface Props { onNavigate: (r: Route) => void }
 
 export default function TradingTerminalPage({ onNavigate }: Props) {
   const { isSignedIn } = useAuth()
-  const { getPortfolios, getPortfolio, getRecentOrders } = useAccount()
-  const { market, stocks, forexPairs, getDetail, getForexPair } = useSimulation()
+  const { getPortfolios, getPortfolio, getRecentOrders, cancelOrder, getPendingOrders, getPortfolioSnapshots, getStats } = useAccount()
+  const { market, stocks, forexPairs, cryptoCoins, getDetail, getForexPair, getCryptoDetail } = useSimulation()
+  const { toasts, add: addToast } = useToast()
 
-  const [selectedSymbol, setSelectedSymbol] = useState<{ symbol: string; assetType: "stock" | "forex" } | null>(null)
-  const [detail, setDetail] = useState<StockDetail | ForexPairDetail | null>(null)
+  const [selectedSymbol, setSelectedSymbol] = useState<{ symbol: string; assetType: "stock" | "forex" | "crypto" } | null>(null)
+  const [detail, setDetail] = useState<StockDetail | ForexPairDetail | CryptoDetail | null>(null)
   const [detailLoading, setDetailLoading] = useState(false)
 
   const [portfolios, setPortfolios] = useState<PortfolioSummary[]>([])
   const [selectedPortfolio, setSelectedPortfolio] = useState<number | null>(null)
   const [positions, setPositions] = useState<Position[]>([])
   const [recentOrders, setRecentOrders] = useState<RecentOrder[]>([])
+  const [pendingOrders, setPendingOrders] = useState<PendingOrder[]>([])
+  const [portfolioStats, setPortfolioStats] = useState<PortfolioStats | null>(null)
+  const [portfolioSnapshots, setPortfolioSnapshots] = useState<PortfolioSnapshot[]>([])
 
   const [chartMode, setChartMode] = useState<"candle" | "line">("candle")
   const [activeTool, setActiveTool] = useState<ToolMode>("cursor")
   const [drawColor, setDrawColor] = useState("#ffffff")
+  const [showVolume, setShowVolume] = useState(false)
+  const [selectedDrawingId, setSelectedDrawingId] = useState<string | null>(null)
+  const [undoStack, setUndoStack] = useState<Drawing[][]>([])
+  const [redoStack, setRedoStack] = useState<Drawing[][]>([])
+  const [panelHeight, setPanelHeight] = useState(180)
 
   const sym = selectedSymbol?.symbol ?? ""
   const [drawings, setDrawings] = useDrawings(sym)
   const [alerts, setAlerts] = useAlerts(sym)
   const [notes, setNotes] = useNotes(sym)
+
+  // Refs for keyboard handler (avoids stale closures on high-frequency state)
+  const drawingsKbRef = useRef<Drawing[]>([])
+  const selectedKbRef = useRef<string | null>(null)
+  useEffect(() => { drawingsKbRef.current = drawings }, [drawings])
+  useEffect(() => { selectedKbRef.current = selectedDrawingId }, [selectedDrawingId])
 
   // Load portfolios
   useEffect(() => {
@@ -1611,6 +2079,108 @@ export default function TradingTerminalPage({ onNavigate }: Props) {
     refreshBlotter()
   }, [isSignedIn, refreshBlotter])
 
+  const fetchPendingOrders = useCallback(() => {
+    if (!selectedPortfolio) return
+    getPendingOrders(selectedPortfolio).then(data => setPendingOrders(Array.isArray(data) ? data : (data?.orders ?? []))).catch(() => {})
+  }, [selectedPortfolio, getPendingOrders])
+
+  const fetchPerformance = useCallback(() => {
+    if (!selectedPortfolio) return
+    getPortfolioSnapshots(selectedPortfolio).then(snaps => setPortfolioSnapshots(Array.isArray(snaps) ? snaps : [])).catch(() => {})
+    getStats().then(stats => setPortfolioStats(stats ?? null)).catch(() => {})
+  }, [selectedPortfolio, getPortfolioSnapshots, getStats])
+
+  useEffect(() => {
+    if (!isSignedIn || !selectedPortfolio) return
+    fetchPendingOrders()
+    fetchPerformance()
+  }, [isSignedIn, selectedPortfolio, fetchPendingOrders, fetchPerformance])
+
+  const handleCancelOrder = useCallback(async (orderId: number) => {
+    if (!selectedPortfolio) return
+    try {
+      await cancelOrder(selectedPortfolio, orderId)
+      addToast("Order cancelled", "info")
+      fetchPendingOrders()
+      refreshBlotter()
+    } catch (e) {
+      addToast(e instanceof Error ? e.message : "Cancel failed", "error")
+    }
+  }, [selectedPortfolio, cancelOrder, addToast, fetchPendingOrders, refreshBlotter])
+
+  // Drawing handlers with undo/redo support
+  const handleAddDrawing = useCallback((d: Drawing) => {
+    setUndoStack(s => [...s.slice(-19), drawingsKbRef.current])
+    setRedoStack([])
+    setDrawings([...drawingsKbRef.current, d])
+  }, [setDrawings])
+
+  const handleRemoveDrawing = useCallback((id: string) => {
+    setUndoStack(s => [...s.slice(-19), drawingsKbRef.current])
+    setRedoStack([])
+    setDrawings(drawingsKbRef.current.filter(d => d.id !== id))
+    if (selectedKbRef.current === id) setSelectedDrawingId(null)
+  }, [setDrawings])
+
+  const handleUpdateDrawing = useCallback((d: Drawing) => {
+    setUndoStack(s => [...s.slice(-19), drawingsKbRef.current])
+    setRedoStack([])
+    setDrawings(drawingsKbRef.current.map(x => x.id === d.id ? d : x))
+  }, [setDrawings])
+
+  // Keyboard shortcuts
+  useEffect(() => {
+    function onKeyDown(e: KeyboardEvent) {
+      const target = e.target as HTMLElement
+      if (target.tagName === "INPUT" || target.tagName === "TEXTAREA" || target.isContentEditable) return
+
+      if (!e.ctrlKey && !e.metaKey) {
+        const toolKeys: Record<string, ToolMode> = {
+          "Escape": "cursor", "1": "hline", "2": "vline", "3": "trendline",
+          "4": "ray", "5": "channel", "6": "rect", "7": "ellipse",
+          "8": "arrow", "9": "text", "0": "fib",
+          "m": "measure", "M": "measure", "a": "alert", "A": "alert",
+          "x": "erase", "X": "erase",
+        }
+        if (toolKeys[e.key]) { setActiveTool(toolKeys[e.key]); return }
+        if (e.key === "t" || e.key === "T") { setChartMode(m => m === "candle" ? "line" : "candle"); return }
+        if (e.key === "v" || e.key === "V") { setShowVolume(v => !v); return }
+        if (e.key === "Delete" || e.key === "Backspace") {
+          const id = selectedKbRef.current
+          if (id) {
+            setUndoStack(s => [...s.slice(-19), drawingsKbRef.current])
+            setRedoStack([])
+            setDrawings(drawingsKbRef.current.filter(d => d.id !== id))
+            setSelectedDrawingId(null)
+          }
+          return
+        }
+      }
+      if ((e.ctrlKey || e.metaKey) && !e.shiftKey && e.key === "z") {
+        e.preventDefault()
+        setUndoStack(stack => {
+          if (stack.length === 0) return stack
+          const prev = stack[stack.length - 1]
+          setRedoStack(r => [...r.slice(-19), drawingsKbRef.current])
+          setDrawings(prev)
+          return stack.slice(0, -1)
+        })
+      }
+      if ((e.ctrlKey || e.metaKey) && e.shiftKey && (e.key === "z" || e.key === "Z")) {
+        e.preventDefault()
+        setRedoStack(stack => {
+          if (stack.length === 0) return stack
+          const next = stack[stack.length - 1]
+          setUndoStack(u => [...u.slice(-19), drawingsKbRef.current])
+          setDrawings(next)
+          return stack.slice(0, -1)
+        })
+      }
+    }
+    window.addEventListener("keydown", onKeyDown)
+    return () => window.removeEventListener("keydown", onKeyDown)
+  }, [setDrawings])
+
   // Auto-select first stock
   useEffect(() => {
     if (!selectedSymbol && Object.keys(stocks).length > 0) {
@@ -1623,12 +2193,14 @@ export default function TradingTerminalPage({ onNavigate }: Props) {
   const loadDetail = useCallback(async (sym: string, assetType: string) => {
     setDetailLoading(true)
     try {
-      const d = assetType === "stock" ? await getDetail(sym) : await getForexPair(sym)
+      const d = assetType === "stock" ? await getDetail(sym)
+             : assetType === "forex"  ? await getForexPair(sym)
+             : await getCryptoDetail(sym)
       setDetail(d)
     } finally {
       setDetailLoading(false)
     }
-  }, [getDetail, getForexPair])
+  }, [getDetail, getForexPair, getCryptoDetail])
 
   useEffect(() => {
     if (selectedSymbol) loadDetail(selectedSymbol.symbol, selectedSymbol.assetType)
@@ -1639,15 +2211,17 @@ export default function TradingTerminalPage({ onNavigate }: Props) {
     if (!selectedSymbol || !detail) return
     if (selectedSymbol.assetType === "stock") {
       getDetail(selectedSymbol.symbol).then(d => { if (d) setDetail(d) }).catch(() => {})
-    } else {
+    } else if (selectedSymbol.assetType === "forex") {
       getForexPair(selectedSymbol.symbol).then(d => { if (d) setDetail(d) }).catch(() => {})
+    } else {
+      getCryptoDetail(selectedSymbol.symbol).then(d => { if (d) setDetail(d) }).catch(() => {})
     }
   }, [market])
 
   // Check alerts against live price
   useEffect(() => {
     if (!sym || alerts.length === 0) return
-    const livePrice = selectedSymbol?.assetType === "stock" ? stocks[sym]?.price : forexPairs[sym]?.price
+    const livePrice = selectedSymbol?.assetType === "stock" ? stocks[sym]?.price : selectedSymbol?.assetType === "forex" ? forexPairs[sym]?.price : cryptoCoins[sym]?.price
     if (!livePrice) return
     const updated = alerts.map(a => {
       if (a.triggered) return a
@@ -1657,14 +2231,22 @@ export default function TradingTerminalPage({ onNavigate }: Props) {
     if (updated.some((a, i) => a.triggered !== alerts[i].triggered)) setAlerts(updated)
   }, [market, sym, alerts])
 
-  const liveStock = selectedSymbol?.assetType === "stock" ? stocks[sym] : null
-  const liveForex = selectedSymbol?.assetType === "forex" ? forexPairs[sym] : null
-  const livePrice = liveStock?.price ?? liveForex?.price ?? detail?.price ?? 0
-  const liveChange = liveStock?.change ?? liveForex?.changePct ?? detail?.change ?? 0
+  const liveStock  = selectedSymbol?.assetType === "stock"  ? stocks[sym]      : null
+  const liveForex  = selectedSymbol?.assetType === "forex"  ? forexPairs[sym]  : null
+  const liveCrypto = selectedSymbol?.assetType === "crypto" ? cryptoCoins[sym] : null
+  const livePrice  = liveStock?.price ?? liveForex?.price ?? liveCrypto?.price ?? detail?.price ?? 0
+  const liveChange = liveStock?.change ?? liveForex?.changePct ?? liveCrypto?.changePct ?? detail?.change ?? 0
+
+  const avgCostLine = useMemo(() => {
+    if (!sym || !selectedSymbol) return null
+    const pos = positions.find(p => p.symbol === sym && p.asset_type === selectedSymbol.assetType)
+    return pos ? Number(pos.avg_cost) : null
+  }, [positions, sym, selectedSymbol])
 
   // Chart data: prefer detail candles, fallback to live summary history
-  const stockDetail = selectedSymbol?.assetType === "stock" ? (detail as StockDetail | null) : null
-  const forexDetail = selectedSymbol?.assetType === "forex" ? (detail as ForexPairDetail | null) : null
+  const stockDetail  = selectedSymbol?.assetType === "stock"  ? (detail as StockDetail    | null) : null
+  const forexDetail  = selectedSymbol?.assetType === "forex"  ? (detail as ForexPairDetail | null) : null
+  const cryptoDetail = selectedSymbol?.assetType === "crypto" ? (detail as CryptoDetail    | null) : null
   const candles = detail?.candles ?? []
   const history = detail?.history ?? []
   const sma20 = detail?.sma20 ?? liveStock?.sma20 ?? 0
@@ -1672,7 +2254,7 @@ export default function TradingTerminalPage({ onNavigate }: Props) {
   const bbUpper = detail?.bbUpper ?? liveStock?.bbUpper ?? 0
   const bbMiddle = detail?.bbMiddle ?? liveStock?.bbMiddle ?? 0
   const bbLower = detail?.bbLower ?? liveStock?.bbLower ?? 0
-  const vwap = stockDetail?.vwap ?? liveStock?.vwap ?? 0
+  const vwap = stockDetail?.vwap ?? liveStock?.vwap ?? cryptoDetail?.price ?? liveCrypto?.price ?? 0
   const macd = detail?.macd ?? liveStock?.macd ?? 0
   const macdSignal = detail?.macdSignal ?? liveStock?.macdSignal ?? 0
   const macdHist = detail?.macdHist ?? liveStock?.macdHist ?? 0
@@ -1698,12 +2280,13 @@ export default function TradingTerminalPage({ onNavigate }: Props) {
               <h2 className="text-lg font-extrabold font-mono tracking-tight">{sym}</h2>
               {stockDetail?.name && <span className="text-xs text-muted-foreground truncate max-w-[180px]">{stockDetail.name}</span>}
               {forexDetail && <span className="text-xs text-muted-foreground truncate max-w-[200px]">{forexDetail.baseName} / {forexDetail.quoteName}</span>}
-              <span className="text-lg font-mono font-bold tabular-nums">${livePrice.toFixed(selectedSymbol.assetType === "forex" ? 4 : 2)}</span>
+              <span className="text-lg font-mono font-bold tabular-nums">${fmtSymbolPrice(livePrice, selectedSymbol.assetType)}</span>
               <span className={`text-sm font-semibold ${liveChange >= 0 ? "text-emerald-500" : "text-red-400"}`}>
                 {liveChange >= 0 ? "+" : ""}{liveChange.toFixed(2)}%
               </span>
               {stockDetail?.sector && <Badge variant="secondary" className="text-[10px]">{stockDetail.sector}</Badge>}
               {forexDetail?.category && <Badge variant="secondary" className="text-[10px] capitalize">{forexDetail.category}</Badge>}
+              {cryptoDetail?.category && <Badge variant="secondary" className="text-[10px] capitalize">{cryptoDetail.category}</Badge>}
               {stockDetail?.session && (
                 <Badge variant="outline" className={`text-[10px] ${stockDetail.session === "open" ? "text-emerald-500 border-emerald-500/30" : "text-muted-foreground"}`}>
                   {stockDetail.session}
@@ -1729,8 +2312,9 @@ export default function TradingTerminalPage({ onNavigate }: Props) {
         <DrawingToolbar
           tool={activeTool} setTool={setActiveTool}
           color={drawColor} setColor={setDrawColor}
-          onClear={() => setDrawings([])}
+          onClear={() => { setUndoStack(s => [...s.slice(-19), drawings]); setRedoStack([]); setDrawings([]) }}
           chartMode={chartMode} setChartMode={setChartMode}
+          showVolume={showVolume} setShowVolume={setShowVolume}
         />
 
         {/* Chart area */}
@@ -1750,17 +2334,32 @@ export default function TradingTerminalPage({ onNavigate }: Props) {
               macd={macd} macdSignal={macdSignal} macdHist={macdHist}
               chartMode={chartMode} activeTool={activeTool} drawColor={drawColor}
               drawings={drawings} alerts={alerts}
-              onAddDrawing={d => setDrawings([...drawings, d])}
-              onRemoveDrawing={id => setDrawings(drawings.filter(d => d.id !== id))}
+              onAddDrawing={handleAddDrawing}
+              onRemoveDrawing={handleRemoveDrawing}
+              onUpdateDrawing={handleUpdateDrawing}
               onAddAlert={a => setAlerts([...alerts, a])}
               currentPrice={livePrice}
+              avgCostLine={avgCostLine}
+              showVolume={showVolume}
+              selectedDrawingId={selectedDrawingId}
+              setSelectedDrawingId={setSelectedDrawingId}
             />
           )}
         </div>
 
         {/* Blotter: positions + order history */}
         {isSignedIn && (
-          <BottomPanel positions={positions} orders={recentOrders} />
+          <BottomPanel
+            positions={positions}
+            orders={recentOrders}
+            pendingOrders={pendingOrders}
+            portfolioStats={portfolioStats}
+            portfolioSnapshots={portfolioSnapshots}
+            onSymbolSelect={(symbol, assetType) => setSelectedSymbol({ symbol, assetType: assetType as "stock" | "forex" | "crypto" })}
+            onCancelOrder={handleCancelOrder}
+            height={panelHeight}
+            onHeightChange={setPanelHeight}
+          />
         )}
 
         {/* Bottom market bar */}
@@ -1786,11 +2385,14 @@ export default function TradingTerminalPage({ onNavigate }: Props) {
           currentPrice={livePrice}
           portfolios={portfolios} selectedPortfolio={selectedPortfolio} setSelectedPortfolio={setSelectedPortfolio}
           positions={positions}
-          onTradeComplete={refreshBlotter}
+          onTradeComplete={() => { refreshBlotter(); fetchPendingOrders(); fetchPerformance() }}
+          onToast={addToast}
           alerts={alerts} setAlerts={setAlerts}
           notes={notes} setNotes={setNotes}
         />
       </div>
+
+      <ToastContainer toasts={toasts} />
     </div>
   )
 }
