@@ -43,6 +43,7 @@ import TradingTerminalPage from "@/pages/TradingTerminalPage"
 import CommunityStandardsPage from "@/pages/CommunityStandardsPage"
 import LegalHubPage from "@/pages/LegalHubPage"
 import LeaderboardPage from "@/pages/LeaderboardPage"
+import { PanelPopoutPage } from "@/pages/PanelPopoutPage"
 
 // ── Routing ───────────────────────────────────────────────────────────────────
 export type Route =
@@ -57,6 +58,7 @@ export type Route =
   | "bug-report" | "suggestion"
   | "community-standards"
   | "leaderboard"
+  | "panel-popout"
 
 const HASH_MAP: Record<string, Route> = {
   "": "home",
@@ -136,10 +138,12 @@ const ROUTE_HASH: Record<Route, string> = {
   "community-standards": "/docs/community-standards",
   legal: "/docs/legal",
   leaderboard: "/leaderboard",
+  "panel-popout": "/popout",
 }
 
 function parseHash(): { route: Route; params: Record<string, string> } {
   const hash = window.location.hash.replace("#", "")
+  if (hash.startsWith("/popout/")) return { route: "panel-popout", params: {} }
   const stockInfo = hash.match(/^\/market\/([^/]+)\/info$/i)
   if (stockInfo) return { route: "stock-info", params: { ticker: stockInfo[1].toUpperCase() } }
   const portfolio = hash.match(/^\/portfolio\/(\d+)$/)
@@ -731,6 +735,17 @@ export default function App() {
   }
 
   const isAccountRoute = route === "dashboard" || route === "portfolio" || route === "account" || route === "admin" || route === "trading-terminal"
+  const isTerminal = route === "trading-terminal"
+
+  if (route === "panel-popout") {
+    return (
+      <SimulationProvider>
+        <div className="h-screen overflow-hidden bg-background text-foreground">
+          <PanelPopoutPage />
+        </div>
+      </SimulationProvider>
+    )
+  }
 
   return (
     <SimulationProvider>
@@ -739,7 +754,7 @@ export default function App() {
         <MarketNudge onNavigate={go} currentRoute={route} />
         <Navbar route={route} setRoute={setRoute} />
 
-        <main className="flex-1">
+        <main className={isTerminal ? "flex-1 min-h-0 overflow-hidden flex flex-col" : "flex-1"}>
           {route === "home"       && <HomePage    onNavigate={go} />}
           {route === "market"     && <MarketPage  onNavigateToInfo={goToInfo} onNavigate={go} />}
           {route === "forex"      && <ForexPage   onNavigate={go} />}
@@ -808,7 +823,7 @@ export default function App() {
           )}
         </main>
 
-        <Footer setRoute={setRoute} />
+        {!isTerminal && <Footer setRoute={setRoute} />}
       </div>
     </SimulationProvider>
   )

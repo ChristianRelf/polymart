@@ -41,6 +41,26 @@ import {
   calcLinReg, calcPivots, calcSMA,
 } from "@/lib/trading/indicators"
 
+// ── Timeframe aggregation ─────────────────────────────────────────────────────
+const TF_GROUP: Record<string, number> = {
+  "1m": 1, "5m": 3, "15m": 6, "1h": 12, "4h": 24, "D": 48, "W": 48,
+}
+function aggregateCandles(candles: Candle[], n: number): Candle[] {
+  if (n <= 1) return candles
+  const out: Candle[] = []
+  for (let i = 0; i < candles.length; i += n) {
+    const g = candles.slice(i, i + n)
+    out.push({
+      o: g[0].o, h: Math.max(...g.map(c => c.h)), l: Math.min(...g.map(c => c.l)), c: g[g.length - 1].c,
+      v: g.reduce((s, c) => s + c.v, 0),
+      bv: g.reduce((s, c) => s + (c.bv ?? 0), 0),
+      sv: g.reduce((s, c) => s + (c.sv ?? 0), 0),
+      t: g[g.length - 1].t,
+    })
+  }
+  return out
+}
+
 // ── Chart palette (matches MarketPage) ───────────────────────────────────────
 const BG   = "oklch(0.13 0.004 264)"
 const GAIN = "#4ade80"
@@ -2466,6 +2486,16 @@ export default function TradingTerminalPage({ onNavigate }: Props) {
   const [savedLayouts, setSavedLayouts] = useState<SavedLayout[]>(() => loadSavedLayouts())
   const [showPanelLibrary, setShowPanelLibrary] = useState(false)
 
+  // Lock scroll so the terminal is fully viewport-contained
+  useEffect(() => {
+    document.documentElement.style.overflow = "hidden"
+    document.body.style.overflow = "hidden"
+    return () => {
+      document.documentElement.style.overflow = ""
+      document.body.style.overflow = ""
+    }
+  }, [])
+
   // ── Indicator system ─────────────────────────────────────────────────────
   const [indicators, setIndicators] = useState<IndicatorConfig[]>(() => {
     try {
@@ -2716,6 +2746,7 @@ export default function TradingTerminalPage({ onNavigate }: Props) {
   const stockDetail  = selectedSymbol?.assetType === "stock"  ? (detail as StockDetail    | null) : null
   const cryptoDetail = selectedSymbol?.assetType === "crypto" ? (detail as CryptoDetail    | null) : null
   const candles = detail?.candles ?? []
+  const displayCandles = useMemo(() => aggregateCandles(candles, TF_GROUP[timeframe] ?? 1), [candles, timeframe])
   const history = detail?.history ?? []
   const sma20 = detail?.sma20 ?? liveStock?.sma20 ?? 0
   const sma50 = detail?.sma50 ?? liveStock?.sma50 ?? 0
@@ -2744,14 +2775,14 @@ export default function TradingTerminalPage({ onNavigate }: Props) {
         <div className="flex items-center justify-center h-full text-muted-foreground">
           <p className="text-sm">Select a symbol from the Watchlist panel</p>
         </div>
-      ) : detailLoading && candles.length === 0 && history.length === 0 ? (
+      ) : detailLoading && displayCandles.length === 0 && history.length === 0 ? (
         <div className="flex items-center justify-center h-full">
           <Loader2 className="w-6 h-6 animate-spin text-muted-foreground" />
         </div>
       ) : (
         <div className="flex-1 min-h-0 overflow-y-auto">
           <TradingChart
-            candles={candles} history={history} price={livePrice}
+            candles={displayCandles} history={history} price={livePrice}
             sma20={sma20} sma50={sma50} bbUpper={bbUpper} bbMiddle={bbMiddle} bbLower={bbLower} vwap={vwap}
             macd={macd} macdSignal={macdSignal} macdHist={macdHist}
             chartMode={chartMode} activeTool={activeTool} drawColor={drawColor}
@@ -2835,7 +2866,7 @@ export default function TradingTerminalPage({ onNavigate }: Props) {
   }
 
   return (
-    <div className="flex flex-col h-[calc(100vh-4rem)] overflow-hidden">
+    <div className="flex flex-col h-full overflow-hidden">
 
       {/* ── Global header bar ───────────────────────────────────────────── */}
       <div className="flex items-center gap-3 px-3 py-1.5 border-b border-border bg-card/30 shrink-0 flex-wrap">
@@ -2922,6 +2953,12 @@ export default function TradingTerminalPage({ onNavigate }: Props) {
           renderPanel={(type, _id) => renderPanel(type)}
           panelTitles={PANEL_TITLES}
           lockedTypes={["chart"]}
+          onPopOut={(type) => {
+            const sym = selectedSymbol?.symbol ?? ""
+            const at  = selectedSymbol?.assetType ?? "stock"
+            const url = `${window.location.origin}${window.location.pathname}#/popout/${type}?symbol=${encodeURIComponent(sym)}&assetType=${at}`
+            window.open(url, `pm_popout_${type}`, "width=960,height=700,resizable=yes,menubar=no,toolbar=no,status=no")
+          }}
         />
       </div>
 

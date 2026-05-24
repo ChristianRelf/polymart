@@ -124,23 +124,21 @@ export function Tooltip({ label, shortcut, description, children }: TooltipProps
 
 // ── Flyout group ──────────────────────────────────────────────────────────────
 
-function ToolGroupFlyout({ group, activeTool, onSelect }: {
+function ToolGroupFlyout({ group, activeTool, onSelect, isOpen, onOpen, onClose }: {
   group: ToolGroup
   activeTool: ToolMode
   onSelect: (id: ToolMode) => void
+  isOpen: boolean
+  onOpen: () => void
+  onClose: () => void
 }) {
-  const [open, setOpen] = useState(false)
-  const ref = useRef<HTMLDivElement>(null)
-  const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   const activeInGroup = group.tools.find(t => t.id === activeTool)
 
-  const showMenu = () => { if (timerRef.current) clearTimeout(timerRef.current); setOpen(true) }
-  const hideMenu = () => { timerRef.current = setTimeout(() => setOpen(false), 150) }
-
   return (
-    <div ref={ref} className="relative" onMouseEnter={showMenu} onMouseLeave={hideMenu}>
+    <div className="relative" onMouseEnter={onOpen} onMouseLeave={onClose}>
       <Tooltip label={activeInGroup?.label ?? group.label} shortcut={activeInGroup?.key} description={activeInGroup?.description}>
         <button
+          type="button"
           onClick={() => activeInGroup ? onSelect(activeInGroup.id) : onSelect(group.tools[0].id)}
           className={`flex items-center gap-1 px-2 py-1.5 rounded-lg text-[10px] font-medium transition-colors cursor-pointer border-0 ${
             activeInGroup ? "bg-indigo-600 text-white" : "text-muted-foreground hover:text-foreground bg-transparent hover:bg-white/8"
@@ -152,12 +150,13 @@ function ToolGroupFlyout({ group, activeTool, onSelect }: {
         </button>
       </Tooltip>
 
-      {open && (
+      {isOpen && (
         <div className="absolute top-full left-0 mt-1 z-50 min-w-[180px] rounded-xl border border-white/10 bg-[oklch(0.15_0.004_264)] shadow-2xl overflow-hidden py-1">
           {group.tools.map(tool => (
             <button
+              type="button"
               key={tool.id}
-              onClick={() => { onSelect(tool.id); setOpen(false) }}
+              onClick={() => { onSelect(tool.id); onClose() }}
               className={`w-full flex items-center gap-2.5 px-3 py-2 text-left transition-colors cursor-pointer border-0 hover:bg-white/8 ${
                 activeTool === tool.id ? "bg-indigo-600/20 text-indigo-300" : "bg-transparent text-foreground/80"
               }`}
@@ -209,6 +208,16 @@ export function DrawingToolbar({
 }: DrawingToolbarProps) {
   const isLineTool = LINE_TOOL_IDS.includes(tool)
   const activeCount = indicators.filter(i => i.enabled).length
+  const [openFlyout, setOpenFlyout] = useState<string | null>(null)
+  const closeTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
+
+  const handleFlyoutOpen = useCallback((label: string) => {
+    if (closeTimer.current) clearTimeout(closeTimer.current)
+    setOpenFlyout(label)
+  }, [])
+  const handleFlyoutClose = useCallback(() => {
+    closeTimer.current = setTimeout(() => setOpenFlyout(null), 150)
+  }, [])
 
   return (
     <div className="border-b border-white/5 bg-[oklch(0.15_0.004_264)] shrink-0">
@@ -267,7 +276,12 @@ export function DrawingToolbar({
         {/* Tool groups with flyouts */}
         {TOOL_GROUPS.map((group, gi) => (
           <div key={group.label} className={`flex items-center ${gi > 0 ? "border-l border-white/10 pl-1 ml-0.5" : ""}`}>
-            <ToolGroupFlyout group={group} activeTool={tool} onSelect={setTool} />
+            <ToolGroupFlyout
+              group={group} activeTool={tool} onSelect={setTool}
+              isOpen={openFlyout === group.label}
+              onOpen={() => handleFlyoutOpen(group.label)}
+              onClose={handleFlyoutClose}
+            />
           </div>
         ))}
 
