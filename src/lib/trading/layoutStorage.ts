@@ -1,8 +1,8 @@
 import type { SavedLayout } from "@/components/trading/types"
 import { DEFAULT_LAYOUT } from "./layoutPresets"
 
-const ACTIVE_KEY = "pm_layout_active"
-const SAVED_KEY  = "pm_layouts_saved"
+const ACTIVE_KEY = "pm_layout_active_v2"
+const SAVED_KEY  = "pm_layouts_saved_v2"
 const MAX_SAVED  = 10
 
 export function loadActiveLayout(): SavedLayout {

@@ -110,19 +110,38 @@ export function PanelGrid({ panels, columns, onUpdatePanels, renderPanel, panelT
     const onMove = (e: MouseEvent) => {
       const dx = e.clientX - resizing.startX
       const dy = e.clientY - resizing.startY
-      const updated = panelsRef.current.map(p => {
-        if (p.id !== resizing.id) return p
-        let colSpan = p.colSpan
-        let rowSpan = p.rowSpan
-        if (resizing.edge !== "bottom") {
-          colSpan = Math.max(1, Math.min(columns - resizing.startCol + 1, Math.round(resizing.startColSpan + dx / resizing.cellW)))
-        }
-        if (resizing.edge !== "right") {
-          rowSpan = Math.max(1, Math.round(resizing.startRowSpan + dy / resizing.cellH))
-        }
-        return { ...p, colSpan, rowSpan }
-      })
-      onUpdatePanels(updated)
+      const allPanels = panelsRef.current
+      const target = allPanels.find(p => p.id === resizing.id)
+      if (!target) return
+
+      let colSpan = target.colSpan
+      let rowSpan = target.rowSpan
+
+      if (resizing.edge !== "bottom") {
+        const raw = Math.max(1, Math.min(columns - resizing.startCol + 1, Math.round(resizing.startColSpan + dx / resizing.cellW)))
+        // Clamp: don't extend into panels immediately to the right that share our row range
+        const minRightCol = allPanels
+          .filter(p => p.id !== resizing.id &&
+            p.col > resizing.startCol &&
+            p.row <= target.row + resizing.startRowSpan - 1 &&
+            p.row + p.rowSpan - 1 >= target.row)
+          .reduce((min, p) => Math.min(min, p.col), columns + 1)
+        colSpan = Math.min(raw, minRightCol - resizing.startCol)
+      }
+
+      if (resizing.edge !== "right") {
+        const raw = Math.max(1, Math.round(resizing.startRowSpan + dy / resizing.cellH))
+        // Clamp: don't extend into panels directly below that share our col range
+        const minBelowRow = allPanels
+          .filter(p => p.id !== resizing.id &&
+            p.row > target.row &&
+            p.col <= resizing.startCol + resizing.startColSpan - 1 &&
+            p.col + p.colSpan - 1 >= resizing.startCol)
+          .reduce((min, p) => Math.min(min, p.row), Infinity)
+        rowSpan = Math.min(raw, isFinite(minBelowRow) ? minBelowRow - target.row : raw)
+      }
+
+      onUpdatePanels(allPanels.map(p => p.id !== resizing.id ? p : { ...p, colSpan, rowSpan }))
     }
     const onUp = () => setResizing(null)
     window.addEventListener("mousemove", onMove)
