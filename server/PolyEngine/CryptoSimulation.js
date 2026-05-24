@@ -218,9 +218,35 @@ export class CryptoSimulation {
       };
       if (!isFinite(price) || price <= 0) {
         const fallback = CRYPTO_DEFS[c.symbol].basePrice;
-        console.warn(`[CryptoSimulation] loadState: bad price for ${c.symbol} (${c.price}) — reset to ${fallback}`);
-        merged.price = fallback;
-        merged.prev_price = fallback;
+        console.warn(`[CryptoSimulation] loadState: bad price for ${c.symbol} (${c.price}) — resetting all price fields to ${fallback}`);
+        // Reset ALL price-derived fields so the tick starts from a clean baseline.
+        merged.price        = fallback;
+        merged.prev_price   = fallback;
+        merged.open_price   = fallback;
+        merged.candle_open  = fallback;
+        merged.candle_high  = fallback;
+        merged.candle_low   = fallback;
+        merged.hi24h        = fallback;
+        merged.lo24h        = fallback;
+        merged.hi52w        = fallback;
+        merged.lo52w        = fallback;
+        merged.ath          = fallback;
+        merged.ema12        = fallback;
+        merged.ema26        = fallback;
+        merged.bb_upper     = fallback;
+        merged.bb_middle    = fallback;
+        merged.bb_lower     = fallback;
+        merged.sma20        = fallback;
+        merged.sma50        = fallback;
+        merged.market_cap   = fallback * (CRYPTO_DEFS[c.symbol].circulating_supply || 0);
+        merged.bid          = fallback;
+        merged.ask          = fallback;
+        merged.macd         = 0;
+        merged.macd_signal  = 0;
+        merged.macd_hist    = 0;
+        merged.history      = [fallback];
+        merged.candles      = [];
+        merged.candle_ticks = 0;
       }
       return merged;
     }).filter(Boolean);
@@ -306,6 +332,12 @@ export class CryptoSimulation {
       try {
         const def  = CRYPTO_DEFS[c.symbol];
         if (!def) return c;
+
+        // Self-heal: if price somehow reached 0 (bad DB seed, truncation rounding, etc.)
+        if (!c.price || c.price <= 0) {
+          console.warn(`[CryptoSimulation] tick: zero price on ${c.symbol} — resetting to basePrice ${def.basePrice}`);
+          c = { ...c, price: def.basePrice, prev_price: def.basePrice };
+        }
 
         const updated = { ...c };
         const h = Array.isArray(c.history) ? c.history : [];

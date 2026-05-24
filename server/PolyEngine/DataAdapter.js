@@ -150,23 +150,32 @@ async function writeCrypto(db, coins, categories) {
 
     for (let i = 0; i < coins.length; i += CHUNK) {
       const chunk = coins.slice(i, i + CHUNK);
-      const vals  = chunk.map(c => [
-        c.symbol, c.name, c.category, c.mcap_tier, c.blockchain, c.consensus,
-        c.circulating_supply, c.total_supply,
-        c.price, c.prev_price, c.open_price,
-        c.hi24h, c.lo24h, c.hi52w, c.lo52w, c.ath,
-        c.market_cap, c.dominance,
-        c.volume, c.buy_volume ?? 0, c.sell_volume ?? 0,
-        c.bid, c.ask, c.spread_pct,
-        c.rsi, c.momentum, c.atr,
-        c.ema12, c.ema26, c.macd, c.macd_signal, c.macd_hist,
-        c.stoch_k ?? 50, c.stoch_d ?? 50, c.cci ?? 0,
-        c.bb_upper, c.bb_middle, c.bb_lower, c.bb_bw,
-        c.sma20, c.sma50, c.streak ?? 0,
-        c.candle_open, c.candle_high, c.candle_low, c.candle_ticks ?? 0,
-        JSON.stringify(c.history),
-        JSON.stringify(c.candles),
-      ]);
+      const vals = chunk
+        .filter(c => {
+          if (!c.price || c.price <= 0) {
+            console.error(`[DataAdapter] writeCrypto: refusing to persist zero price for ${c.symbol}`);
+            return false;
+          }
+          return true;
+        })
+        .map(c => [
+          c.symbol, c.name, c.category, c.mcap_tier, c.blockchain, c.consensus,
+          c.circulating_supply, c.total_supply,
+          c.price, c.prev_price, c.open_price,
+          c.hi24h, c.lo24h, c.hi52w, c.lo52w, c.ath,
+          c.market_cap, c.dominance,
+          c.volume, c.buy_volume ?? 0, c.sell_volume ?? 0,
+          c.bid, c.ask, c.spread_pct,
+          c.rsi, c.momentum, c.atr,
+          c.ema12, c.ema26, c.macd, c.macd_signal, c.macd_hist,
+          c.stoch_k ?? 50, c.stoch_d ?? 50, c.cci ?? 0,
+          c.bb_upper, c.bb_middle, c.bb_lower, c.bb_bw,
+          c.sma20, c.sma50, c.streak ?? 0,
+          c.candle_open, c.candle_high, c.candle_low, c.candle_ticks ?? 0,
+          JSON.stringify(c.history),
+          JSON.stringify(c.candles),
+        ]);
+      if (vals.length === 0) continue;
       const ph = vals.map(() => `(${Array(48).fill('?').join(',')})`).join(',');
       await conn.query(
         `INSERT INTO crypto_state (${COLS}) VALUES ${ph} ON DUPLICATE KEY UPDATE ${UPD}`,
