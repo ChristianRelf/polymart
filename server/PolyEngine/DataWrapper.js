@@ -96,11 +96,13 @@ function validateCryptoPayload(payload) {
   if (!Array.isArray(payload.categories))
     throw new TypeError('DataWrapper[crypto]: payload.categories must be an array');
 
-  for (const c of payload.coins) {
-    if (typeof c.symbol !== 'string')
-      throw new TypeError(`DataWrapper[crypto]: coin entry missing .symbol`);
-    if (!isFiniteNumber(c.price) || c.price <= 0)
-      throw new RangeError(`DataWrapper[crypto]: coin ${c.symbol} has invalid price ${c.price}`);
+  // Filter bad-price coins rather than throwing — keeps the tick loop alive
+  // while the self-heal in CryptoSimulation corrects the state over subsequent ticks.
+  const bad = payload.coins.filter(c => typeof c.symbol !== 'string' || !isFiniteNumber(c.price) || c.price <= 0);
+  if (bad.length > 0) {
+    for (const c of bad)
+      console.error(`[DataWrapper] crypto: coin ${c.symbol ?? '?'} has invalid price ${c.price} — excluded from publish`);
+    payload.coins = payload.coins.filter(c => typeof c.symbol === 'string' && isFiniteNumber(c.price) && c.price > 0);
   }
 }
 
