@@ -9,16 +9,37 @@ import { ScrollArea } from "@/components/ui/scroll-area"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog"
 import {
-  Search, TrendingUp, Minus, Bell, MousePointer2, Eraser,
+  Search, TrendingUp, Minus, Bell,
   Trash2, Loader2, ShoppingCart,
-  BookOpen, Calculator, Target, Type, Square, X, Check,
-  BarChart2, ChevronRight, Layers, ArrowUpRight, AlignCenter,
-  Percent, Ruler, BarChart,
+  BookOpen, Calculator, Target, Type, X, Check,
+  BarChart2, ChevronRight, Layers, Plus,
 } from "lucide-react"
 import { useAccount } from "@/hooks/useAccount"
 import { useSimulation } from "@/lib/SimulationContext"
 import type { StockDetail, ForexPairDetail, CryptoDetail, Candle } from "@/lib/SimulationContext"
 import type { Route } from "@/App"
+// ── New layout & panel system ─────────────────────────────────────────────────
+import { PanelGrid } from "@/components/trading/PanelGrid"
+import { PanelLibrary } from "@/components/trading/PanelLibrary"
+import { LayoutsDropdown } from "@/components/trading/LayoutsDropdown"
+import { DrawingToolbar as NewDrawingToolbar } from "@/components/trading/DrawingToolbar"
+import { IndicatorsPanel } from "@/components/trading/IndicatorsPanel"
+import { OrderBookPanel } from "@/components/trading/panels/OrderBookPanel"
+import { TimeSalesPanel } from "@/components/trading/panels/TimeSalesPanel"
+import { HeatmapPanel } from "@/components/trading/panels/HeatmapPanel"
+import { ScannerPanel } from "@/components/trading/panels/ScannerPanel"
+import { DomLadderPanel } from "@/components/trading/panels/DomLadderPanel"
+import { NewsPanel } from "@/components/trading/panels/NewsPanel"
+import { CalendarPanel } from "@/components/trading/panels/CalendarPanel"
+import type { PanelType, PanelDef, SavedLayout, IndicatorConfig } from "@/components/trading/types"
+import { DEFAULT_INDICATORS } from "@/components/trading/types"
+import { DEFAULT_LAYOUT, LAYOUT_PRESETS } from "@/lib/trading/layoutPresets"
+import { loadActiveLayout, saveActiveLayout, loadSavedLayouts, saveUserLayout, deleteUserLayout, renameUserLayout } from "@/lib/trading/layoutStorage"
+import {
+  calcEMA, calcWMA, calcBB, calcRSI, calcMACD, calcStochastic, calcCCI,
+  calcATR, calcOBV, calcParabolicSAR, calcIchimoku, calcKeltner, calcDonchian,
+  calcLinReg, calcPivots, calcSMA,
+} from "@/lib/trading/indicators"
 
 // ── Chart palette (matches MarketPage) ───────────────────────────────────────
 const BG   = "oklch(0.13 0.004 264)"
@@ -26,16 +47,23 @@ const GAIN = "#4ade80"
 const LOSS = "#f87171"
 const DIM  = "rgba(255,255,255,0.3)"
 const CARD_BG = "oklch(0.165 0.004 264)"
-const DRAW_COLORS = ["#ffffff","#4ade80","#f87171","#60a5fa","#fbbf24","#c084fc","#f97316"]
 
 // ── Types ────────────────────────────────────────────────────────────────────
 type ToolMode =
   | "cursor" | "hline" | "vline" | "trendline" | "ray" | "channel"
   | "rect" | "ellipse" | "arrow" | "text" | "fib" | "measure" | "alert" | "erase"
+  | "extline" | "trendangle" | "pitchfork"
+  | "triangle" | "brush"
+  | "fibext" | "fibfan" | "fibtime"
+  | "callout" | "pricenote"
 
 interface Drawing {
   id: string
   type: "hline" | "vline" | "trendline" | "ray" | "channel" | "rect" | "ellipse" | "arrow" | "text" | "fib"
+    | "extline" | "trendangle" | "pitchfork"
+    | "triangle" | "brush"
+    | "fibext" | "fibfan" | "fibtime"
+    | "callout" | "pricenote"
   color: string
   price?: number
   idxFromRight?: number
@@ -43,10 +71,13 @@ interface Drawing {
   p1?: { price: number; idxFromRight: number }
   p2?: { price: number; idxFromRight: number }
   p3?: { price: number; idxFromRight: number }
+  p4?: { price: number; idxFromRight: number }
+  points?: { price: number; idxFromRight: number }[]
   text?: string
   fontSize?: "sm" | "md" | "lg"
   showBg?: boolean
   lineStyle?: "solid" | "dashed" | "dotted"
+  lineWidth?: 1 | 2 | 3
 }
 
 interface PendingOrder {
@@ -374,6 +405,192 @@ function renderFib(ctx: CanvasRenderingContext2D, g: ChartGeom, d: Drawing, alph
   ctx.restore()
 }
 
+function renderExtLine(ctx: CanvasRenderingContext2D, g: ChartGeom, d: Drawing, alpha = 1) {
+  if (!d.p1 || !d.p2) return
+  const x1 = idxToX(g, d.p1.idxFromRight), y1 = toY(g, d.p1.price)
+  const x2 = idxToX(g, d.p2.idxFromRight), y2 = toY(g, d.p2.price)
+  const dx = x2 - x1, dy = y2 - y1
+  if (Math.abs(dx) < 0.001 && Math.abs(dy) < 0.001) return
+  const tLeft = dx !== 0 ? (g.pad.l - x1) / dx : -Infinity
+  const tRight = dx !== 0 ? (g.cssW - g.pad.r - x1) / dx : Infinity
+  const tMin = Math.min(tLeft, tRight), tMax = Math.max(tLeft, tRight)
+  const xA = x1 + tMin * dx, yA = y1 + tMin * dy
+  const xB = x1 + tMax * dx, yB = y1 + tMax * dy
+  ctx.save(); ctx.globalAlpha = alpha
+  ctx.strokeStyle = d.color; ctx.lineWidth = d.lineWidth ?? 1.5
+  applyLineDash(ctx, d.lineStyle)
+  ctx.beginPath(); ctx.moveTo(xA, yA); ctx.lineTo(xB, yB); ctx.stroke()
+  ctx.setLineDash([])
+  ctx.fillStyle = d.color
+  ;[[x1, y1], [x2, y2]].forEach(([x, y]) => { ctx.beginPath(); ctx.arc(x, y, 3, 0, Math.PI * 2); ctx.fill() })
+  ctx.restore()
+}
+
+function renderTrendAngle(ctx: CanvasRenderingContext2D, g: ChartGeom, d: Drawing, alpha = 1) {
+  if (!d.p1 || !d.p2) return
+  const x1 = idxToX(g, d.p1.idxFromRight), y1 = toY(g, d.p1.price)
+  const x2 = idxToX(g, d.p2.idxFromRight), y2 = toY(g, d.p2.price)
+  const angle = Math.atan2(-(y2 - y1), x2 - x1) * 180 / Math.PI
+  ctx.save(); ctx.globalAlpha = alpha
+  ctx.strokeStyle = d.color; ctx.lineWidth = d.lineWidth ?? 1.5
+  ctx.beginPath(); ctx.moveTo(x1, y1); ctx.lineTo(x2, y2); ctx.stroke()
+  ctx.fillStyle = d.color
+  ;[[x1, y1], [x2, y2]].forEach(([x, y]) => { ctx.beginPath(); ctx.arc(x, y, 3, 0, Math.PI * 2); ctx.fill() })
+  ctx.font = "10px 'DM Mono',monospace"; ctx.textAlign = "left"
+  const mx = (x1 + x2) / 2, my = (y1 + y2) / 2
+  ctx.fillText(`${angle.toFixed(1)}°`, mx + 6, my - 4)
+  ctx.restore()
+}
+
+function renderPitchfork(ctx: CanvasRenderingContext2D, g: ChartGeom, d: Drawing, alpha = 1) {
+  if (!d.p1 || !d.p2 || !d.p3) return
+  const x1 = idxToX(g, d.p1.idxFromRight), y1 = toY(g, d.p1.price)
+  const x2 = idxToX(g, d.p2.idxFromRight), y2 = toY(g, d.p2.price)
+  const x3 = idxToX(g, d.p3.idxFromRight), y3 = toY(g, d.p3.price)
+  const midX = (x2 + x3) / 2, midY = (y2 + y3) / 2
+  const xEnd = g.cssW - g.pad.r
+  const dx = midX - x1, dy = midY - y1
+  const t = dx !== 0 ? (xEnd - x1) / dx : 1
+  ctx.save(); ctx.globalAlpha = alpha
+  ctx.strokeStyle = d.color; ctx.lineWidth = d.lineWidth ?? 1.5
+  ;[[x1, y1, midX, midY], [x1, y1, x2, y2], [x1, y1, x3, y3]].forEach(([ax, ay, bx, by]) => {
+    const T = (bx - ax) !== 0 ? (xEnd - ax) / (bx - ax) : t
+    ctx.beginPath(); ctx.moveTo(ax, ay); ctx.lineTo(ax + T * (bx - ax), ay + T * (by - ay)); ctx.stroke()
+  })
+  ctx.fillStyle = d.color
+  ;[[x1, y1], [x2, y2], [x3, y3]].forEach(([x, y]) => { ctx.beginPath(); ctx.arc(x, y, 3, 0, Math.PI * 2); ctx.fill() })
+  // Connection bar between p2 and p3
+  ctx.setLineDash([3, 3]); ctx.beginPath(); ctx.moveTo(x2, y2); ctx.lineTo(x3, y3); ctx.stroke(); ctx.setLineDash([])
+  ctx.restore()
+}
+
+function renderTriangle(ctx: CanvasRenderingContext2D, g: ChartGeom, d: Drawing, alpha = 1) {
+  if (!d.p1 || !d.p2 || !d.p3) return
+  const x1 = idxToX(g, d.p1.idxFromRight), y1 = toY(g, d.p1.price)
+  const x2 = idxToX(g, d.p2.idxFromRight), y2 = toY(g, d.p2.price)
+  const x3 = idxToX(g, d.p3.idxFromRight), y3 = toY(g, d.p3.price)
+  ctx.save(); ctx.globalAlpha = alpha
+  ctx.beginPath(); ctx.moveTo(x1, y1); ctx.lineTo(x2, y2); ctx.lineTo(x3, y3); ctx.closePath()
+  ctx.fillStyle = d.color + "15"; ctx.fill()
+  ctx.strokeStyle = d.color; ctx.lineWidth = d.lineWidth ?? 1.5; ctx.stroke()
+  ctx.fillStyle = d.color
+  ;[[x1, y1], [x2, y2], [x3, y3]].forEach(([x, y]) => { ctx.beginPath(); ctx.arc(x, y, 3, 0, Math.PI * 2); ctx.fill() })
+  ctx.restore()
+}
+
+function renderBrush(ctx: CanvasRenderingContext2D, g: ChartGeom, d: Drawing, alpha = 1) {
+  if (!d.points || d.points.length < 2) return
+  ctx.save(); ctx.globalAlpha = alpha
+  ctx.strokeStyle = d.color; ctx.lineWidth = d.lineWidth ?? 1.5; ctx.lineJoin = "round"; ctx.lineCap = "round"
+  ctx.beginPath()
+  d.points.forEach((pt, i) => {
+    const x = idxToX(g, pt.idxFromRight), y = toY(g, pt.price)
+    i === 0 ? ctx.moveTo(x, y) : ctx.lineTo(x, y)
+  })
+  ctx.stroke()
+  ctx.restore()
+}
+
+function renderFibExt(ctx: CanvasRenderingContext2D, g: ChartGeom, d: Drawing, alpha = 1) {
+  if (!d.p1 || !d.p2) return
+  const priceLow = Math.min(d.p1.price, d.p2.price)
+  const priceHigh = Math.max(d.p1.price, d.p2.price)
+  const range = priceHigh - priceLow
+  const levels = [0, 0.382, 0.618, 1.0, 1.272, 1.618, 2.0, 2.618]
+  const colors  = ["#94a3b8","#60a5fa","#a78bfa","#4ade80","#f97316","#f87171","#fbbf24","#fb7185"]
+  ctx.save(); ctx.globalAlpha = alpha
+  ctx.font = "10px 'DM Mono',monospace"; ctx.textAlign = "left"
+  const x1 = g.pad.l, x2 = g.cssW - g.pad.r
+  levels.forEach((lvl, i) => {
+    const price = priceHigh + lvl * range
+    const y = toY(g, price)
+    if (y < g.pad.t - 20 || y > g.cssH) return
+    ctx.strokeStyle = colors[i]; ctx.lineWidth = 1; ctx.setLineDash([3, 3])
+    ctx.beginPath(); ctx.moveTo(x1, y); ctx.lineTo(x2, y); ctx.stroke(); ctx.setLineDash([])
+    ctx.fillStyle = colors[i]
+    ctx.fillText(`${(lvl * 100).toFixed(1)}%  ${price.toFixed(2)}`, x2 + 4, y + 4)
+  })
+  ctx.restore()
+}
+
+function renderFibFan(ctx: CanvasRenderingContext2D, g: ChartGeom, d: Drawing, alpha = 1) {
+  if (!d.p1 || !d.p2) return
+  const x1 = idxToX(g, d.p1.idxFromRight), y1 = toY(g, d.p1.price)
+  const x2 = idxToX(g, d.p2.idxFromRight), y2 = toY(g, d.p2.price)
+  const ratios = [0.236, 0.382, 0.5, 0.618, 0.786]
+  const colors  = ["#60a5fa","#a78bfa","#4ade80","#f97316","#f87171"]
+  const xEnd = g.cssW - g.pad.r
+  ctx.save(); ctx.globalAlpha = alpha
+  ratios.forEach((r, i) => {
+    const fanY = y1 + (y2 - y1) * r
+    ctx.strokeStyle = colors[i]; ctx.lineWidth = 1; ctx.setLineDash([4, 3])
+    const dx = x2 - x1, dy = fanY - y1
+    const T = dx !== 0 ? (xEnd - x1) / dx : 1
+    ctx.beginPath(); ctx.moveTo(x1, y1); ctx.lineTo(x1 + T * dx, y1 + T * dy); ctx.stroke()
+    ctx.setLineDash([])
+    ctx.fillStyle = colors[i]; ctx.font = "9px 'DM Mono',monospace"; ctx.textAlign = "left"
+    ctx.fillText(`${(r * 100).toFixed(1)}%`, xEnd + 4, y1 + T * dy + 3)
+  })
+  ctx.restore()
+}
+
+function renderFibTime(ctx: CanvasRenderingContext2D, g: ChartGeom, d: Drawing, alpha = 1) {
+  if (!d.p1 || !d.p2) return
+  const x1 = idxToX(g, d.p1.idxFromRight), x2 = idxToX(g, d.p2.idxFromRight)
+  const dx = x2 - x1
+  const fibNums = [1, 1, 2, 3, 5, 8, 13, 21]
+  ctx.save(); ctx.globalAlpha = alpha
+  ctx.font = "9px 'DM Mono',monospace"; ctx.textAlign = "center"
+  fibNums.forEach((f, i) => {
+    const x = x1 + dx * f
+    if (x < g.pad.l || x > g.cssW - g.pad.r) return
+    ctx.strokeStyle = `rgba(167,139,250,${0.3 + i * 0.04})`; ctx.lineWidth = 1; ctx.setLineDash([3, 4])
+    ctx.beginPath(); ctx.moveTo(x, g.pad.t); ctx.lineTo(x, g.cssH - g.pad.b); ctx.stroke(); ctx.setLineDash([])
+    ctx.fillStyle = `rgba(167,139,250,0.7)`
+    ctx.fillText(String(f), x, g.pad.t + 10)
+  })
+  ctx.restore()
+}
+
+function renderCallout(ctx: CanvasRenderingContext2D, g: ChartGeom, d: Drawing, alpha = 1) {
+  if (!d.p1 || !d.text) return
+  const x = idxToX(g, d.p1.idxFromRight), y = toY(g, d.p1.price)
+  const fsPx = 11, pad = 6, bw = Math.max(80, ctx.measureText(d.text).width + pad * 2 + 8), bh = fsPx + pad * 2
+  const bx = x + 10, by = y - bh / 2
+  ctx.save(); ctx.globalAlpha = alpha
+  ctx.font = `${fsPx}px 'DM Mono',monospace`
+  ctx.fillStyle = d.color + "22"; ctx.strokeStyle = d.color + "88"; ctx.lineWidth = 1
+  if (ctx.roundRect) ctx.roundRect(bx, by, bw, bh, 4); else ctx.rect(bx, by, bw, bh)
+  ctx.fill(); ctx.stroke()
+  // Tail
+  ctx.beginPath(); ctx.moveTo(x, y); ctx.lineTo(bx, by + bh / 2); ctx.strokeStyle = d.color + "88"; ctx.stroke()
+  ctx.fillStyle = d.color; ctx.textAlign = "left"
+  ctx.fillText(d.text, bx + pad, by + bh / 2 + fsPx * 0.35)
+  ctx.restore()
+}
+
+function renderPriceNote(ctx: CanvasRenderingContext2D, g: ChartGeom, d: Drawing, alpha = 1) {
+  if (d.price === undefined || !d.text) return
+  const y = toY(g, d.price)
+  ctx.save(); ctx.globalAlpha = alpha
+  ctx.font = "10px 'DM Mono',monospace"; ctx.textAlign = "left"
+  const tw = ctx.measureText(d.text).width
+  ctx.fillStyle = d.color + "22"; ctx.strokeStyle = d.color; ctx.lineWidth = 1
+  ctx.fillRect(g.pad.l, y - 10, tw + 16, 14); ctx.strokeRect(g.pad.l, y - 10, tw + 16, 14)
+  ctx.fillStyle = d.color
+  ctx.fillText(d.text, g.pad.l + 6, y + 1)
+  ctx.setLineDash([4, 3])
+  ctx.beginPath(); ctx.moveTo(g.pad.l + tw + 20, y); ctx.lineTo(g.cssW - g.pad.r, y); ctx.stroke()
+  ctx.setLineDash([])
+  ctx.restore()
+}
+
+function applyLineDash(ctx: CanvasRenderingContext2D, style?: string) {
+  if (style === "dashed") ctx.setLineDash([6, 4])
+  else if (style === "dotted") ctx.setLineDash([2, 3])
+  else ctx.setLineDash([])
+}
+
 function hitTestLine(x1: number, y1: number, x2: number, y2: number, x: number, y: number, tol = 8) {
   const len2 = (x2 - x1) ** 2 + (y2 - y1) ** 2
   if (len2 === 0) return Math.hypot(x - x1, y - y1) < tol
@@ -409,6 +626,42 @@ function hitTest(g: ChartGeom, d: Drawing, x: number, y: number): boolean {
   if (d.type === "text" && d.p1) {
     const ax = idxToX(g, d.p1.idxFromRight), ay = toY(g, d.p1.price)
     return Math.abs(x - ax) < 60 && Math.abs(y - ay) < 14
+  }
+  if ((d.type === "extline" || d.type === "trendangle") && d.p1 && d.p2) {
+    const x1 = idxToX(g, d.p1.idxFromRight), y1 = toY(g, d.p1.price)
+    const x2 = idxToX(g, d.p2.idxFromRight), y2 = toY(g, d.p2.price)
+    return hitTestLine(x1, y1, x2, y2, x, y)
+  }
+  if (d.type === "pitchfork" && d.p1 && d.p2 && d.p3) {
+    const x1 = idxToX(g, d.p1.idxFromRight), y1 = toY(g, d.p1.price)
+    const x2 = idxToX(g, d.p2.idxFromRight), y2 = toY(g, d.p2.price)
+    const x3 = idxToX(g, d.p3.idxFromRight), y3 = toY(g, d.p3.price)
+    return hitTestLine(x1, y1, (x2+x3)/2, (y2+y3)/2, x, y)
+  }
+  if (d.type === "triangle" && d.p1 && d.p2 && d.p3) {
+    const x1 = idxToX(g, d.p1.idxFromRight), y1 = toY(g, d.p1.price)
+    const x2 = idxToX(g, d.p2.idxFromRight), y2 = toY(g, d.p2.price)
+    const x3 = idxToX(g, d.p3.idxFromRight), y3 = toY(g, d.p3.price)
+    return hitTestLine(x1,y1,x2,y2,x,y) || hitTestLine(x2,y2,x3,y3,x,y) || hitTestLine(x3,y3,x1,y1,x,y)
+  }
+  if ((d.type === "fibext" || d.type === "fibfan" || d.type === "fibtime") && d.p1 && d.p2) {
+    const x1 = idxToX(g, d.p1.idxFromRight), y1 = toY(g, d.p1.price)
+    const x2 = idxToX(g, d.p2.idxFromRight), y2 = toY(g, d.p2.price)
+    return hitTestLine(x1, y1, x2, y2, x, y)
+  }
+  if (d.type === "callout" && d.p1) {
+    const ax = idxToX(g, d.p1.idxFromRight), ay = toY(g, d.p1.price)
+    return Math.abs(x - ax) < 80 && Math.abs(y - ay) < 20
+  }
+  if (d.type === "pricenote" && d.price !== undefined) {
+    return Math.abs(y - toY(g, d.price)) < 10
+  }
+  if (d.type === "brush" && d.points && d.points.length > 1) {
+    return d.points.some((pt, i) => {
+      if (i === 0) return false
+      const prev = d.points![i - 1]
+      return hitTestLine(idxToX(g, prev.idxFromRight), toY(g, prev.price), idxToX(g, pt.idxFromRight), toY(g, pt.price), x, y, 6)
+    })
   }
   return false
 }
@@ -488,6 +741,126 @@ function VolumeChart({ candles }: { candles: Candle[] }) {
   return <canvas ref={ref} className="w-full block border-t border-white/5" style={{ background: BG, height: 40 }} />
 }
 
+// ── Generic sub-chart canvas helper ──────────────────────────────────────────
+function SubChartCanvas({ draw, height = 70, deps }: { draw: (ctx: CanvasRenderingContext2D, W: number, H: number) => void; height?: number; deps: unknown[] }) {
+  const ref = useRef<HTMLCanvasElement>(null)
+  useEffect(() => {
+    const cv = ref.current; if (!cv) return
+    const dpr = window.devicePixelRatio || 1
+    const W = cv.clientWidth, H = cv.clientHeight
+    cv.width = Math.round(W * dpr); cv.height = Math.round(H * dpr)
+    const ctx = cv.getContext("2d")!; ctx.scale(dpr, dpr)
+    ctx.clearRect(0, 0, W, H); ctx.fillStyle = BG; ctx.fillRect(0, 0, W, H)
+    draw(ctx, W, H)
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, deps)
+  return <canvas ref={ref} className="w-full block border-t border-white/5" style={{ background: BG, height }} />
+}
+
+function RsiChart({ candles, period, color }: { candles: Candle[]; period: number; color: string }) {
+  const vals = candles.map(c => c.c)
+  const rsi = calcRSI(vals, period)
+  return (
+    <SubChartCanvas height={70} deps={[candles, period, color]} draw={(ctx, W, H) => {
+      const pad = { t: 12, r: 74, b: 4, l: 8 }, cW = W - pad.l - pad.r, cH = H - pad.t - pad.b, n = candles.length
+      const gap = cW / n
+      const tY = (v: number) => pad.t + cH - (v / 100) * cH
+      ;[70, 50, 30].forEach(lvl => {
+        ctx.strokeStyle = lvl === 50 ? "rgba(255,255,255,0.08)" : "rgba(255,255,255,0.12)"; ctx.lineWidth = 1
+        ctx.setLineDash(lvl === 50 ? [] : [3,3])
+        ctx.beginPath(); ctx.moveTo(pad.l, tY(lvl)); ctx.lineTo(W - pad.r, tY(lvl)); ctx.stroke(); ctx.setLineDash([])
+        ctx.fillStyle = "rgba(255,255,255,0.3)"; ctx.font = "9px 'DM Mono',monospace"; ctx.textAlign = "left"
+        ctx.fillText(String(lvl), W - pad.r + 4, tY(lvl) + 3)
+      })
+      ctx.beginPath(); ctx.strokeStyle = color; ctx.lineWidth = 1
+      let started = false
+      rsi.forEach((v, i) => { if (v === null) { started = false; return }; const x = pad.l + i*gap+gap/2; started ? ctx.lineTo(x, tY(v)) : (ctx.moveTo(x, tY(v)), (started = true)) })
+      ctx.stroke()
+      const last = rsi.filter(v => v !== null).at(-1)
+      ctx.fillStyle = "rgba(255,255,255,0.4)"; ctx.font = "10px 'DM Mono',monospace"; ctx.textAlign = "left"
+      ctx.fillText(`RSI(${period}) ${last?.toFixed(1) ?? "—"}`, pad.l + 4, pad.t - 1)
+    }} />
+  )
+}
+
+function StochChart({ candles, k, d, color }: { candles: Candle[]; k: number; d: number; color: string }) {
+  const { kLine, dLine } = calcStochastic(candles, k, d)
+  return (
+    <SubChartCanvas height={70} deps={[candles, k, d, color]} draw={(ctx, W, H) => {
+      const pad = { t: 12, r: 74, b: 4, l: 8 }, cW = W - pad.l - pad.r, cH = H - pad.t - pad.b, n = candles.length
+      const gap = cW / n, tY = (v: number) => pad.t + cH - (v / 100) * cH
+      ;[80, 20].forEach(lvl => {
+        ctx.strokeStyle = "rgba(255,255,255,0.12)"; ctx.lineWidth = 1; ctx.setLineDash([3,3])
+        ctx.beginPath(); ctx.moveTo(pad.l, tY(lvl)); ctx.lineTo(W - pad.r, tY(lvl)); ctx.stroke(); ctx.setLineDash([])
+        ctx.fillStyle = "rgba(255,255,255,0.3)"; ctx.font = "9px 'DM Mono',monospace"; ctx.textAlign = "left"
+        ctx.fillText(String(lvl), W - pad.r + 4, tY(lvl) + 3)
+      })
+      ;[{line: kLine, col: color}, {line: dLine, col: "#f87171"}].forEach(({line, col}) => {
+        ctx.beginPath(); ctx.strokeStyle = col; ctx.lineWidth = 1; let s = false
+        line.forEach((v, i) => { if (v === null) { s = false; return }; const x = pad.l + i*gap+gap/2; s ? ctx.lineTo(x, tY(v)) : (ctx.moveTo(x, tY(v)), (s = true)) })
+        ctx.stroke()
+      })
+      ctx.fillStyle = "rgba(255,255,255,0.4)"; ctx.font = "10px 'DM Mono',monospace"; ctx.textAlign = "left"
+      ctx.fillText(`Stoch(${k},${d})`, pad.l + 4, pad.t - 1)
+    }} />
+  )
+}
+
+function CciChart({ candles, period, color }: { candles: Candle[]; period: number; color: string }) {
+  const cci = calcCCI(candles, period)
+  const mx = Math.max(200, ...cci.filter(v => v !== null).map(v => Math.abs(v!)))
+  return (
+    <SubChartCanvas height={70} deps={[candles, period, color]} draw={(ctx, W, H) => {
+      const pad = { t: 12, r: 74, b: 4, l: 8 }, cW = W - pad.l - pad.r, cH = H - pad.t - pad.b, n = candles.length
+      const gap = cW / n, tY = (v: number) => pad.t + cH/2 - (v / mx) * (cH/2)
+      ctx.strokeStyle = "rgba(255,255,255,0.08)"; ctx.lineWidth = 1
+      ctx.beginPath(); ctx.moveTo(pad.l, tY(0)); ctx.lineTo(W - pad.r, tY(0)); ctx.stroke()
+      ;[100, -100].forEach(lvl => {
+        ctx.strokeStyle = "rgba(255,255,255,0.12)"; ctx.lineWidth = 1; ctx.setLineDash([3,3])
+        ctx.beginPath(); ctx.moveTo(pad.l, tY(lvl)); ctx.lineTo(W - pad.r, tY(lvl)); ctx.stroke(); ctx.setLineDash([])
+      })
+      ctx.beginPath(); ctx.strokeStyle = color; ctx.lineWidth = 1; let s = false
+      cci.forEach((v, i) => { if (v === null) { s = false; return }; const x = pad.l + i*gap+gap/2; s ? ctx.lineTo(x, tY(v)) : (ctx.moveTo(x, tY(v)), (s = true)) })
+      ctx.stroke()
+      ctx.fillStyle = "rgba(255,255,255,0.4)"; ctx.font = "10px 'DM Mono',monospace"; ctx.textAlign = "left"
+      ctx.fillText(`CCI(${period})`, pad.l + 4, pad.t - 1)
+    }} />
+  )
+}
+
+function AtrChart({ candles, period, color }: { candles: Candle[]; period: number; color: string }) {
+  const atr = calcATR(candles, period)
+  const mx = Math.max(...atr.filter(v => v !== null).map(v => v!), 0.01)
+  return (
+    <SubChartCanvas height={70} deps={[candles, period, color]} draw={(ctx, W, H) => {
+      const pad = { t: 12, r: 74, b: 4, l: 8 }, cW = W - pad.l - pad.r, cH = H - pad.t - pad.b, n = candles.length
+      const gap = cW / n, tY = (v: number) => pad.t + cH - (v / mx) * cH
+      ctx.beginPath(); ctx.strokeStyle = color; ctx.lineWidth = 1; let s = false
+      atr.forEach((v, i) => { if (v === null) { s = false; return }; const x = pad.l + i*gap+gap/2; s ? ctx.lineTo(x, tY(v)) : (ctx.moveTo(x, tY(v)), (s = true)) })
+      ctx.stroke()
+      ctx.fillStyle = "rgba(255,255,255,0.4)"; ctx.font = "10px 'DM Mono',monospace"; ctx.textAlign = "left"
+      ctx.fillText(`ATR(${period})`, pad.l + 4, pad.t - 1)
+    }} />
+  )
+}
+
+function ObvChart({ candles, color }: { candles: Candle[]; color: string }) {
+  const obv = calcOBV(candles)
+  const mn = Math.min(...obv), mx = Math.max(...obv)
+  const rng = mx - mn || 1
+  return (
+    <SubChartCanvas height={70} deps={[candles, color]} draw={(ctx, W, H) => {
+      const pad = { t: 12, r: 74, b: 4, l: 8 }, cW = W - pad.l - pad.r, cH = H - pad.t - pad.b, n = candles.length
+      const gap = cW / n, tY = (v: number) => pad.t + cH - ((v - mn) / rng) * cH
+      ctx.beginPath(); ctx.strokeStyle = color; ctx.lineWidth = 1
+      obv.forEach((v, i) => { const x = pad.l + i*gap+gap/2; i === 0 ? ctx.moveTo(x, tY(v)) : ctx.lineTo(x, tY(v)) })
+      ctx.stroke()
+      ctx.fillStyle = "rgba(255,255,255,0.4)"; ctx.font = "10px 'DM Mono',monospace"; ctx.textAlign = "left"
+      ctx.fillText("OBV", pad.l + 4, pad.t - 1)
+    }} />
+  )
+}
+
 // ── Trading Chart (with drawing tool support) ─────────────────────────────────
 interface TradingChartProps {
   candles: Candle[]; history: number[]; price: number
@@ -495,6 +868,8 @@ interface TradingChartProps {
   macd: number; macdSignal: number; macdHist: number
   chartMode: "candle" | "line"
   activeTool: ToolMode; drawColor: string
+  lineStyle?: "solid" | "dashed" | "dotted"
+  lineWidth?: 1 | 2 | 3
   drawings: Drawing[]; alerts: PriceAlert[]
   onAddDrawing: (d: Drawing) => void
   onRemoveDrawing: (id: string) => void
@@ -503,6 +878,7 @@ interface TradingChartProps {
   currentPrice: number
   avgCostLine?: number | null
   showVolume?: boolean
+  indicators?: IndicatorConfig[]
   selectedDrawingId: string | null
   setSelectedDrawingId: (id: string | null) => void
 }
@@ -510,9 +886,9 @@ interface TradingChartProps {
 function TradingChart({
   candles, history, price, sma20, sma50, bbUpper, bbMiddle, bbLower, vwap,
   macd, macdSignal, macdHist, chartMode,
-  activeTool, drawColor, drawings, alerts,
+  activeTool, drawColor, lineStyle, lineWidth, drawings, alerts,
   onAddDrawing, onRemoveDrawing, onUpdateDrawing, onAddAlert, currentPrice,
-  avgCostLine, showVolume,
+  avgCostLine, showVolume, indicators = [],
   selectedDrawingId, setSelectedDrawingId,
 }: TradingChartProps) {
   const mainRef = useRef<HTMLCanvasElement>(null)
@@ -591,23 +967,106 @@ function TradingChart({
 
       if (showCandles) {
         const cw = Math.max(2, gap * 0.7)
-        // BB fill
-        ctx.beginPath()
-        candles.forEach((_c, i) => { const x = pad.l + i * gap + gap/2; i === 0 ? ctx.moveTo(x, tYLocal(bbUpper)) : ctx.lineTo(x, tYLocal(bbUpper)) })
-        candles.slice().reverse().forEach((_c, i) => ctx.lineTo(pad.l + (n-1-i)*gap + gap/2, tYLocal(bbLower)))
-        ctx.closePath(); ctx.fillStyle = "rgba(124,138,244,0.06)"; ctx.fill()
+        const cs = candles.map(c => c.c)
 
-        const dl = (vals: number[], color: string, dash: number[] = []) => {
-          ctx.beginPath(); ctx.setLineDash(dash); ctx.strokeStyle = color; ctx.lineWidth = 1
-          vals.forEach((v, i) => { const x = pad.l + i*gap + gap/2; i === 0 ? ctx.moveTo(x, tYLocal(v)) : ctx.lineTo(x, tYLocal(v)) })
+        // ── Indicator-aware rendering ─────────────────────────────────────────
+        const dl = (vals: (number | null)[], color: string, dash: number[] = [], lw = 1) => {
+          ctx.beginPath(); ctx.setLineDash(dash); ctx.strokeStyle = color; ctx.lineWidth = lw
+          let started = false
+          vals.forEach((v, i) => {
+            if (v === null) { started = false; return }
+            const x = pad.l + i*gap + gap/2
+            if (!started) { ctx.moveTo(x, tYLocal(v)); started = true } else ctx.lineTo(x, tYLocal(v))
+          })
           ctx.stroke(); ctx.setLineDash([])
         }
-        dl(candles.map(() => bbUpper), "rgba(124,138,244,0.5)", [3,3])
-        dl(candles.map(() => bbMiddle), "rgba(124,138,244,0.3)", [2,4])
-        dl(candles.map(() => bbLower), "rgba(124,138,244,0.5)", [3,3])
-        dl(candles.map(() => vwap), "rgba(234,179,77,0.6)", [4,3])
-        dl(candles.map(() => sma20), "rgba(91,206,138,0.5)")
-        dl(candles.map(() => sma50), "rgba(232,105,106,0.5)")
+
+        // Resolve active main indicators (fall back to server values when no candle data available)
+        const activeMain = indicators.filter(ind => ind.pane === "main" && ind.enabled)
+        if (activeMain.length === 0 && candles.length >= 2) {
+          // Default fallback: render server-provided values as flat lines
+          const defDl = (v: number, color: string, dash: number[] = []) => {
+            if (!v) return
+            ctx.strokeStyle = color; ctx.lineWidth = 1; ctx.setLineDash(dash)
+            ctx.beginPath(); ctx.moveTo(pad.l, tYLocal(v)); ctx.lineTo(W - pad.r, tYLocal(v)); ctx.stroke(); ctx.setLineDash([])
+          }
+          const bbCfg = { upper: bbUpper, middle: bbMiddle, lower: bbLower }
+          if (bbCfg.upper && bbCfg.lower) {
+            ctx.beginPath()
+            candles.forEach((_c, i) => { const x = pad.l + i * gap + gap/2; i === 0 ? ctx.moveTo(x, tYLocal(bbCfg.upper)) : ctx.lineTo(x, tYLocal(bbCfg.upper)) })
+            candles.slice().reverse().forEach((_c, i) => ctx.lineTo(pad.l + (n-1-i)*gap + gap/2, tYLocal(bbCfg.lower)))
+            ctx.closePath(); ctx.fillStyle = "rgba(124,138,244,0.06)"; ctx.fill()
+            defDl(bbCfg.upper, "rgba(124,138,244,0.5)", [3,3])
+            defDl(bbCfg.middle, "rgba(124,138,244,0.3)", [2,4])
+            defDl(bbCfg.lower, "rgba(124,138,244,0.5)", [3,3])
+          }
+          defDl(vwap, "rgba(234,179,77,0.6)", [4,3])
+          defDl(sma20, "rgba(91,206,138,0.5)")
+          defDl(sma50, "rgba(232,105,106,0.5)")
+        } else {
+          for (const ind of activeMain) {
+            const col = ind.color ?? "#ffffff"
+            const period = Number(ind.params.period ?? 20)
+            if (ind.type === "sma") dl(calcSMA(cs, period), col + "99")
+            else if (ind.type === "ema") dl(calcEMA(cs, period), col + "99")
+            else if (ind.type === "wma") dl(calcWMA(cs, period), col + "99")
+            else if (ind.type === "bb") {
+              const { upper, middle, lower } = calcBB(cs, period, Number(ind.params.stddev ?? 2))
+              // Fill
+              ctx.beginPath()
+              upper.forEach((v, i) => { if (v === null) return; const x = pad.l + i*gap+gap/2; i === 0 ? ctx.moveTo(x, tYLocal(v)) : ctx.lineTo(x, tYLocal(v)) })
+              lower.slice().reverse().forEach((v, i) => { if (v === null) return; ctx.lineTo(pad.l + (n-1-i)*gap+gap/2, tYLocal(v)) })
+              ctx.closePath(); ctx.fillStyle = col + "0d"; ctx.fill()
+              dl(upper, col + "88", [3,3]); dl(middle, col + "55", [2,4]); dl(lower, col + "88", [3,3])
+            }
+            else if (ind.type === "vwap") { ctx.strokeStyle = col + "99"; ctx.lineWidth = 1; ctx.setLineDash([4,3]); ctx.beginPath(); ctx.moveTo(pad.l, tYLocal(vwap)); ctx.lineTo(W - pad.r, tYLocal(vwap)); ctx.stroke(); ctx.setLineDash([]) }
+            else if (ind.type === "keltner") {
+              const { upper, middle, lower } = calcKeltner(candles, period, Number(ind.params.mult ?? 2))
+              dl(upper, col + "88", [3,3]); dl(middle, col + "99"); dl(lower, col + "88", [3,3])
+            }
+            else if (ind.type === "donchian") {
+              const { upper, lower } = calcDonchian(candles, period)
+              dl(upper, col + "88", [3,3]); dl(lower, col + "88", [3,3])
+            }
+            else if (ind.type === "sar") {
+              const { sar, trend } = calcParabolicSAR(candles, Number(ind.params.step ?? 0.02), Number(ind.params.max ?? 0.2))
+              sar.forEach((s, i) => {
+                const x = pad.l + i*gap + gap/2, y = tYLocal(s)
+                ctx.beginPath(); ctx.arc(x, y, 2, 0, Math.PI * 2)
+                ctx.fillStyle = trend[i] === "up" ? col : col + "88"; ctx.fill()
+              })
+            }
+            else if (ind.type === "ichimoku") {
+              const { tenkanLine, kijunLine, senkouA, senkouB } = calcIchimoku(candles, Number(ind.params.tenkan ?? 9), Number(ind.params.kijun ?? 26), Number(ind.params.senkou ?? 52))
+              // Cloud fill
+              ctx.beginPath()
+              senkouA.forEach((v, i) => { if (v === null) return; const x = pad.l + i*gap+gap/2; i === 0 ? ctx.moveTo(x, tYLocal(v)) : ctx.lineTo(x, tYLocal(v)) })
+              senkouB.slice().reverse().forEach((v, i) => { if (v === null) return; ctx.lineTo(pad.l + (n-1-i)*gap+gap/2, tYLocal(v)) })
+              ctx.closePath(); ctx.fillStyle = col + "18"; ctx.fill()
+              dl(tenkanLine, col + "dd"); dl(kijunLine, "#f87171" + "dd"); dl(senkouA, col + "66"); dl(senkouB, "#f87171" + "44")
+            }
+            else if (ind.type === "linreg") {
+              const { line, upper: upR, lower: loR } = calcLinReg(cs)
+              dl(line.map(v => v), col + "cc"); dl(upR.map(v => v), col + "55", [3,3]); dl(loR.map(v => v), col + "55", [3,3])
+            }
+            else if (ind.type === "pivots" && candles.length >= 2) {
+              const pivs = calcPivots(candles)
+              if (pivs) {
+                const pvLines: { v: number; color: string; label: string }[] = [
+                  { v: pivs.p,  color: "#94a3b8", label: "P" },
+                  { v: pivs.r1, color: "#4ade80", label: "R1" }, { v: pivs.r2, color: "#4ade80", label: "R2" }, { v: pivs.r3, color: "#4ade80", label: "R3" },
+                  { v: pivs.s1, color: "#f87171", label: "S1" }, { v: pivs.s2, color: "#f87171", label: "S2" }, { v: pivs.s3, color: "#f87171", label: "S3" },
+                ]
+                pvLines.forEach(({ v, color, label }) => {
+                  const y = tYLocal(v); ctx.strokeStyle = color + "77"; ctx.lineWidth = 1; ctx.setLineDash([4,3])
+                  ctx.beginPath(); ctx.moveTo(pad.l, y); ctx.lineTo(W - pad.r, y); ctx.stroke(); ctx.setLineDash([])
+                  ctx.fillStyle = color; ctx.font = "9px 'DM Mono',monospace"; ctx.textAlign = "left"
+                  ctx.fillText(label, W - pad.r + 4, y + 3)
+                })
+              }
+            }
+          }
+        }
 
         candles.forEach((c, i) => {
           const x = pad.l + i * gap + gap/2, up = c.c >= c.o, col = up ? GAIN : LOSS
@@ -671,6 +1130,16 @@ function TradingChart({
         else if (d.type === "arrow") renderArrow(ctx, geom, d, alpha)
         else if (d.type === "text") renderText(ctx, geom, d, alpha)
         else if (d.type === "fib") renderFib(ctx, geom, d, alpha)
+        else if (d.type === "extline") renderExtLine(ctx, geom, d, alpha)
+        else if (d.type === "trendangle") renderTrendAngle(ctx, geom, d, alpha)
+        else if (d.type === "pitchfork") renderPitchfork(ctx, geom, d, alpha)
+        else if (d.type === "triangle") renderTriangle(ctx, geom, d, alpha)
+        else if (d.type === "brush") renderBrush(ctx, geom, d, alpha)
+        else if (d.type === "fibext") renderFibExt(ctx, geom, d, alpha)
+        else if (d.type === "fibfan") renderFibFan(ctx, geom, d, alpha)
+        else if (d.type === "fibtime") renderFibTime(ctx, geom, d, alpha)
+        else if (d.type === "callout") renderCallout(ctx, geom, d, alpha)
+        else if (d.type === "pricenote") renderPriceNote(ctx, geom, d, alpha)
         // Highlight selected drawing
         if (isSelected && d.p1) {
           ctx.save()
@@ -708,6 +1177,16 @@ function TradingChart({
           renderArrow(ctx, geom, { id: "_", type: "arrow", color: col, p1, p2 }, 0.55)
         else if (tool === "fib")
           renderFib(ctx, geom, { id: "_", type: "fib", color: col, p1, p2 }, 0.55)
+        else if (tool === "extline")
+          renderExtLine(ctx, geom, { id: "_", type: "extline", color: col, p1, p2 }, 0.55)
+        else if (tool === "trendangle")
+          renderTrendAngle(ctx, geom, { id: "_", type: "trendangle", color: col, p1, p2 }, 0.55)
+        else if (tool === "fibext")
+          renderFibExt(ctx, geom, { id: "_", type: "fibext", color: col, p1, p2 }, 0.55)
+        else if (tool === "fibfan")
+          renderFibFan(ctx, geom, { id: "_", type: "fibfan", color: col, p1, p2 }, 0.55)
+        else if (tool === "fibtime")
+          renderFibTime(ctx, geom, { id: "_", type: "fibtime", color: col, p1, p2 }, 0.55)
         else if (tool === "measure") {
           // Ephemeral measure overlay
           const x1 = idxToX(geom, p1.idxFromRight), x2 = idxToX(geom, p2.idxFromRight)
@@ -864,18 +1343,29 @@ function TradingChart({
     if (isDraggingRef.current && c && dragStartRef.current && activeTool !== "cursor") {
       const { price: clickPrice, idxFromRight } = c
       const p1 = dragStartRef.current, p2 = { price: clickPrice, idxFromRight }
+      const baseDrawing = { id: Date.now().toString(), color: drawColor, lineStyle, lineWidth }
       if (activeTool === "trendline")
-        onAddDrawing({ id: Date.now().toString(), type: "trendline", color: drawColor, p1, p2 })
+        onAddDrawing({ ...baseDrawing, type: "trendline", p1, p2 })
       else if (activeTool === "ray")
-        onAddDrawing({ id: Date.now().toString(), type: "ray", color: drawColor, p1, p2 })
+        onAddDrawing({ ...baseDrawing, type: "ray", p1, p2 })
       else if (activeTool === "rect")
-        onAddDrawing({ id: Date.now().toString(), type: "rect", color: drawColor, p1, p2 })
+        onAddDrawing({ ...baseDrawing, type: "rect", p1, p2 })
       else if (activeTool === "ellipse")
-        onAddDrawing({ id: Date.now().toString(), type: "ellipse", color: drawColor, p1, p2 })
+        onAddDrawing({ ...baseDrawing, type: "ellipse", p1, p2 })
       else if (activeTool === "arrow")
-        onAddDrawing({ id: Date.now().toString(), type: "arrow", color: drawColor, p1, p2 })
+        onAddDrawing({ ...baseDrawing, type: "arrow", p1, p2 })
       else if (activeTool === "fib")
-        onAddDrawing({ id: Date.now().toString(), type: "fib", color: drawColor, p1, p2 })
+        onAddDrawing({ ...baseDrawing, type: "fib", p1, p2 })
+      else if (activeTool === "extline")
+        onAddDrawing({ ...baseDrawing, type: "extline", p1, p2 })
+      else if (activeTool === "trendangle")
+        onAddDrawing({ ...baseDrawing, type: "trendangle", p1, p2 })
+      else if (activeTool === "fibext")
+        onAddDrawing({ ...baseDrawing, type: "fibext", p1, p2 })
+      else if (activeTool === "fibfan")
+        onAddDrawing({ ...baseDrawing, type: "fibfan", p1, p2 })
+      else if (activeTool === "fibtime")
+        onAddDrawing({ ...baseDrawing, type: "fibtime", p1, p2 })
     }
     isDraggingRef.current = false; dragStartRef.current = null; dragCurrentRef.current = null
     dragSelectRef.current = null
@@ -930,8 +1420,24 @@ function TradingChart({
         className="w-full block select-none"
         style={{ background: BG, height: 380, cursor }}
       />
-      <MACDChart candles={candles} macd={macd} macdSignal={macdSignal} macdHist={macdHist} />
-      {showVolume && <VolumeChart candles={candles} />}
+      {/* Dynamic sub-charts based on active indicator configs */}
+      {indicators.filter(ind => ind.pane === "sub" && ind.enabled).map(ind => {
+        if (ind.type === "macd") return <MACDChart key={ind.id} candles={candles} macd={macd} macdSignal={macdSignal} macdHist={macdHist} />
+        if (ind.type === "volume") return <VolumeChart key={ind.id} candles={candles} />
+        if (ind.type === "rsi") return <RsiChart key={ind.id} candles={candles} period={Number(ind.params.period ?? 14)} color={ind.color ?? "#a78bfa"} />
+        if (ind.type === "stoch") return <StochChart key={ind.id} candles={candles} k={Number(ind.params.k ?? 14)} d={Number(ind.params.d ?? 3)} color={ind.color ?? "#34d399"} />
+        if (ind.type === "cci") return <CciChart key={ind.id} candles={candles} period={Number(ind.params.period ?? 20)} color={ind.color ?? "#fb923c"} />
+        if (ind.type === "atr") return <AtrChart key={ind.id} candles={candles} period={Number(ind.params.period ?? 14)} color={ind.color ?? "#facc15"} />
+        if (ind.type === "obv") return <ObvChart key={ind.id} candles={candles} color={ind.color ?? "#6ee7b7"} />
+        return null
+      })}
+      {/* Fallback: show MACD+Volume if no indicator config provided */}
+      {indicators.length === 0 && (
+        <>
+          <MACDChart candles={candles} macd={macd} macdSignal={macdSignal} macdHist={macdHist} />
+          {showVolume && <VolumeChart candles={candles} />}
+        </>
+      )}
 
       {/* Label / text dialog */}
       <Dialog open={!!pendingText} onOpenChange={() => { setPendingText(null); setTextInput("") }}>
@@ -966,102 +1472,6 @@ function TradingChart({
           </DialogFooter>
         </DialogContent>
       </Dialog>
-    </div>
-  )
-}
-
-// ── Drawing toolbar ──────────────────────────────────────────────────────────
-const TOOL_GROUPS: { label: string; tools: { id: ToolMode; icon: React.ReactNode; title: string; key?: string }[] }[] = [
-  {
-    label: "Navigate",
-    tools: [
-      { id: "cursor",    icon: <MousePointer2 className="w-3.5 h-3.5" />, title: "Select (Esc)",  key: "Esc" },
-      { id: "erase",     icon: <Eraser className="w-3.5 h-3.5" />,        title: "Erase (X)",    key: "X" },
-    ],
-  },
-  {
-    label: "Lines",
-    tools: [
-      { id: "hline",     icon: <Minus className="w-3.5 h-3.5" />,         title: "H-Line (1)",   key: "1" },
-      { id: "vline",     icon: <AlignCenter className="w-3.5 h-3.5" />,   title: "V-Line (2)",   key: "2" },
-      { id: "trendline", icon: <TrendingUp className="w-3.5 h-3.5" />,    title: "Trendline (3)",key: "3" },
-      { id: "ray",       icon: <ArrowUpRight className="w-3.5 h-3.5" />,  title: "Ray (4)",      key: "4" },
-      { id: "channel",   icon: <Layers className="w-3.5 h-3.5" />,        title: "Channel (5)",  key: "5" },
-    ],
-  },
-  {
-    label: "Shapes",
-    tools: [
-      { id: "rect",      icon: <Square className="w-3.5 h-3.5" />,        title: "Zone (6)",     key: "6" },
-      { id: "ellipse",   icon: <BarChart className="w-3.5 h-3.5" />,      title: "Ellipse (7)",  key: "7" },
-      { id: "arrow",     icon: <ChevronRight className="w-3.5 h-3.5" />,  title: "Arrow (8)",    key: "8" },
-    ],
-  },
-  {
-    label: "Annotate",
-    tools: [
-      { id: "text",      icon: <Type className="w-3.5 h-3.5" />,          title: "Label (9)",    key: "9" },
-      { id: "fib",       icon: <Percent className="w-3.5 h-3.5" />,       title: "Fibonacci (0)",key: "0" },
-      { id: "measure",   icon: <Ruler className="w-3.5 h-3.5" />,         title: "Measure (M)",  key: "M" },
-      { id: "alert",     icon: <Bell className="w-3.5 h-3.5" />,          title: "Alert (A)",    key: "A" },
-    ],
-  },
-]
-
-function DrawingToolbar({
-  tool, setTool, color, setColor, onClear, chartMode, setChartMode, showVolume, setShowVolume,
-}: {
-  tool: ToolMode; setTool: (t: ToolMode) => void
-  color: string; setColor: (c: string) => void
-  onClear: () => void
-  chartMode: "candle" | "line"; setChartMode: (m: "candle" | "line") => void
-  showVolume: boolean; setShowVolume: (v: boolean) => void
-}) {
-  return (
-    <div className="border-b border-white/5 bg-[oklch(0.15_0.004_264)]">
-      <div className="flex items-center gap-1 px-2 py-1.5 flex-wrap">
-        {/* Chart type */}
-        <div className="flex items-center gap-0.5 bg-black/30 rounded p-0.5 mr-1">
-          {([["candle", <BarChart2 key="c" className="w-3 h-3" />, "T"], ["line", <Layers key="l" className="w-3 h-3" />, "T"]] as const).map(([m, icon]) => (
-            <button type="button" key={m} onClick={() => setChartMode(m)}
-              className={`flex items-center gap-1 px-2 py-1 rounded text-[10px] font-medium transition-colors cursor-pointer border-0 ${chartMode === m ? "bg-foreground/90 text-background" : "text-muted-foreground hover:text-foreground bg-transparent"}`}>
-              {icon}
-            </button>
-          ))}
-          <button type="button" onClick={() => setShowVolume(!showVolume)} title="Toggle volume (V)"
-            className={`flex items-center px-2 py-1 rounded text-[10px] font-medium transition-colors cursor-pointer border-0 ${showVolume ? "bg-foreground/90 text-background" : "text-muted-foreground hover:text-foreground bg-transparent"}`}>
-            <BarChart className="w-3 h-3" />
-          </button>
-        </div>
-
-        {/* Tool groups */}
-        {TOOL_GROUPS.map((group, gi) => (
-          <div key={group.label} className={`flex items-center gap-0.5 ${gi > 0 ? "border-l border-white/10 pl-1 ml-0.5" : ""}`}>
-            {group.tools.map(t => (
-              <button type="button" key={t.id} onClick={() => setTool(t.id)} title={t.title}
-                className={`flex items-center gap-1 px-1.5 py-1 rounded text-[10px] font-medium transition-colors cursor-pointer border-0 ${tool === t.id ? "bg-foreground/90 text-background" : "text-muted-foreground hover:text-foreground bg-transparent hover:bg-white/5"}`}>
-                {t.icon}
-              </button>
-            ))}
-          </div>
-        ))}
-
-        {/* Separator */}
-        <div className="w-px h-4 bg-white/10 mx-1" />
-
-        {/* Color palette */}
-        {DRAW_COLORS.map(c => (
-          <button type="button" key={c} onClick={() => setColor(c)} title={c}
-            className={`w-3.5 h-3.5 rounded-full border-2 cursor-pointer transition-transform hover:scale-110 ${color === c ? "border-white scale-110" : "border-transparent"}`}
-            style={{ background: c }} />
-        ))}
-
-        {/* Clear all */}
-        <button type="button" onClick={onClear} title="Clear all drawings"
-          className="ml-auto flex items-center gap-1 px-2 py-1 rounded text-[10px] text-muted-foreground hover:text-red-400 transition-colors cursor-pointer bg-transparent border-0">
-          <Trash2 className="w-3 h-3" />
-        </button>
-      </div>
     </div>
   )
 }
@@ -2040,11 +2450,68 @@ export default function TradingTerminalPage({ onNavigate }: Props) {
   const [chartMode, setChartMode] = useState<"candle" | "line">("candle")
   const [activeTool, setActiveTool] = useState<ToolMode>("cursor")
   const [drawColor, setDrawColor] = useState("#ffffff")
+  const [lineStyle, setLineStyle] = useState<"solid" | "dashed" | "dotted">("solid")
+  const [lineWidth, setLineWidth] = useState<1 | 2 | 3>(1)
+  const [timeframe, setTimeframe] = useState("D")
   const [showVolume, setShowVolume] = useState(false)
   const [selectedDrawingId, setSelectedDrawingId] = useState<string | null>(null)
   const [, setUndoStack] = useState<Drawing[][]>([])
   const [, setRedoStack] = useState<Drawing[][]>([])
   const [panelHeight, setPanelHeight] = useState(180)
+
+  // ── Layout & panel system ────────────────────────────────────────────────
+  const [activeLayout, setActiveLayout] = useState<SavedLayout>(() => loadActiveLayout())
+  const [savedLayouts, setSavedLayouts] = useState<SavedLayout[]>(() => loadSavedLayouts())
+  const [showPanelLibrary, setShowPanelLibrary] = useState(false)
+
+  // ── Indicator system ─────────────────────────────────────────────────────
+  const [indicators, setIndicators] = useState<IndicatorConfig[]>(() => {
+    try {
+      const raw = localStorage.getItem("pm_indicators_global")
+      if (raw) return JSON.parse(raw) as IndicatorConfig[]
+    } catch {}
+    return DEFAULT_INDICATORS
+  })
+  const [showIndicatorsPanel, setShowIndicatorsPanel] = useState(false)
+
+  const updateIndicators = useCallback((inds: IndicatorConfig[]) => {
+    setIndicators(inds)
+    try { localStorage.setItem("pm_indicators_global", JSON.stringify(inds)) } catch {}
+  }, [])
+
+  const applyLayout = useCallback((layout: SavedLayout) => {
+    setActiveLayout(layout)
+    saveActiveLayout(layout)
+  }, [])
+
+  const handleSaveLayout = useCallback((name: string) => {
+    const toSave: SavedLayout = { ...activeLayout, name }
+    const updated = saveUserLayout(toSave)
+    setSavedLayouts(updated)
+  }, [activeLayout])
+
+  const handleDeleteLayout = useCallback((name: string) => {
+    const updated = deleteUserLayout(name)
+    setSavedLayouts(updated)
+  }, [])
+
+  const handleRenameLayout = useCallback((oldName: string, newName: string) => {
+    const updated = renameUserLayout(oldName, newName)
+    setSavedLayouts(updated)
+  }, [])
+
+  const handleAddPanel = useCallback((type: PanelType) => {
+    const existing = activeLayout.panels
+    const maxRow = Math.max(...existing.map(p => p.row + p.rowSpan - 1), 1)
+    const newPanel: PanelDef = { id: `${type}_${Date.now()}`, type, col: 1, row: maxRow + 1, colSpan: 1, rowSpan: 1 }
+    const updated: SavedLayout = { ...activeLayout, panels: [...existing, newPanel] }
+    applyLayout(updated)
+  }, [activeLayout, applyLayout])
+
+  const handleUpdatePanels = useCallback((panels: PanelDef[]) => {
+    const updated: SavedLayout = { ...activeLayout, panels }
+    applyLayout(updated)
+  }, [activeLayout, applyLayout])
 
   const sym = selectedSymbol?.symbol ?? ""
   const [drawings, setDrawings] = useDrawings(sym)
@@ -2259,127 +2726,63 @@ export default function TradingTerminalPage({ onNavigate }: Props) {
   const macdSignal = detail?.macdSignal ?? liveStock?.macdSignal ?? 0
   const macdHist = detail?.macdHist ?? liveStock?.macdHist ?? 0
 
-  return (
-    <div className="flex h-[calc(100vh-4rem)] overflow-hidden">
+  // ── Panel titles ──────────────────────────────────────────────────────────
+  const PANEL_TITLES: Record<PanelType, string> = {
+    chart: "Chart", watchlist: "Watchlist", orderbook: "Order Book",
+    timesales: "Time & Sales", positions: "Positions", orders: "Orders",
+    tradeform: "Order Entry", news: "News", calendar: "Calendar",
+    heatmap: "Heatmap", scanner: "Scanner", notes: "Notes",
+    alerts: "Alerts", performance: "Performance", calculator: "Calculator",
+    signals: "Signals", domladder: "DOM Ladder",
+  }
 
-      {/* Left: symbol list */}
-      <div className="w-52 xl:w-60 shrink-0 flex flex-col hidden sm:flex">
+  // ── Chart panel content ───────────────────────────────────────────────────
+  const chartPanelContent = (
+    <div className="flex flex-col h-full overflow-hidden" style={{ background: BG }}>
+      {!selectedSymbol ? (
+        <div className="flex items-center justify-center h-full text-muted-foreground">
+          <p className="text-sm">Select a symbol from the Watchlist panel</p>
+        </div>
+      ) : detailLoading && candles.length === 0 && history.length === 0 ? (
+        <div className="flex items-center justify-center h-full">
+          <Loader2 className="w-6 h-6 animate-spin text-muted-foreground" />
+        </div>
+      ) : (
+        <div className="flex-1 min-h-0 overflow-y-auto">
+          <TradingChart
+            candles={candles} history={history} price={livePrice}
+            sma20={sma20} sma50={sma50} bbUpper={bbUpper} bbMiddle={bbMiddle} bbLower={bbLower} vwap={vwap}
+            macd={macd} macdSignal={macdSignal} macdHist={macdHist}
+            chartMode={chartMode} activeTool={activeTool} drawColor={drawColor}
+            lineStyle={lineStyle} lineWidth={lineWidth}
+            drawings={drawings} alerts={alerts}
+            onAddDrawing={handleAddDrawing}
+            onRemoveDrawing={handleRemoveDrawing}
+            onUpdateDrawing={handleUpdateDrawing}
+            onAddAlert={a => setAlerts([...alerts, a])}
+            currentPrice={livePrice}
+            avgCostLine={avgCostLine}
+            showVolume={showVolume}
+            indicators={indicators}
+            selectedDrawingId={selectedDrawingId}
+            setSelectedDrawingId={setSelectedDrawingId}
+          />
+        </div>
+      )}
+    </div>
+  )
+
+  // ── Panel renderer ────────────────────────────────────────────────────────
+  function renderPanel(type: PanelType): React.ReactNode {
+    switch (type) {
+      case "chart": return chartPanelContent
+      case "watchlist": return (
         <SymbolListPanel
           selected={selectedSymbol}
           onSelect={s => setSelectedSymbol({ symbol: s.symbol, assetType: s.assetType })}
         />
-      </div>
-
-      {/* Center: chart */}
-      <div className="flex-1 flex flex-col overflow-hidden">
-
-        {/* Symbol header */}
-        <div className="px-4 py-2 border-b border-border bg-card/30 flex items-center gap-3 flex-wrap shrink-0">
-          {selectedSymbol ? (
-            <>
-              <h2 className="text-lg font-extrabold font-mono tracking-tight">{sym}</h2>
-              {stockDetail?.name && <span className="text-xs text-muted-foreground truncate max-w-[180px]">{stockDetail.name}</span>}
-              {forexDetail && <span className="text-xs text-muted-foreground truncate max-w-[200px]">{forexDetail.baseName} / {forexDetail.quoteName}</span>}
-              <span className="text-lg font-mono font-bold tabular-nums">${fmtSymbolPrice(livePrice, selectedSymbol.assetType)}</span>
-              <span className={`text-sm font-semibold ${liveChange >= 0 ? "text-emerald-500" : "text-red-400"}`}>
-                {liveChange >= 0 ? "+" : ""}{liveChange.toFixed(2)}%
-              </span>
-              {stockDetail?.sector && <Badge variant="secondary" className="text-[10px]">{stockDetail.sector}</Badge>}
-              {forexDetail?.category && <Badge variant="secondary" className="text-[10px] capitalize">{forexDetail.category}</Badge>}
-              {cryptoDetail?.category && <Badge variant="secondary" className="text-[10px] capitalize">{cryptoDetail.category}</Badge>}
-              {stockDetail?.session && (
-                <Badge variant="outline" className={`text-[10px] ${stockDetail.session === "open" ? "text-emerald-500 border-emerald-500/30" : "text-muted-foreground"}`}>
-                  {stockDetail.session}
-                </Badge>
-              )}
-              {forexDetail?.activeSession && (
-                <Badge variant="outline" className="text-[10px] text-muted-foreground">
-                  {forexDetail.activeSession}
-                </Badge>
-              )}
-              {detailLoading && <Loader2 className="w-3.5 h-3.5 animate-spin text-muted-foreground ml-auto" />}
-              <button onClick={() => onNavigate("market")}
-                className="ml-auto text-[10px] text-muted-foreground hover:text-foreground flex items-center gap-0.5 cursor-pointer bg-transparent border-0 p-0 transition-colors">
-                Full view <ChevronRight className="w-3 h-3" />
-              </button>
-            </>
-          ) : (
-            <p className="text-sm text-muted-foreground">Select a symbol to begin</p>
-          )}
-        </div>
-
-        {/* Drawing toolbar */}
-        <DrawingToolbar
-          tool={activeTool} setTool={setActiveTool}
-          color={drawColor} setColor={setDrawColor}
-          onClear={() => { setUndoStack(s => [...s.slice(-19), drawings]); setRedoStack([]); setDrawings([]) }}
-          chartMode={chartMode} setChartMode={setChartMode}
-          showVolume={showVolume} setShowVolume={setShowVolume}
-        />
-
-        {/* Chart area */}
-        <div className="flex-1 overflow-hidden" style={{ background: BG }}>
-          {!selectedSymbol ? (
-            <div className="flex items-center justify-center h-full text-muted-foreground">
-              <p className="text-sm">← Select a symbol from the list</p>
-            </div>
-          ) : detailLoading && candles.length === 0 && history.length === 0 ? (
-            <div className="flex items-center justify-center h-full">
-              <Loader2 className="w-6 h-6 animate-spin text-muted-foreground" />
-            </div>
-          ) : (
-            <TradingChart
-              candles={candles} history={history} price={livePrice}
-              sma20={sma20} sma50={sma50} bbUpper={bbUpper} bbMiddle={bbMiddle} bbLower={bbLower} vwap={vwap}
-              macd={macd} macdSignal={macdSignal} macdHist={macdHist}
-              chartMode={chartMode} activeTool={activeTool} drawColor={drawColor}
-              drawings={drawings} alerts={alerts}
-              onAddDrawing={handleAddDrawing}
-              onRemoveDrawing={handleRemoveDrawing}
-              onUpdateDrawing={handleUpdateDrawing}
-              onAddAlert={a => setAlerts([...alerts, a])}
-              currentPrice={livePrice}
-              avgCostLine={avgCostLine}
-              showVolume={showVolume}
-              selectedDrawingId={selectedDrawingId}
-              setSelectedDrawingId={setSelectedDrawingId}
-            />
-          )}
-        </div>
-
-        {/* Blotter: positions + order history */}
-        {isSignedIn && (
-          <BottomPanel
-            positions={positions}
-            orders={recentOrders}
-            pendingOrders={pendingOrders}
-            portfolioStats={portfolioStats}
-            portfolioSnapshots={portfolioSnapshots}
-            onSymbolSelect={(symbol, assetType) => setSelectedSymbol({ symbol, assetType: assetType as "stock" | "forex" | "crypto" })}
-            onCancelOrder={handleCancelOrder}
-            height={panelHeight}
-            onHeightChange={setPanelHeight}
-          />
-        )}
-
-        {/* Bottom market bar */}
-        {market && (
-          <div className="px-3 py-1.5 border-t border-border bg-card/20 flex items-center gap-4 text-[10px] text-muted-foreground shrink-0 flex-wrap">
-            <span>Index <span className="text-foreground font-mono font-semibold">{market.index.toLocaleString("en-US", { maximumFractionDigits: 0 })}</span></span>
-            <span className={market.indexChangePct >= 0 ? "text-emerald-500" : "text-red-400"}>
-              {market.indexChangePct >= 0 ? "+" : ""}{market.indexChangePct.toFixed(2)}%
-            </span>
-            <span>F&amp;G <span className="font-semibold text-foreground">{market.fearGreed}</span> <span className="text-muted-foreground/60">{market.fearGreedLabel}</span></span>
-            <span>VIX <span className="font-mono">{market.vix.toFixed(1)}</span></span>
-            <span className="text-emerald-600">{market.gainers}↑</span>
-            <span className="text-red-400">{market.losers}↓</span>
-            <span className="ml-auto">Tick #{market.tickCount}</span>
-          </div>
-        )}
-      </div>
-
-      {/* Right: trading panel */}
-      <div className="w-72 xl:w-80 shrink-0 flex flex-col">
+      )
+      case "tradeform": return (
         <RightPanel
           symbol={sym} assetType={selectedSymbol?.assetType ?? "stock"}
           currentPrice={livePrice}
@@ -2390,8 +2793,150 @@ export default function TradingTerminalPage({ onNavigate }: Props) {
           alerts={alerts} setAlerts={setAlerts}
           notes={notes} setNotes={setNotes}
         />
+      )
+      case "positions":
+      case "orders":
+      case "performance": return isSignedIn ? (
+        <BottomPanel
+          positions={positions} orders={recentOrders} pendingOrders={pendingOrders}
+          portfolioStats={portfolioStats} portfolioSnapshots={portfolioSnapshots}
+          onSymbolSelect={(symbol, assetType) => setSelectedSymbol({ symbol, assetType: assetType as "stock" | "forex" | "crypto" })}
+          onCancelOrder={handleCancelOrder}
+          height={panelHeight} onHeightChange={setPanelHeight}
+          defaultTab={type === "orders" ? "orders" : type === "performance" ? "performance" : "positions"}
+        />
+      ) : <div className="flex items-center justify-center h-full text-xs text-muted-foreground">Sign in to view</div>
+      case "signals":
+      case "alerts":
+      case "notes":
+      case "calculator": return (
+        <RightPanel
+          symbol={sym} assetType={selectedSymbol?.assetType ?? "stock"}
+          currentPrice={livePrice}
+          portfolios={portfolios} selectedPortfolio={selectedPortfolio} setSelectedPortfolio={setSelectedPortfolio}
+          positions={positions}
+          onTradeComplete={() => { refreshBlotter(); fetchPendingOrders(); fetchPerformance() }}
+          onToast={addToast}
+          alerts={alerts} setAlerts={setAlerts}
+          notes={notes} setNotes={setNotes}
+          defaultTab="tools"
+        />
+      )
+      case "orderbook": return <OrderBookPanel symbol={sym} assetType={selectedSymbol?.assetType ?? "stock"} />
+      case "timesales": return <TimeSalesPanel symbol={sym} assetType={selectedSymbol?.assetType ?? "stock"} />
+      case "heatmap": return <HeatmapPanel />
+      case "scanner": return <ScannerPanel onSymbolSelect={(symbol, assetType) => setSelectedSymbol({ symbol, assetType: assetType as "stock" | "forex" | "crypto" })} />
+      case "domladder": return <DomLadderPanel symbol={sym} assetType={selectedSymbol?.assetType ?? "stock"} />
+      case "news": return <NewsPanel />
+      case "calendar": return <CalendarPanel />
+      default: return <div className="flex items-center justify-center h-full text-xs text-muted-foreground">{type}</div>
+    }
+  }
+
+  return (
+    <div className="flex flex-col h-[calc(100vh-4rem)] overflow-hidden">
+
+      {/* ── Global header bar ───────────────────────────────────────────── */}
+      <div className="flex items-center gap-3 px-3 py-1.5 border-b border-border bg-card/30 shrink-0 flex-wrap">
+        {/* Symbol display */}
+        {selectedSymbol ? (
+          <>
+            <h2 className="text-base font-extrabold font-mono tracking-tight">{sym}</h2>
+            {stockDetail?.name && <span className="text-xs text-muted-foreground truncate max-w-[140px] hidden md:block">{stockDetail.name}</span>}
+            <span className="text-base font-mono font-bold tabular-nums">${fmtSymbolPrice(livePrice, selectedSymbol.assetType)}</span>
+            <span className={`text-xs font-semibold ${liveChange >= 0 ? "text-emerald-500" : "text-red-400"}`}>
+              {liveChange >= 0 ? "+" : ""}{liveChange.toFixed(2)}%
+            </span>
+            {stockDetail?.session && (
+              <Badge variant="outline" className={`text-[10px] hidden md:flex ${stockDetail.session === "open" ? "text-emerald-500 border-emerald-500/30" : "text-muted-foreground"}`}>
+                {stockDetail.session}
+              </Badge>
+            )}
+            {detailLoading && <Loader2 className="w-3.5 h-3.5 animate-spin text-muted-foreground" />}
+          </>
+        ) : (
+          <p className="text-xs text-muted-foreground">Select a symbol</p>
+        )}
+
+        {/* Market bar compact */}
+        {market && (
+          <div className="hidden xl:flex items-center gap-3 text-[10px] text-muted-foreground ml-2 border-l border-white/10 pl-3">
+            <span>Index <span className="text-foreground font-mono font-semibold">{market.index.toLocaleString("en-US", { maximumFractionDigits: 0 })}</span></span>
+            <span className={market.indexChangePct >= 0 ? "text-emerald-500" : "text-red-400"}>
+              {market.indexChangePct >= 0 ? "+" : ""}{market.indexChangePct.toFixed(2)}%
+            </span>
+            <span>F&G <span className="font-semibold text-foreground">{market.fearGreed}</span></span>
+            <span>VIX <span className="font-mono">{market.vix.toFixed(1)}</span></span>
+            <span className="text-emerald-500">{market.gainers}↑</span>
+            <span className="text-red-400">{market.losers}↓</span>
+          </div>
+        )}
+
+        {/* Layout controls */}
+        <div className="ml-auto flex items-center gap-1.5">
+          <LayoutsDropdown
+            currentName={activeLayout.name}
+            savedLayouts={savedLayouts}
+            onApply={applyLayout}
+            onSaveCurrent={handleSaveLayout}
+            onDelete={handleDeleteLayout}
+            onRename={handleRenameLayout}
+            onReset={() => applyLayout(DEFAULT_LAYOUT)}
+          />
+          <button
+            type="button"
+            onClick={() => setShowPanelLibrary(true)}
+            className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg border border-white/10 bg-white/5 hover:bg-white/10 text-xs text-foreground/80 hover:text-foreground transition-colors cursor-pointer"
+            title="Add panel"
+          >
+            <Plus className="w-3.5 h-3.5" />
+            <span className="hidden sm:inline">Add Panel</span>
+          </button>
+          <button type="button" onClick={() => onNavigate("market")}
+            className="text-[10px] text-muted-foreground hover:text-foreground flex items-center gap-0.5 cursor-pointer bg-transparent border-0 p-0 transition-colors">
+            Full view <ChevronRight className="w-3 h-3" />
+          </button>
+        </div>
       </div>
 
+      {/* ── Drawing toolbar (new component) ─────────────────────────────── */}
+      <NewDrawingToolbar
+        tool={activeTool} setTool={setActiveTool}
+        color={drawColor} setColor={setDrawColor}
+        lineStyle={lineStyle} setLineStyle={setLineStyle}
+        lineWidth={lineWidth} setLineWidth={setLineWidth}
+        onClear={() => { setUndoStack(s => [...s.slice(-19), drawings]); setRedoStack([]); setDrawings([]) }}
+        chartMode={chartMode} setChartMode={setChartMode}
+        timeframe={timeframe} setTimeframe={setTimeframe}
+        onOpenIndicators={() => setShowIndicatorsPanel(true)}
+        indicators={indicators}
+      />
+
+      {/* ── Panel grid (fills remaining height) ─────────────────────────── */}
+      <div className="flex-1 min-h-0">
+        <PanelGrid
+          panels={activeLayout.panels}
+          columns={activeLayout.columns}
+          onUpdatePanels={handleUpdatePanels}
+          renderPanel={(type, _id) => renderPanel(type)}
+          panelTitles={PANEL_TITLES}
+          lockedTypes={["chart"]}
+        />
+      </div>
+
+      {/* ── Overlays ─────────────────────────────────────────────────────── */}
+      <IndicatorsPanel
+        open={showIndicatorsPanel}
+        onClose={() => setShowIndicatorsPanel(false)}
+        indicators={indicators}
+        onUpdate={updateIndicators}
+      />
+      <PanelLibrary
+        open={showPanelLibrary}
+        onClose={() => setShowPanelLibrary(false)}
+        existingPanels={activeLayout.panels}
+        onAddPanel={handleAddPanel}
+      />
       <ToastContainer toasts={toasts} />
     </div>
   )
