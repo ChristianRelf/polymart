@@ -19,7 +19,7 @@ import { useSimulation } from "@/lib/SimulationContext"
 import type { StockDetail, ForexPairDetail, CryptoDetail, Candle } from "@/lib/SimulationContext"
 import type { Route } from "@/App"
 // ── New layout & panel system ─────────────────────────────────────────────────
-import { PanelGrid } from "@/components/trading/PanelGrid"
+import { PanelGrid, getPanelTypes } from "@/components/trading/PanelGrid"
 import { PanelLibrary } from "@/components/trading/PanelLibrary"
 import { LayoutsDropdown } from "@/components/trading/LayoutsDropdown"
 import { DrawingToolbar as NewDrawingToolbar } from "@/components/trading/DrawingToolbar"
@@ -31,7 +31,7 @@ import { ScannerPanel } from "@/components/trading/panels/ScannerPanel"
 import { DomLadderPanel } from "@/components/trading/panels/DomLadderPanel"
 import { NewsPanel } from "@/components/trading/panels/NewsPanel"
 import { CalendarPanel } from "@/components/trading/panels/CalendarPanel"
-import type { PanelType, PanelDef, SavedLayout, IndicatorConfig } from "@/components/trading/types"
+import type { PanelType, SavedLayout, LayoutNode, IndicatorConfig } from "@/components/trading/types"
 import { DEFAULT_INDICATORS } from "@/components/trading/types"
 import { DEFAULT_LAYOUT } from "@/lib/trading/layoutPresets"
 import { loadActiveLayout, saveActiveLayout, loadSavedLayouts, saveUserLayout, deleteUserLayout, renameUserLayout } from "@/lib/trading/layoutStorage"
@@ -2533,16 +2533,24 @@ export default function TradingTerminalPage({ onNavigate }: Props) {
   }, [])
 
   const handleAddPanel = useCallback((type: PanelType) => {
-    const existing = activeLayout.panels
-    const maxRow = Math.max(...existing.map(p => p.row + p.rowSpan - 1), 1)
-    const newPanel: PanelDef = { id: `${type}_${Date.now()}`, type, col: 1, row: maxRow + 1, colSpan: 1, rowSpan: 1 }
-    const updated: SavedLayout = { ...activeLayout, panels: [...existing, newPanel] }
-    applyLayout(updated)
+    const id = `${type}_${Date.now()}`
+    const newLeaf: LayoutNode = { kind: "panel", id, type }
+    const root = activeLayout.root
+    // Append to root row-split, or wrap everything in a new row split
+    let newRoot: LayoutNode
+    if (root.kind === "split" && root.dir === "row") {
+      const n = root.children.length
+      const newSize = 1 / (n + 1)
+      const rescaled = root.children.map(c => ({ ...c, size: c.size * (n / (n + 1)) }))
+      newRoot = { ...root, children: [...rescaled, { size: newSize, node: newLeaf }] }
+    } else {
+      newRoot = { kind: "split", dir: "row", children: [{ size: 0.75, node: root }, { size: 0.25, node: newLeaf }] }
+    }
+    applyLayout({ ...activeLayout, root: newRoot })
   }, [activeLayout, applyLayout])
 
-  const handleUpdatePanels = useCallback((panels: PanelDef[]) => {
-    const updated: SavedLayout = { ...activeLayout, panels }
-    applyLayout(updated)
+  const handleUpdateLayout = useCallback((root: LayoutNode) => {
+    applyLayout({ ...activeLayout, root })
   }, [activeLayout, applyLayout])
 
   const sym = selectedSymbol?.symbol ?? ""
@@ -2805,7 +2813,7 @@ export default function TradingTerminalPage({ onNavigate }: Props) {
   )
 
   // ── Panel renderer ────────────────────────────────────────────────────────
-  function renderPanel(type: PanelType): React.ReactNode {
+  function renderPanel(type: PanelType, _id?: string): React.ReactNode {
     switch (type) {
       case "chart": return chartPanelContent
       case "watchlist": return (
@@ -2947,10 +2955,9 @@ export default function TradingTerminalPage({ onNavigate }: Props) {
       {/* ── Panel grid (fills remaining height) ─────────────────────────── */}
       <div className="flex-1 min-h-0">
         <PanelGrid
-          panels={activeLayout.panels}
-          columns={activeLayout.columns}
-          onUpdatePanels={handleUpdatePanels}
-          renderPanel={(type, _id) => renderPanel(type)}
+          layout={activeLayout.root}
+          onUpdateLayout={handleUpdateLayout}
+          renderPanel={(type, id) => renderPanel(type, id)}
           panelTitles={PANEL_TITLES}
           lockedTypes={["chart"]}
           onPopOut={(type) => {
@@ -2972,7 +2979,7 @@ export default function TradingTerminalPage({ onNavigate }: Props) {
       <PanelLibrary
         open={showPanelLibrary}
         onClose={() => setShowPanelLibrary(false)}
-        existingPanels={activeLayout.panels}
+        existingTypes={getPanelTypes(activeLayout.root)}
         onAddPanel={handleAddPanel}
       />
       <ToastContainer toasts={toasts} />

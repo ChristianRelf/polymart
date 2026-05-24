@@ -1,268 +1,230 @@
-import { useState, useCallback, useRef, useEffect } from "react"
-import { X, Maximize2, GripHorizontal, ExternalLink } from "lucide-react"
-import type { PanelDef, PanelType } from "./types"
+import { useState, useRef, useEffect, useCallback } from "react"
+import { X, Maximize2, ExternalLink } from "lucide-react"
+import type { LayoutNode, PanelLeaf, SplitPane, SplitChild, PanelType } from "./types"
 
 const POPPABLE: PanelType[] = ["orderbook", "timesales", "heatmap", "scanner", "domladder", "news", "calendar"]
+const MIN_PANE = 0.08  // minimum 8% before a pane stops shrinking
 
 interface PanelGridProps {
-  panels: PanelDef[]
-  columns: number
-  onUpdatePanels: (panels: PanelDef[]) => void
+  layout: LayoutNode
+  onUpdateLayout: (layout: LayoutNode) => void
   renderPanel: (type: PanelType, id: string) => React.ReactNode
   panelTitles: Record<PanelType, string>
   lockedTypes?: PanelType[]
   onPopOut?: (type: PanelType) => void
 }
 
-type ResizeState = {
-  id: string
-  edge: "right" | "bottom" | "corner"
-  startX: number
-  startY: number
-  startColSpan: number
-  startRowSpan: number
-  startCol: number
-  cellW: number
-  cellH: number
+type DividerDrag = {
+  path: number[]          // indices into the tree to reach the parent SplitPane
+  index: number           // divider sits between children[index] and children[index+1]
+  dir: "row" | "col"
+  startPos: number        // clientX or clientY at drag start
+  startSizes: number[]    // snapshot of all sibling sizes at drag start
+  containerPx: number     // total px of parent container (width or height)
 }
 
-export function PanelGrid({ panels, columns, onUpdatePanels, renderPanel, panelTitles, lockedTypes = ["chart"], onPopOut }: PanelGridProps) {
-  const [expandedId, setExpandedId] = useState<string | null>(null)
-  const [dragSrc, setDragSrc] = useState<string | null>(null)
-  const [dragOver, setDragOver] = useState<string | null>(null)
-  const [resizing, setResizing] = useState<ResizeState | null>(null)
-  const gridRef = useRef<HTMLDivElement>(null)
-  const panelsRef = useRef(panels)
-  const emptyImgRef = useRef<HTMLImageElement | null>(null)
+// ── Tree helpers ───────────────────────────────────────────────────────────────
 
-  useEffect(() => { panelsRef.current = panels }, [panels])
-
-  useEffect(() => {
-    const img = new Image()
-    img.src = "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7"
-    emptyImgRef.current = img
-  }, [])
-
-  const rows = Math.max(...panels.map(p => p.row + p.rowSpan - 1), 1)
-
-  // Fix resize feedback loop: lock row height in px during resize so adding rows
-  // doesn't shrink existing ones (which would make 1fr cells smaller mid-drag).
-  const gridStyle: React.CSSProperties = {
-    gridTemplateColumns: `repeat(${columns}, 1fr)`,
-    gridTemplateRows: resizing
-      ? `repeat(${rows}, ${resizing.cellH}px)`
-      : `repeat(${rows}, 1fr)`,
+function updateSizes(root: LayoutNode, path: number[], newSizes: number[]): LayoutNode {
+  if (path.length === 0) {
+    if (root.kind !== "split") return root
+    return { ...root, children: root.children.map((c, i) => ({ ...c, size: newSizes[i] })) }
   }
+  if (root.kind !== "split") return root
+  const [head, ...rest] = path
+  return {
+    ...root,
+    children: root.children.map((c, i) =>
+      i === head ? { ...c, node: updateSizes(c.node, rest, newSizes) } : c
+    ),
+  }
+}
 
-  const removePanel = useCallback((id: string) => {
-    onUpdatePanels(panels.filter(p => p.id !== id))
-  }, [panels, onUpdatePanels])
+function removeLeaf(root: LayoutNode, id: string): LayoutNode | null {
+  if (root.kind === "panel") return root.id === id ? null : root
+  const kept: SplitChild[] = []
+  for (const child of root.children) {
+    const next = removeLeaf(child.node, id)
+    if (next !== null) kept.push({ ...child, node: next })
+  }
+  if (kept.length === 0) return null
+  if (kept.length === 1) return kept[0].node  // unwrap single remaining child
+  const removed = root.children.reduce((s, c) => s + c.size, 0) - kept.reduce((s, c) => s + c.size, 0)
+  const bonus = removed / kept.length
+  return { ...root, children: kept.map(c => ({ ...c, size: c.size + bonus })) }
+}
 
-  const handleDragStart = useCallback((id: string, e: React.DragEvent) => {
-    if (emptyImgRef.current) e.dataTransfer.setDragImage(emptyImgRef.current, 0, 0)
-    setDragSrc(id)
-  }, [])
+function findLeaf(root: LayoutNode, id: string): PanelLeaf | null {
+  if (root.kind === "panel") return root.id === id ? root : null
+  for (const c of root.children) {
+    const f = findLeaf(c.node, id)
+    if (f) return f
+  }
+  return null
+}
 
-  const handleDragOver = useCallback((id: string, e: React.DragEvent) => {
-    e.preventDefault()
-    setDragOver(id)
-  }, [])
+function collectTypes(root: LayoutNode): PanelType[] {
+  if (root.kind === "panel") return [root.type]
+  return root.children.flatMap(c => collectTypes(c.node))
+}
 
-  const handleDrop = useCallback((targetId: string) => {
-    if (!dragSrc || dragSrc === targetId) { setDragSrc(null); setDragOver(null); return }
-    const src = panels.find(p => p.id === dragSrc)
-    const tgt = panels.find(p => p.id === targetId)
-    if (!src || !tgt) { setDragSrc(null); setDragOver(null); return }
-    const updated = panels.map(p => {
-      if (p.id === dragSrc) return { ...p, col: tgt.col, row: tgt.row, colSpan: tgt.colSpan, rowSpan: tgt.rowSpan }
-      if (p.id === targetId) return { ...p, col: src.col, row: src.row, colSpan: src.colSpan, rowSpan: src.rowSpan }
-      return p
-    })
-    onUpdatePanels(updated)
-    setDragSrc(null)
-    setDragOver(null)
-  }, [dragSrc, panels, onUpdatePanels])
+export function getPanelTypes(root: LayoutNode): PanelType[] {
+  return collectTypes(root)
+}
 
-  const startResize = useCallback((e: React.MouseEvent, panel: PanelDef, edge: "right" | "bottom" | "corner") => {
-    e.preventDefault()
-    e.stopPropagation()
-    if (!gridRef.current) return
-    const rect = gridRef.current.getBoundingClientRect()
-    const currentRows = Math.max(...panelsRef.current.map(p => p.row + p.rowSpan - 1), 1)
-    setResizing({
-      id: panel.id,
-      edge,
-      startX: e.clientX,
-      startY: e.clientY,
-      startColSpan: panel.colSpan,
-      startRowSpan: panel.rowSpan,
-      startCol: panel.col,
-      cellW: (rect.width - (columns - 1) * 2) / columns,
-      cellH: (rect.height - (currentRows - 1) * 2) / currentRows,
-    })
-  }, [columns])
+// ── Component ──────────────────────────────────────────────────────────────────
 
+export function PanelGrid({
+  layout, onUpdateLayout, renderPanel, panelTitles, lockedTypes = ["chart"], onPopOut,
+}: PanelGridProps) {
+  const [expandedId, setExpandedId] = useState<string | null>(null)
+  const [drag, setDrag] = useState<DividerDrag | null>(null)
+  const layoutRef = useRef(layout)
+  useEffect(() => { layoutRef.current = layout }, [layout])
+
+  // ── Divider drag ───────────────────────────────────────────────────────────
   useEffect(() => {
-    if (!resizing) return
-    const cursor = resizing.edge === "right" ? "col-resize" : resizing.edge === "bottom" ? "row-resize" : "se-resize"
-    document.body.style.cursor = cursor
+    if (!drag) return
     document.body.style.userSelect = "none"
+    document.body.style.cursor = drag.dir === "row" ? "col-resize" : "row-resize"
+
     const onMove = (e: MouseEvent) => {
-      const dx = e.clientX - resizing.startX
-      const dy = e.clientY - resizing.startY
-      const allPanels = panelsRef.current
-      const target = allPanels.find(p => p.id === resizing.id)
-      if (!target) return
-
-      let colSpan = target.colSpan
-      let rowSpan = target.rowSpan
-
-      if (resizing.edge !== "bottom") {
-        const raw = Math.max(1, Math.min(columns - resizing.startCol + 1, Math.round(resizing.startColSpan + dx / resizing.cellW)))
-        // Clamp: don't extend into panels immediately to the right that share our row range
-        const minRightCol = allPanels
-          .filter(p => p.id !== resizing.id &&
-            p.col > resizing.startCol &&
-            p.row <= target.row + resizing.startRowSpan - 1 &&
-            p.row + p.rowSpan - 1 >= target.row)
-          .reduce((min, p) => Math.min(min, p.col), columns + 1)
-        colSpan = Math.min(raw, minRightCol - resizing.startCol)
-      }
-
-      if (resizing.edge !== "right") {
-        const raw = Math.max(1, Math.round(resizing.startRowSpan + dy / resizing.cellH))
-        // Clamp: don't extend into panels directly below that share our col range
-        const minBelowRow = allPanels
-          .filter(p => p.id !== resizing.id &&
-            p.row > target.row &&
-            p.col <= resizing.startCol + resizing.startColSpan - 1 &&
-            p.col + p.colSpan - 1 >= resizing.startCol)
-          .reduce((min, p) => Math.min(min, p.row), Infinity)
-        rowSpan = Math.min(raw, isFinite(minBelowRow) ? minBelowRow - target.row : raw)
-      }
-
-      onUpdatePanels(allPanels.map(p => p.id !== resizing.id ? p : { ...p, colSpan, rowSpan }))
+      const pos   = drag.dir === "row" ? e.clientX : e.clientY
+      const delta = (pos - drag.startPos) / drag.containerPx
+      const i     = drag.index
+      const s     = drag.startSizes
+      // clamp so neither side goes below MIN_PANE
+      const maxTransfer = s[i] - MIN_PANE
+      const maxReceive  = s[i + 1] - MIN_PANE
+      const d     = Math.max(-maxReceive, Math.min(maxTransfer, delta))
+      const newSizes = s.map((v, j) => j === i ? v + d : j === i + 1 ? v - d : v)
+      onUpdateLayout(updateSizes(layoutRef.current, drag.path, newSizes))
     }
-    const onUp = () => setResizing(null)
+    const onUp = () => setDrag(null)
     window.addEventListener("mousemove", onMove)
     window.addEventListener("mouseup", onUp)
     return () => {
-      document.body.style.cursor = ""
       document.body.style.userSelect = ""
+      document.body.style.cursor = ""
       window.removeEventListener("mousemove", onMove)
       window.removeEventListener("mouseup", onUp)
     }
-  }, [resizing, columns, onUpdatePanels])
+  }, [drag, onUpdateLayout])
 
+  // ── Panel actions ──────────────────────────────────────────────────────────
+  const handleRemove = useCallback((id: string) => {
+    const next = removeLeaf(layoutRef.current, id)
+    if (next) onUpdateLayout(next)
+  }, [onUpdateLayout])
+
+  // ── Fullscreen mode ────────────────────────────────────────────────────────
   if (expandedId) {
-    const panel = panels.find(p => p.id === expandedId)
-    if (panel) {
+    const leaf = findLeaf(layout, expandedId)
+    if (leaf) return (
+      <div className="h-full flex flex-col bg-[oklch(0.13_0.004_264)]">
+        <div className="flex items-center gap-2 px-3 py-1.5 border-b border-white/10 bg-[oklch(0.16_0.004_264)] shrink-0">
+          <span className="text-xs font-semibold text-foreground/80">{panelTitles[leaf.type]}</span>
+          <button type="button" onClick={() => setExpandedId(null)}
+            className="ml-auto flex items-center gap-1 px-2 py-1 rounded text-[10px] text-muted-foreground hover:text-foreground bg-white/5 hover:bg-white/10 transition-colors border-0 cursor-pointer">
+            <Maximize2 className="w-3 h-3" /> Exit fullscreen
+          </button>
+        </div>
+        <div className="flex-1 min-h-0 overflow-hidden">{renderPanel(leaf.type, leaf.id)}</div>
+      </div>
+    )
+  }
+
+  // ── Recursive renderer ─────────────────────────────────────────────────────
+  function renderNode(node: LayoutNode, path: number[]): React.ReactNode {
+    // ── Panel leaf ───────────────────────────────────────────────────────────
+    if (node.kind === "panel") {
       return (
-        <div className="h-full flex flex-col bg-[oklch(0.13_0.004_264)]">
-          <div className="flex items-center gap-2 px-3 py-1.5 border-b border-white/10 bg-[oklch(0.16_0.004_264)] shrink-0">
-            <span className="text-xs font-semibold text-foreground/80">{panelTitles[panel.type]}</span>
-            <button type="button" onClick={() => setExpandedId(null)} className="ml-auto flex items-center gap-1 px-2 py-1 rounded text-[10px] text-muted-foreground hover:text-foreground bg-white/5 hover:bg-white/10 transition-colors border-0 cursor-pointer">
-              <Maximize2 className="w-3 h-3" /> Exit fullscreen
-            </button>
+        <div className="flex flex-col h-full w-full overflow-hidden bg-[oklch(0.14_0.004_264)]">
+          <div className="flex items-center gap-1.5 px-2 py-1 border-b border-white/5 bg-[oklch(0.16_0.004_264)] shrink-0 select-none">
+            <span className="text-[10px] font-semibold text-foreground/50 uppercase tracking-wider truncate">
+              {panelTitles[node.type]}
+            </span>
+            <div className="ml-auto flex items-center gap-0.5 shrink-0">
+              {onPopOut && POPPABLE.includes(node.type) && (
+                <button type="button" onClick={() => onPopOut(node.type)}
+                  className="p-0.5 rounded hover:bg-white/10 text-white/30 hover:text-white/70 transition-colors border-0 bg-transparent cursor-pointer"
+                  title="Pop out to window">
+                  <ExternalLink className="w-2.5 h-2.5" />
+                </button>
+              )}
+              <button type="button" onClick={() => setExpandedId(node.id)}
+                className="p-0.5 rounded hover:bg-white/10 text-white/30 hover:text-white/70 transition-colors border-0 bg-transparent cursor-pointer"
+                title="Fullscreen">
+                <Maximize2 className="w-2.5 h-2.5" />
+              </button>
+              {!lockedTypes.includes(node.type) && (
+                <button type="button" onClick={() => handleRemove(node.id)}
+                  className="p-0.5 rounded hover:bg-red-500/20 text-white/30 hover:text-red-400 transition-colors border-0 bg-transparent cursor-pointer"
+                  title="Close panel">
+                  <X className="w-2.5 h-2.5" />
+                </button>
+              )}
+            </div>
           </div>
           <div className="flex-1 min-h-0 overflow-hidden">
-            {renderPanel(panel.type, panel.id)}
+            {renderPanel(node.type, node.id)}
           </div>
         </div>
       )
     }
+
+    // ── Split pane ───────────────────────────────────────────────────────────
+    const isRow = node.dir === "row"
+    const items: React.ReactNode[] = []
+
+    node.children.forEach((child, i) => {
+      const childKey = child.node.kind === "panel" ? child.node.id : `split-${path.join("-")}-${i}`
+      items.push(
+        <div
+          key={childKey}
+          className={isRow ? "h-full min-w-0 overflow-hidden" : "w-full min-h-0 overflow-hidden"}
+          style={{ [isRow ? "width" : "height"]: `${child.size * 100}%` }}
+        >
+          {renderNode(child.node, [...path, i])}
+        </div>
+      )
+
+      if (i < node.children.length - 1) {
+        items.push(
+          <div
+            key={`div-${path.join("-")}-${i}`}
+            className={[
+              "shrink-0 bg-[oklch(0.09_0.004_264)] transition-colors",
+              "hover:bg-indigo-500/50 active:bg-indigo-500/70",
+              isRow ? "w-[3px] h-full cursor-col-resize" : "h-[3px] w-full cursor-row-resize",
+            ].join(" ")}
+            onMouseDown={(e) => {
+              e.preventDefault()
+              const rect = (e.currentTarget.parentElement as HTMLElement).getBoundingClientRect()
+              setDrag({
+                path,
+                index: i,
+                dir: node.dir,
+                startPos: isRow ? e.clientX : e.clientY,
+                startSizes: node.children.map(c => c.size),
+                containerPx: isRow ? rect.width : rect.height,
+              })
+            }}
+          />
+        )
+      }
+    })
+
+    return (
+      <div className={`flex ${isRow ? "flex-row" : "flex-col"} h-full w-full`}>
+        {items}
+      </div>
+    )
   }
 
   return (
-    <div ref={gridRef} style={gridStyle} className="grid gap-0.5 h-full bg-[oklch(0.11_0.004_264)]">
-      {panels.map(panel => {
-        const isDragSrc = dragSrc === panel.id
-        const isDragOver = dragOver === panel.id && dragOver !== dragSrc
-        const dragSrcPanel = dragSrc ? panels.find(p => p.id === dragSrc) : null
-        return (
-          <div
-            key={panel.id}
-            onDragOver={e => handleDragOver(panel.id, e)}
-            onDrop={() => handleDrop(panel.id)}
-            onDragEnd={() => { setDragSrc(null); setDragOver(null) }}
-            style={{
-              gridColumn: `${panel.col} / span ${panel.colSpan}`,
-              gridRow: `${panel.row} / span ${panel.rowSpan}`,
-            }}
-            className={`relative flex flex-col overflow-hidden rounded-sm bg-[oklch(0.14_0.004_264)] transition-opacity duration-100 ${isDragSrc ? "opacity-25" : "opacity-100"}`}
-          >
-            {/* Drop target overlay — shows dragged panel title so user knows what will land here */}
-            {isDragOver && (
-              <div className="absolute inset-0 z-30 rounded-sm bg-indigo-500/15 border-2 border-indigo-400/60 flex items-center justify-center pointer-events-none">
-                <span className="text-indigo-200 text-xs font-semibold px-3 py-1.5 rounded bg-indigo-950/70 border border-indigo-500/40">
-                  {dragSrcPanel ? panelTitles[dragSrcPanel.type] : ""}
-                </span>
-              </div>
-            )}
-
-            {/* Panel header — drag handle */}
-            <div
-              draggable
-              onDragStart={e => handleDragStart(panel.id, e)}
-              className="flex items-center gap-1.5 px-2 py-1 border-b border-white/5 bg-[oklch(0.16_0.004_264)] shrink-0 select-none cursor-grab active:cursor-grabbing"
-            >
-              <GripHorizontal className="w-3 h-3 text-white/20 pointer-events-none" />
-              <span className="text-[10px] font-semibold text-foreground/50 uppercase tracking-wider">{panelTitles[panel.type]}</span>
-              <div className="ml-auto flex items-center gap-0.5">
-                {onPopOut && POPPABLE.includes(panel.type) && (
-                  <button
-                    type="button"
-                    onClick={() => onPopOut(panel.type)}
-                    className="p-0.5 rounded hover:bg-white/10 text-white/30 hover:text-white/70 transition-colors border-0 bg-transparent cursor-pointer"
-                    title="Pop out to window"
-                  >
-                    <ExternalLink className="w-2.5 h-2.5" />
-                  </button>
-                )}
-                <button
-                  type="button"
-                  onClick={() => setExpandedId(panel.id)}
-                  className="p-0.5 rounded hover:bg-white/10 text-white/30 hover:text-white/70 transition-colors border-0 bg-transparent cursor-pointer"
-                  title="Fullscreen"
-                >
-                  <Maximize2 className="w-2.5 h-2.5" />
-                </button>
-                {!lockedTypes.includes(panel.type) && (
-                  <button
-                    type="button"
-                    onClick={() => removePanel(panel.id)}
-                    className="p-0.5 rounded hover:bg-red-500/20 text-white/30 hover:text-red-400 transition-colors border-0 bg-transparent cursor-pointer"
-                    title="Close panel"
-                  >
-                    <X className="w-2.5 h-2.5" />
-                  </button>
-                )}
-              </div>
-            </div>
-
-            {/* Panel content — explicitly not draggable so chart drawing tools work */}
-            <div className="flex-1 min-h-0 overflow-hidden" draggable={false}>
-              {renderPanel(panel.type, panel.id)}
-            </div>
-
-            {/* Right-edge resize handle — always subtly visible */}
-            <div
-              onMouseDown={e => startResize(e, panel, "right")}
-              className="absolute top-7 right-0 w-1.5 bottom-3 cursor-col-resize z-10 opacity-0 hover:opacity-100 hover:bg-indigo-500/50 transition-opacity"
-            />
-            {/* Bottom-edge resize handle */}
-            <div
-              onMouseDown={e => startResize(e, panel, "bottom")}
-              className="absolute bottom-0 left-0 right-3 h-1.5 cursor-row-resize z-10 opacity-0 hover:opacity-100 hover:bg-indigo-500/50 transition-opacity"
-            />
-            {/* Corner resize handle — always visible as a triangle */}
-            <div
-              onMouseDown={e => startResize(e, panel, "corner")}
-              className="absolute bottom-0 right-0 w-3.5 h-3.5 cursor-se-resize z-20 opacity-50 hover:opacity-100 transition-opacity bg-[linear-gradient(135deg,transparent_50%,rgba(99,102,241,0.7)_50%)]"
-            />
-          </div>
-        )
-      })}
+    <div className="h-full w-full overflow-hidden bg-[oklch(0.11_0.004_264)]">
+      {renderNode(layout, [])}
     </div>
   )
 }

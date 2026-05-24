@@ -1,85 +1,99 @@
-import type { SavedLayout, PanelDef } from "@/components/trading/types"
+import type { SavedLayout, LayoutNode, PanelLeaf, SplitPane } from "@/components/trading/types"
+import type { PanelType } from "@/components/trading/types"
 
-function panel(id: string, type: PanelDef["type"], col: number, row: number, colSpan: number, rowSpan: number): PanelDef {
-  return { id, type, col, row, colSpan, rowSpan }
+function leaf(type: PanelType, id?: string): PanelLeaf {
+  return { kind: "panel", id: id ?? type, type }
 }
 
-// 4-column grid. Row values use a 12-unit scale (×4 from old 3-unit scale).
-// This means each 1-unit row ≈ 8% of viewport height (~75px on a 900px terminal),
-// giving panels fine-grained resize granularity without needing fractional values.
-// old row 1→1, old row 2→5, old row 3→9  |  old rowSpan 1→4, 2→8, 3→12
+function row(...children: [number, LayoutNode][]): SplitPane {
+  const total = children.reduce((s, [n]) => s + n, 0)
+  return { kind: "split", dir: "row", children: children.map(([n, node]) => ({ size: n / total, node })) }
+}
+
+function col(...children: [number, LayoutNode][]): SplitPane {
+  const total = children.reduce((s, [n]) => s + n, 0)
+  return { kind: "split", dir: "col", children: children.map(([n, node]) => ({ size: n / total, node })) }
+}
+
 export const LAYOUT_PRESETS: SavedLayout[] = [
   {
     name: "Default",
-    columns: 4,
-    panels: [
-      panel("watchlist",   "watchlist",   1, 1,  1, 12),
-      panel("chart",       "chart",       2, 1,  2,  8),
-      panel("positions",   "positions",   2, 9,  2,  4),
-      panel("tradeform",   "tradeform",   4, 1,  1,  8),
-      panel("signals",     "signals",     4, 9,  1,  4),
-    ],
+    root: row(
+      [1,  leaf("watchlist")],
+      [3,  col(
+        [2, row([3, leaf("chart")], [1, leaf("tradeform")])],
+        [1, row([3, leaf("positions")], [1, leaf("signals")])]
+      )]
+    ),
   },
   {
     name: "Day Trader",
-    columns: 5,
-    panels: [
-      panel("chart",       "chart",       1, 1,  2, 8),
-      panel("orderbook",   "orderbook",   3, 1,  1, 8),
-      panel("domladder",   "domladder",   4, 1,  1, 8),
-      panel("tradeform",   "tradeform",   5, 1,  1, 4),
-      panel("timesales",   "timesales",   3, 9,  2, 4),
-      panel("positions",   "positions",   1, 9,  2, 4),
-      panel("orders",      "orders",      5, 5,  1, 8),
-    ],
+    root: row(
+      [2, col(
+        [2, leaf("chart")],
+        [1, row([1, leaf("positions")], [1, leaf("timesales")])]
+      )],
+      [1, col(
+        [2, leaf("orderbook")],
+        [1, leaf("domladder")]
+      )],
+      [1, col(
+        [1, leaf("tradeform")],
+        [1, leaf("orders")]
+      )]
+    ),
   },
   {
     name: "Swing Trader",
-    columns: 4,
-    panels: [
-      panel("watchlist",   "watchlist",   1, 1,  1, 12),
-      panel("chart",       "chart",       2, 1,  2,  8),
-      panel("news",        "news",        4, 1,  1,  4),
-      panel("calendar",    "calendar",    4, 5,  1,  4),
-      panel("signals",     "signals",     2, 9,  1,  4),
-      panel("notes",       "notes",       3, 9,  2,  4),
-    ],
+    root: row(
+      [1, leaf("watchlist")],
+      [3, col(
+        [2, row([3, leaf("chart")], [1, col([1, leaf("news")], [1, leaf("calendar")])])],
+        [1, row([1, leaf("signals")], [2, leaf("notes")])]
+      )]
+    ),
   },
   {
     name: "Scalper",
-    columns: 5,
-    panels: [
-      panel("chart",       "chart",       1, 1,  2, 12),
-      panel("orderbook",   "orderbook",   3, 1,  1,  4),
-      panel("domladder",   "domladder",   4, 1,  1, 12),
-      panel("timesales",   "timesales",   3, 5,  1,  8),
-      panel("tradeform",   "tradeform",   5, 1,  1,  8),
-      panel("positions",   "positions",   5, 9,  1,  4),
-    ],
+    root: row(
+      [2, leaf("chart")],
+      [1, col(
+        [1, leaf("orderbook")],
+        [2, leaf("timesales")]
+      )],
+      [1, leaf("domladder")],
+      [1, col(
+        [2, leaf("tradeform")],
+        [1, leaf("positions")]
+      )]
+    ),
   },
   {
     name: "Macro View",
-    columns: 4,
-    panels: [
-      panel("chart",       "chart",       1, 1,  2, 8),
-      panel("heatmap",     "heatmap",     3, 1,  2, 4),
-      panel("news",        "news",        3, 5,  1, 4),
-      panel("calendar",    "calendar",    4, 5,  1, 4),
-      panel("performance", "performance", 1, 9,  2, 4),
-      panel("signals",     "signals",     3, 9,  2, 4),
-    ],
+    root: row(
+      [2, col(
+        [2, leaf("chart")],
+        [1, row([1, leaf("performance")], [1, leaf("signals")])]
+      )],
+      [2, col(
+        [1, leaf("heatmap")],
+        [1, row([1, leaf("news")], [1, leaf("calendar")])]
+      )]
+    ),
   },
   {
     name: "Options Focus",
-    columns: 4,
-    panels: [
-      panel("chart",       "chart",       1, 1,  2, 8),
-      panel("scanner",     "scanner",     3, 1,  1, 8),
-      panel("signals",     "signals",     4, 1,  1, 4),
-      panel("calculator",  "calculator",  4, 5,  1, 4),
-      panel("tradeform",   "tradeform",   1, 9,  2, 4),
-      panel("orders",      "orders",      3, 9,  2, 4),
-    ],
+    root: row(
+      [2, col(
+        [2, leaf("chart")],
+        [1, row([1, leaf("tradeform")], [1, leaf("orders")])]
+      )],
+      [1, leaf("scanner")],
+      [1, col(
+        [1, leaf("signals")],
+        [1, leaf("calculator")]
+      )]
+    ),
   },
 ]
 

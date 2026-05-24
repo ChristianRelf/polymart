@@ -1,6 +1,6 @@
 import { useState } from "react"
 import { X, Search, BarChart2, BookOpen, Clock, ListOrdered, ShoppingCart, Newspaper, Calendar, Map, ScanSearch, FileText, Bell, TrendingUp, Calculator, Activity, Layers } from "lucide-react"
-import type { PanelType, PanelDef } from "./types"
+import type { PanelType } from "./types"
 
 interface PanelMeta {
   type: PanelType
@@ -39,11 +39,11 @@ const CATEGORIES = ["Charts & Data", "Trading", "Market Info", "Tools"]
 interface PanelLibraryProps {
   open: boolean
   onClose: () => void
-  existingPanels: PanelDef[]
+  existingTypes: PanelType[]
   onAddPanel: (type: PanelType) => void
 }
 
-export function PanelLibrary({ open, onClose, existingPanels, onAddPanel }: PanelLibraryProps) {
+export function PanelLibrary({ open, onClose, existingTypes, onAddPanel }: PanelLibraryProps) {
   const [query, setQuery] = useState("")
 
   if (!open) return null
@@ -57,7 +57,7 @@ export function PanelLibrary({ open, onClose, existingPanels, onAddPanel }: Pane
     return acc
   }, {})
 
-  const hasPanel = (type: PanelType) => existingPanels.some(p => p.type === type)
+  const hasPanel = (type: PanelType) => existingTypes.includes(type)
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center">

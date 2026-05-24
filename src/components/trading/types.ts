@@ -22,17 +22,37 @@ export type PanelType =
 export interface PanelDef {
   id: string
   type: PanelType
-  col: number   // 1-based grid column start
-  row: number   // 1-based grid row start
+  col: number
+  row: number
   colSpan: number
   rowSpan: number
   config?: Record<string, unknown>
 }
 
+// ── Split-pane layout tree ─────────────────────────────────────────────────────
+
+export interface PanelLeaf {
+  kind: "panel"
+  id: string
+  type: PanelType
+}
+
+export interface SplitPane {
+  kind: "split"
+  dir: "row" | "col"     // row = side-by-side, col = stacked vertically
+  children: SplitChild[]
+}
+
+export interface SplitChild {
+  size: number             // fraction 0–1; all siblings must sum to 1
+  node: PanelLeaf | SplitPane
+}
+
+export type LayoutNode = PanelLeaf | SplitPane
+
 export interface SavedLayout {
   name: string
-  panels: PanelDef[]
-  columns: number  // number of equal columns in the grid
+  root: LayoutNode
 }
 
 // ── Indicator types ───────────────────────────────────────────────────────────
