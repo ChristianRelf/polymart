@@ -19,11 +19,12 @@ export const LAYOUT_PRESETS: SavedLayout[] = [
   {
     name: "Default",
     root: row(
-      [1,  leaf("watchlist")],
-      [3,  col(
-        [2, row([3, leaf("chart")], [1, leaf("tradeform")])],
-        [1, row([3, leaf("positions")], [1, leaf("signals")])]
-      )]
+      [1, leaf("watchlist")],
+      [4, col(
+        [3, leaf("chart")],
+        [1, row([2, leaf("positions")], [1, leaf("signals")])]
+      )],
+      [1, leaf("tradeform")]
     ),
   },
   {
