@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect, useCallback } from "react"
 import { X, Maximize2, ExternalLink } from "lucide-react"
-import type { LayoutNode, PanelLeaf, SplitPane, SplitChild, PanelType } from "./types"
+import type { LayoutNode, PanelLeaf, SplitChild, PanelType } from "./types"
 
 const POPPABLE: PanelType[] = ["orderbook", "timesales", "heatmap", "scanner", "domladder", "news", "calendar"]
 const MIN_PANE = 0.08  // minimum 8% before a pane stops shrinking
