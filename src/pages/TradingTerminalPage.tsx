@@ -9,9 +9,9 @@ import { ScrollArea } from "@/components/ui/scroll-area"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog"
 import {
-  Search, TrendingUp, Minus, Bell,
-  Trash2, Loader2, ShoppingCart,
-  BookOpen, Calculator, Target, Type, X, Check,
+  Search, TrendingUp, Bell,
+  Loader2, ShoppingCart,
+  BookOpen, Calculator, Target, X, Check,
   BarChart2, ChevronRight, Layers, Plus,
 } from "lucide-react"
 import { useAccount } from "@/hooks/useAccount"
@@ -33,10 +33,10 @@ import { NewsPanel } from "@/components/trading/panels/NewsPanel"
 import { CalendarPanel } from "@/components/trading/panels/CalendarPanel"
 import type { PanelType, PanelDef, SavedLayout, IndicatorConfig } from "@/components/trading/types"
 import { DEFAULT_INDICATORS } from "@/components/trading/types"
-import { DEFAULT_LAYOUT, LAYOUT_PRESETS } from "@/lib/trading/layoutPresets"
+import { DEFAULT_LAYOUT } from "@/lib/trading/layoutPresets"
 import { loadActiveLayout, saveActiveLayout, loadSavedLayouts, saveUserLayout, deleteUserLayout, renameUserLayout } from "@/lib/trading/layoutStorage"
 import {
-  calcEMA, calcWMA, calcBB, calcRSI, calcMACD, calcStochastic, calcCCI,
+  calcEMA, calcWMA, calcBB, calcRSI, calcStochastic, calcCCI,
   calcATR, calcOBV, calcParabolicSAR, calcIchimoku, calcKeltner, calcDonchian,
   calcLinReg, calcPivots, calcSMA,
 } from "@/lib/trading/indicators"
@@ -449,7 +449,7 @@ function renderPitchfork(ctx: CanvasRenderingContext2D, g: ChartGeom, d: Drawing
   const x3 = idxToX(g, d.p3.idxFromRight), y3 = toY(g, d.p3.price)
   const midX = (x2 + x3) / 2, midY = (y2 + y3) / 2
   const xEnd = g.cssW - g.pad.r
-  const dx = midX - x1, dy = midY - y1
+  const dx = midX - x1
   const t = dx !== 0 ? (xEnd - x1) / dx : 1
   ctx.save(); ctx.globalAlpha = alpha
   ctx.strokeStyle = d.color; ctx.lineWidth = d.lineWidth ?? 1.5
@@ -1564,7 +1564,7 @@ function SymbolListPanel({
 function RightPanel({
   symbol, assetType, currentPrice, portfolios, selectedPortfolio, setSelectedPortfolio,
   positions, onTradeComplete, onToast,
-  alerts, setAlerts, notes, setNotes,
+  alerts, setAlerts, notes, setNotes, defaultTab,
 }: {
   symbol: string; assetType: string; currentPrice: number
   portfolios: PortfolioSummary[]; selectedPortfolio: number | null; setSelectedPortfolio: (id: number) => void
@@ -1572,6 +1572,7 @@ function RightPanel({
   onToast: (text: string, type: "success" | "error" | "info") => void
   alerts: PriceAlert[]; setAlerts: (a: PriceAlert[]) => void
   notes: string; setNotes: (n: string) => void
+  defaultTab?: string
 }) {
   const { isSignedIn } = useAuth()
   const { placeOrder } = useAccount()
@@ -1675,7 +1676,7 @@ function RightPanel({
 
   return (
     <div className="flex flex-col h-full border-l border-border">
-      <Tabs defaultValue="trade" className="flex flex-col h-full">
+      <Tabs defaultValue={defaultTab ?? "trade"} className="flex flex-col h-full">
         <TabsList className="grid grid-cols-3 rounded-none border-b border-border bg-card/60 h-9 shrink-0">
           <TabsTrigger value="trade" className="text-[11px] gap-1 rounded-none data-[state=active]:bg-background">
             <ShoppingCart className="w-3 h-3" />Trade
@@ -2165,7 +2166,7 @@ function EquityCurveChart({ snapshots }: { snapshots: PortfolioSnapshot[] }) {
 
 function BottomPanel({
   positions, orders, pendingOrders, portfolioStats, portfolioSnapshots,
-  onSymbolSelect, onCancelOrder, height, onHeightChange,
+  onSymbolSelect, onCancelOrder, height, onHeightChange, defaultTab,
 }: {
   positions: Position[]
   orders: RecentOrder[]
@@ -2176,9 +2177,10 @@ function BottomPanel({
   onCancelOrder: (orderId: number) => void
   height: number
   onHeightChange: (h: number) => void
+  defaultTab?: "positions" | "orders" | "pending" | "performance"
 }) {
   const { stocks, forexPairs } = useSimulation()
-  const [tab, setTab] = useState<"positions" | "orders" | "pending" | "performance">("positions")
+  const [tab, setTab] = useState<"positions" | "orders" | "pending" | "performance">(defaultTab ?? "positions")
   const dragRef = useRef(false)
   const dragStartYRef = useRef(0)
   const dragStartHRef = useRef(0)
@@ -2712,7 +2714,6 @@ export default function TradingTerminalPage({ onNavigate }: Props) {
 
   // Chart data: prefer detail candles, fallback to live summary history
   const stockDetail  = selectedSymbol?.assetType === "stock"  ? (detail as StockDetail    | null) : null
-  const forexDetail  = selectedSymbol?.assetType === "forex"  ? (detail as ForexPairDetail | null) : null
   const cryptoDetail = selectedSymbol?.assetType === "crypto" ? (detail as CryptoDetail    | null) : null
   const candles = detail?.candles ?? []
   const history = detail?.history ?? []

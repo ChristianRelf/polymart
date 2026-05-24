@@ -1,4 +1,4 @@
-import { useState, useRef, useCallback, useEffect } from "react"
+import { useState, useCallback } from "react"
 import { X, Maximize2, GripHorizontal } from "lucide-react"
 import type { PanelDef, PanelType } from "./types"
 

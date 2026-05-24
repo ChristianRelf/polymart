@@ -1,5 +1,5 @@
 import { useState, useMemo } from "react"
-import { Search, TrendingUp, TrendingDown, Filter } from "lucide-react"
+import { Search, Filter } from "lucide-react"
 import { useSimulation } from "@/lib/SimulationContext"
 
 type SortKey = "change" | "volume" | "price" | "name"

@@ -1,0 +1,47 @@
+"filename", "language", "MS SQL", "JavaScript", "TypeScript JSX", "TypeScript", "comment", "blank", "total"
+"c:\Users\chris\Documents\GitHub\polymart\server\PolyAPI\AccountsAPI.js", "JavaScript", 0, 94, 0, 0, 7, 21, 122
+"c:\Users\chris\Documents\GitHub\polymart\server\PolyAPI\LeaderboardAPI.js", "JavaScript", 0, 87, 0, 0, 15, 17, 119
+"c:\Users\chris\Documents\GitHub\polymart\server\PolyAPI\MarketAPI.js", "JavaScript", 0, 193, 0, 0, 3, 11, 207
+"c:\Users\chris\Documents\GitHub\polymart\server\PolyEngine\AssetResolver.js", "JavaScript", 0, 1, 0, 0, 0, 0, 1
+"c:\Users\chris\Documents\GitHub\polymart\server\PolyEngine\CryptoData.js", "JavaScript", 0, 296, 0, 0, 73, 49, 418
+"c:\Users\chris\Documents\GitHub\polymart\server\PolyEngine\CryptoSimulation.js", "JavaScript", 0, 380, 0, 0, 51, 63, 494
+"c:\Users\chris\Documents\GitHub\polymart\server\PolyEngine\DataAdapter.js", "JavaScript", 0, 85, 0, 0, 1, 6, 92
+"c:\Users\chris\Documents\GitHub\polymart\server\PolyEngine\DataWrapper.js", "JavaScript", 0, 21, 0, 0, 1, 2, 24
+"c:\Users\chris\Documents\GitHub\polymart\server\PolyEngine\OrderMatcher.js", "JavaScript", 0, 89, 0, 0, 27, 15, 131
+"c:\Users\chris\Documents\GitHub\polymart\server\PolyEngine\StockData.js", "JavaScript", 0, 34, 0, 0, 1, 0, 35
+"c:\Users\chris\Documents\GitHub\polymart\server\PolyEngine\StockSimulation.js", "JavaScript", 0, 5, 0, 0, 0, 0, 5
+"c:\Users\chris\Documents\GitHub\polymart\server\PolyEngine\tick.js", "JavaScript", 0, 24, 0, 0, 2, 3, 29
+"c:\Users\chris\Documents\GitHub\polymart\server\schema-market.sql", "MS SQL", 67, 0, 0, 0, 2, 3, 72
+"c:\Users\chris\Documents\GitHub\polymart\server\schema-user.sql", "MS SQL", 7, 0, 0, 0, 13, 1, 21
+"c:\Users\chris\Documents\GitHub\polymart\server\server.js", "JavaScript", 0, 43, 0, 0, 6, 3, 52
+"c:\Users\chris\Documents\GitHub\polymart\src\App.tsx", "TypeScript JSX", 0, 0, 19, 0, 0, 0, 19
+"c:\Users\chris\Documents\GitHub\polymart\src\components\trading\DrawingToolbar.tsx", "TypeScript JSX", 0, 0, 314, 0, 13, 33, 360
+"c:\Users\chris\Documents\GitHub\polymart\src\components\trading\IndicatorsPanel.tsx", "TypeScript JSX", 0, 0, 201, 0, 7, 16, 224
+"c:\Users\chris\Documents\GitHub\polymart\src\components\trading\LayoutsDropdown.tsx", "TypeScript JSX", 0, 0, 137, 0, 3, 9, 149
+"c:\Users\chris\Documents\GitHub\polymart\src\components\trading\PanelGrid.tsx", "TypeScript JSX", 0, 0, 115, 0, 3, 12, 130
+"c:\Users\chris\Documents\GitHub\polymart\src\components\trading\PanelLibrary.tsx", "TypeScript JSX", 0, 0, 107, 0, 7, 11, 125
+"c:\Users\chris\Documents\GitHub\polymart\src\components\trading\panels\CalendarPanel.tsx", "TypeScript JSX", 0, 0, 46, 0, 1, 3, 50
+"c:\Users\chris\Documents\GitHub\polymart\src\components\trading\panels\DomLadderPanel.tsx", "TypeScript JSX", 0, 0, 63, 0, 3, 7, 73
+"c:\Users\chris\Documents\GitHub\polymart\src\components\trading\panels\HeatmapPanel.tsx", "TypeScript JSX", 0, 0, 50, 0, 0, 6, 56
+"c:\Users\chris\Documents\GitHub\polymart\src\components\trading\panels\NewsPanel.tsx", "TypeScript JSX", 0, 0, 49, 0, 0, 5, 54
+"c:\Users\chris\Documents\GitHub\polymart\src\components\trading\panels\OrderBookPanel.tsx", "TypeScript JSX", 0, 0, 65, 0, 4, 12, 81
+"c:\Users\chris\Documents\GitHub\polymart\src\components\trading\panels\ScannerPanel.tsx", "TypeScript JSX", 0, 0, 83, 0, 3, 8, 94
+"c:\Users\chris\Documents\GitHub\polymart\src\components\trading\panels\TimeSalesPanel.tsx", "TypeScript JSX", 0, 0, 49, 0, 0, 8, 57
+"c:\Users\chris\Documents\GitHub\polymart\src\components\trading\types.ts", "TypeScript", 0, 0, 0, 111, 5, 14, 130
+"c:\Users\chris\Documents\GitHub\polymart\src\hooks\useAccount.ts", "TypeScript", 0, 0, 0, 33, 0, 5, 38
+"c:\Users\chris\Documents\GitHub\polymart\src\lib\SimulationContext.tsx", "TypeScript JSX", 0, 0, 88, 0, 1, 5, 94
+"c:\Users\chris\Documents\GitHub\polymart\src\lib\routes.ts", "TypeScript", 0, 0, 0, -10, 0, 0, -10
+"c:\Users\chris\Documents\GitHub\polymart\src\lib\trading\indicators.ts", "TypeScript", 0, 0, 0, 223, 3, 20, 246
+"c:\Users\chris\Documents\GitHub\polymart\src\lib\trading\layoutPresets.ts", "TypeScript", 0, 0, 0, 79, 1, 4, 84
+"c:\Users\chris\Documents\GitHub\polymart\src\lib\trading\layoutStorage.ts", "TypeScript", 0, 0, 0, 44, 0, 8, 52
+"c:\Users\chris\Documents\GitHub\polymart\src\pages\AccountPage.tsx", "TypeScript JSX", 0, 0, 31, 0, 1, 4, 36
+"c:\Users\chris\Documents\GitHub\polymart\src\pages\ApiDocsPage.tsx", "TypeScript JSX", 0, 0, 206, 0, 4, 6, 216
+"c:\Users\chris\Documents\GitHub\polymart\src\pages\CommunityAdminPage.tsx", "TypeScript JSX", 0, 0, 2, 0, 0, 0, 2
+"c:\Users\chris\Documents\GitHub\polymart\src\pages\CryptoPage.tsx", "TypeScript JSX", 0, 0, 728, 0, 31, 60, 819
+"c:\Users\chris\Documents\GitHub\polymart\src\pages\LeaderboardPage.tsx", "TypeScript JSX", 0, 0, 204, 0, 11, 28, 243
+"c:\Users\chris\Documents\GitHub\polymart\src\pages\LegalHubPage.tsx", "TypeScript JSX", 0, 0, 102, 0, 4, 9, 115
+"c:\Users\chris\Documents\GitHub\polymart\src\pages\LegalPage.tsx", "TypeScript JSX", 0, 0, 25, 0, 0, 0, 25
+"c:\Users\chris\Documents\GitHub\polymart\src\pages\ProductsPage.tsx", "TypeScript JSX", 0, 0, 3, 0, 0, 0, 3
+"c:\Users\chris\Documents\GitHub\polymart\src\pages\SponsorPage.tsx", "TypeScript JSX", 0, 0, 73, 0, 3, 2, 78
+"c:\Users\chris\Documents\GitHub\polymart\src\pages\TradingTerminalPage.tsx", "TypeScript JSX", 0, 0, 1599, 0, 43, 80, 1722
+"Total", "-", 74, 1352, 4359, 480, 353, 569, 7187

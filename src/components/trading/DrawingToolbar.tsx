@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect, useCallback } from "react"
+import { useState, useRef, useCallback } from "react"
 import {
   MousePointer2, Eraser, Minus, AlignCenter, TrendingUp, ArrowUpRight, Layers,
   Square, Circle, ChevronRight, Type, Percent, Ruler, Bell, BarChart2, BarChart,
