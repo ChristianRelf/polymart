@@ -308,6 +308,27 @@ CREATE TABLE IF NOT EXISTS community_community_reports (
   UNIQUE KEY uk_community_report (community_id, reporter_clerk_id)
 ) ENGINE=InnoDB;
 
+-- ── server_price_alerts ──────────────────────────────────────────────────────
+-- Price alerts created on either the website or via the Discord bot.
+-- The bot polls GET /bot/discord/alerts/pending for all untriggered alerts.
+CREATE TABLE IF NOT EXISTS server_price_alerts (
+  id           INT           NOT NULL AUTO_INCREMENT,
+  clerk_id     VARCHAR(64)   NOT NULL,
+  asset_type   VARCHAR(32)   NOT NULL DEFAULT 'stock',
+  symbol       VARCHAR(32)   NOT NULL,
+  direction    ENUM('above','below') NOT NULL,
+  threshold    DECIMAL(18,6) NOT NULL,
+  note         VARCHAR(200)  DEFAULT NULL,
+  triggered    TINYINT(1)    NOT NULL DEFAULT 0,
+  created_at   DATETIME      NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  triggered_at DATETIME      DEFAULT NULL,
+  PRIMARY KEY (id),
+  KEY idx_spa_clerk     (clerk_id),
+  KEY idx_spa_symbol    (asset_type, symbol),
+  KEY idx_spa_triggered (triggered),
+  CONSTRAINT fk_spa_user FOREIGN KEY (clerk_id) REFERENCES user_profiles(clerk_id) ON DELETE CASCADE
+) ENGINE=InnoDB;
+
 -- ── discord_link_codes ───────────────────────────────────────────────────────
 -- Temporary 6-digit codes used to link a Polymart account to a Discord user.
 -- Codes expire after 30 seconds and are single-use.

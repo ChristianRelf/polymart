@@ -534,6 +534,34 @@ async function applyMigrations() {
     console.log(`[polymart] Migration: fixed ${badProfileCnt} malformed profile_id(s)`);
   }
 
+  // Create server_price_alerts table for cross-platform alert management.
+  const [[{ spaCnt }]] = await dbUser.query(
+    `SELECT COUNT(*) AS spaCnt FROM INFORMATION_SCHEMA.TABLES
+     WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'server_price_alerts'`
+  );
+  if (!spaCnt) {
+    await dbUser.query(`
+      CREATE TABLE server_price_alerts (
+        id           INT           NOT NULL AUTO_INCREMENT,
+        clerk_id     VARCHAR(64)   NOT NULL,
+        asset_type   VARCHAR(32)   NOT NULL DEFAULT 'stock',
+        symbol       VARCHAR(32)   NOT NULL,
+        direction    ENUM('above','below') NOT NULL,
+        threshold    DECIMAL(18,6) NOT NULL,
+        note         VARCHAR(200)  DEFAULT NULL,
+        triggered    TINYINT(1)    NOT NULL DEFAULT 0,
+        created_at   DATETIME      NOT NULL DEFAULT CURRENT_TIMESTAMP,
+        triggered_at DATETIME      DEFAULT NULL,
+        PRIMARY KEY (id),
+        KEY idx_spa_clerk     (clerk_id),
+        KEY idx_spa_symbol    (asset_type, symbol),
+        KEY idx_spa_triggered (triggered),
+        CONSTRAINT fk_spa_user FOREIGN KEY (clerk_id)
+          REFERENCES user_profiles(clerk_id) ON DELETE CASCADE
+      ) ENGINE=InnoDB`);
+    console.log("[polymart] Migration: created server_price_alerts table");
+  }
+
   // Add discord_id, discord_username, discord_linked_at to user_profiles.
   const [[{ discordIdCnt }]] = await dbUser.query(
     `SELECT COUNT(*) AS discordIdCnt FROM INFORMATION_SCHEMA.COLUMNS

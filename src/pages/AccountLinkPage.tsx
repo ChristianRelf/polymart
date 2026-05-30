@@ -36,6 +36,7 @@ export default function AccountLinkPage({ onNavigate }: Props) {
   const [error, setError]           = useState<string | null>(null)
 
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null)
+  const pollRef  = useRef<ReturnType<typeof setInterval> | null>(null)
 
   // ── API ───────────────────────────────────────────────────────────────────
 
@@ -95,6 +96,27 @@ export default function AccountLinkPage({ onNavigate }: Props) {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [withToken])
 
+  // ── Status polling — runs while code is displayed, stops on link ──────────
+
+  function startPolling() {
+    if (pollRef.current) clearInterval(pollRef.current)
+    pollRef.current = setInterval(async () => {
+      try {
+        const data = await apiCall("/account/discord/status")
+        if (data.linked) {
+          clearInterval(pollRef.current!)
+          pollRef.current = null
+          if (timerRef.current) { clearInterval(timerRef.current); timerRef.current = null }
+          setStatus(data as DiscordStatus)
+        }
+      } catch { /* silent — keep polling */ }
+    }, 3000)
+  }
+
+  function stopPolling() {
+    if (pollRef.current) { clearInterval(pollRef.current); pollRef.current = null }
+  }
+
   // ── Mount ─────────────────────────────────────────────────────────────────
 
   useEffect(() => {
@@ -104,7 +126,7 @@ export default function AccountLinkPage({ onNavigate }: Props) {
         const data = await apiCall("/account/discord/status")
         if (cancelled) return
         setStatus(data as DiscordStatus)
-        if (!data.linked) generateCode()
+        if (!data.linked) { generateCode(); startPolling() }
       } catch {
         if (!cancelled) setError("Failed to load status.")
       } finally {
@@ -114,6 +136,7 @@ export default function AccountLinkPage({ onNavigate }: Props) {
     return () => {
       cancelled = true
       if (timerRef.current) clearInterval(timerRef.current)
+      stopPolling()
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
@@ -127,6 +150,7 @@ export default function AccountLinkPage({ onNavigate }: Props) {
       await apiCall("/account/discord/unlink", "DELETE")
       setStatus(prev => prev ? { ...prev, linked: false, discordId: null, discordUsername: null, discordLinkedAt: null } : null)
       generateCode()
+      startPolling()
     } catch (e: unknown) {
       setError(e instanceof Error ? e.message : String(e))
     } finally {

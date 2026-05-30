@@ -1544,82 +1544,178 @@ Set channel overrides (trades, alerts, announcements).
 
 ---
 
-## src/alertPoller.js — Background price alert system
+## src/alertPoller.js — Unified alert poller (local SQLite + server-side)
+
+For linked users, alerts are stored on the Polymart server and visible on polymart.co.
+For unlinked users, alerts use local SQLite. The poller handles both in one pass.
 
 ```js
 import { EmbedBuilder } from 'discord.js';
 import { stmt } from './db.js';
-import { api, detectAssetType } from './api.js';
-import { sign, colorOf, cash } from './utils.js';
+import { api } from './api.js';
+import { botApi } from './botApi.js';
+import { colorOf, cash } from './utils.js';
 
 export function startAlertPoller(client) {
-  // Poll every 12 seconds — slightly after each 10s tick
   setInterval(() => runAlertCheck(client), 12_000);
 }
 
 async function runAlertCheck(client) {
-  const alerts = stmt.getAllAlerts.all();
-  if (!alerts.length) return;
-
-  // Group by asset type and batch-fetch prices
-  const stockSymbols  = [...new Set(alerts.filter(a => a.asset_type === 'stock').map(a => a.ticker))];
-  const cryptoSymbols = [...new Set(alerts.filter(a => a.asset_type === 'crypto').map(a => a.ticker))];
-  const forexPairs    = [...new Set(alerts.filter(a => a.asset_type === 'forex').map(a => a.ticker))];
-
+  // Fetch all prices in one batch per asset class
+  const [allStocks, allCrypto, allForex] = await Promise.allSettled([
+    api.stocks(),
+    api.cryptoCoins(),
+    api.forexPairs(),
+  ]);
   const prices = {};
+  if (allStocks.status  === 'fulfilled') for (const [k, v] of Object.entries(allStocks.value))  prices[k] = v.price;
+  if (allCrypto.status  === 'fulfilled') for (const [k, v] of Object.entries(allCrypto.value))  prices[k] = v.price;
+  if (allForex.status   === 'fulfilled') for (const [k, v] of Object.entries(allForex.value))   prices[k] = v.price;
 
-  // Stocks: one /getStocks call covers all tickers
-  if (stockSymbols.length) {
-    try {
-      const all = await api.stocks();
-      for (const t of stockSymbols) if (all[t]) prices[t] = all[t].price;
-    } catch {}
-  }
+  // ── Server-side alerts (linked users, stored on Polymart) ──────────────────
+  try {
+    const { alerts: serverAlerts } = await botApi('GET', '/discord/alerts/pending');
+    for (const alert of serverAlerts) {
+      const price = prices[alert.symbol];
+      if (price == null) continue;
+      const triggered = alert.direction === 'above' ? price >= alert.threshold : price <= alert.threshold;
+      if (!triggered) continue;
 
-  // Crypto: one /crypto/getCoins call covers all
-  if (cryptoSymbols.length) {
-    try {
-      const all = await api.cryptoCoins();
-      for (const s of cryptoSymbols) if (all[s]) prices[s] = all[s].price;
-    } catch {}
-  }
+      // Mark triggered on server (fire-and-forget)
+      botApi('POST', `/discord/alerts/${alert.id}/trigger`).catch(() => {});
 
-  // Forex: one /forex/getPairs call covers all
-  if (forexPairs.length) {
-    try {
-      const all = await api.forexPairs();
-      for (const p of forexPairs) if (all[p]) prices[p] = all[p].price;
-    } catch {}
-  }
+      // Notify the Discord user via DM
+      try {
+        const user = await client.users.fetch(alert.discordUserId);
+        const embed = new EmbedBuilder()
+          .setTitle('🔔 Price Alert — Polymart')
+          .setColor(alert.direction === 'above' ? 0x22c55e : 0xef4444)
+          .addFields(
+            { name: 'Asset',     value: alert.symbol,                              inline: true },
+            { name: 'Condition', value: `${alert.direction} ${cash(alert.threshold)}`, inline: true },
+            { name: 'Now',       value: cash(price),                               inline: true },
+          );
+        if (alert.note) embed.setDescription(`_${alert.note}_`);
+        await user.send({ embeds: [embed] });
+      } catch { /* user DMs disabled or not found */ }
+    }
+  } catch { /* server alerts unavailable, skip */ }
 
-  for (const alert of alerts) {
+  // ── Local SQLite alerts (unlinked users) ───────────────────────────────────
+  const localAlerts = stmt.getAllAlerts.all();
+  for (const alert of localAlerts) {
     const price = prices[alert.ticker];
     if (price == null) continue;
-
-    const triggered =
-      alert.direction === 'above' ? price >= alert.threshold :
-      alert.direction === 'below' ? price <= alert.threshold : false;
-
+    const triggered = alert.direction === 'above' ? price >= alert.threshold : price <= alert.threshold;
     if (!triggered) continue;
 
-    // Fire the alert
     try {
       const channel = await client.channels.fetch(alert.channel_id);
       const embed = new EmbedBuilder()
         .setTitle('🔔 Price Alert Triggered')
-        .setColor(colorOf(alert.direction === 'above' ? 1 : -1))
+        .setColor(alert.direction === 'above' ? 0x22c55e : 0xef4444)
         .addFields(
-          { name: 'Asset',      value: alert.ticker,                   inline: true },
-          { name: 'Condition',  value: `${alert.direction} ${cash(alert.threshold)}`, inline: true },
-          { name: 'Now',        value: cash(price),                    inline: true },
+          { name: 'Asset',     value: alert.ticker,                              inline: true },
+          { name: 'Condition', value: `${alert.direction} ${cash(alert.threshold)}`, inline: true },
+          { name: 'Now',       value: cash(price),                               inline: true },
         );
       await channel.send({ content: `<@${alert.user_id}>`, embeds: [embed] });
     } catch {}
 
-    // Delete the alert after firing (one-shot)
     stmt.deleteAlertById.run(alert.id);
   }
 }
+```
+
+---
+
+## Synced data — new Bot API endpoints
+
+All endpoints require `Authorization: Bearer ${BOT_API_KEY}`.
+
+| Method | Path | Description |
+|--------|------|-------------|
+| `GET`  | `/bot/discord/history/:id?page=1&limit=20&portfolioId=` | Paginated filled order history |
+| `GET`  | `/bot/discord/stats/:id` | P&L stats across all portfolios |
+| `GET`  | `/bot/discord/watchlist/:id` | All items from default watchlist |
+| `POST` | `/bot/discord/watchlist/:id` | Add `{symbol, assetType}` to watchlist |
+| `DELETE`| `/bot/discord/watchlist/:id` | Remove `{symbol, assetType}` from watchlist |
+| `GET`  | `/bot/discord/alerts/:id` | All untriggered alerts for user |
+| `POST` | `/bot/discord/alerts/:id` | Create alert `{symbol, assetType, direction, threshold, note?}` |
+| `DELETE`| `/bot/discord/alerts/:id/:alertId` | Delete an alert |
+| `GET`  | `/bot/discord/alerts/pending` | All untriggered alerts for all linked users (poller use) |
+| `POST` | `/bot/discord/alerts/:alertId/trigger` | Mark alert as triggered after firing |
+| `GET`  | `/bot/discord/pending/:id?portfolioId=` | Pending limit/stop orders |
+| `DELETE`| `/bot/discord/pending/:id/:orderId` | Cancel a pending order |
+
+---
+
+## New commands for linked users
+
+### /history [page]
+```js
+// commands/portfolio/history.js (linked path)
+const link = stmt.getLink.get(interaction.user.id);
+if (link) {
+  const page = interaction.options.getInteger('page') ?? 1;
+  const data = await botApi('GET', `/discord/history/${interaction.user.id}?page=${page}&limit=10`);
+  const rows = data.orders.map(o =>
+    `\`${o.side.toUpperCase().padEnd(4)}\` **${o.symbol}** × ${o.quantity} @ $${o.price.toFixed(2)} = $${o.total.toFixed(2)}${
+      o.realizedPnl != null ? ` (${o.realizedPnl >= 0 ? '+' : ''}$${o.realizedPnl.toFixed(2)})` : ''
+    }`
+  ).join('\n');
+  // build embed with rows, page X/Y footer
+}
+```
+
+### /stats
+```js
+// commands/portfolio/stats.js
+const link = stmt.getLink.get(interaction.user.id);
+if (link) {
+  const s = await botApi('GET', `/discord/stats/${interaction.user.id}`);
+  // s.realisedPnl, s.winRate, s.totalOrders, s.bestTrade, s.worstTrade
+}
+```
+
+### /watchlist view | add | remove
+```js
+// Subcommand: view
+const data = await botApi('GET', `/discord/watchlist/${interaction.user.id}`);
+// data.items: [{ assetType, symbol, addedAt }] — fetch live prices in parallel
+
+// Subcommand: add
+await botApi('POST', `/discord/watchlist/${interaction.user.id}`, { symbol, assetType });
+
+// Subcommand: remove
+await botApi('DELETE', `/discord/watchlist/${interaction.user.id}`, { symbol, assetType });
+```
+Watchlist items added via `/watchlist add` in Discord appear on polymart.co and vice versa.
+
+### /alert set | list | clear (server-side, synced with website)
+```js
+// Set
+const a = await botApi('POST', `/discord/alerts/${interaction.user.id}`, {
+  symbol, assetType, direction, threshold, note,
+});
+// reply: "Alert set — notify when ${symbol} goes ${direction} $${threshold}"
+
+// List
+const { alerts } = await botApi('GET', `/discord/alerts/${interaction.user.id}`);
+// Display as embed: symbol, direction, threshold, note
+
+// Clear
+await botApi('DELETE', `/discord/alerts/${interaction.user.id}/${alertId}`);
+```
+Server-side alerts survive bot restarts, show on polymart.co, and fire as Discord DMs.
+
+### /pending [cancel <id>]
+```js
+// View pending orders
+const { orders } = await botApi('GET', `/discord/pending/${interaction.user.id}`);
+
+// Cancel
+await botApi('DELETE', `/discord/pending/${interaction.user.id}/${orderId}`);
 ```
 
 ---

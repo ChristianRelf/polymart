@@ -314,6 +314,371 @@ router.post('/discord/order', guard(async (req, res) => {
   }
 }));
 
+// ── Shared helper — resolve clerk_id from discordId ──────────────────────────
+
+async function requireLinked(discordId, res) {
+  const [[user]] = await pool.query(
+    'SELECT clerk_id FROM user_profiles WHERE discord_id = ? LIMIT 1',
+    [discordId]
+  );
+  if (!user) { fail(res, ERRORS.NOT_FOUND, 'No Polymart account linked to this Discord user', HTTP.NOT_FOUND); return null; }
+  return user.clerk_id;
+}
+
+// ── GET /discord/history/:discordId ──────────────────────────────────────────
+// Paginated filled order history for the user's default (or specified) portfolio.
+// ?page=1&limit=20&portfolioId=
+
+router.get('/discord/history/:discordId', guard(async (req, res) => {
+  const clerkId = await requireLinked(req.params.discordId, res);
+  if (!clerkId) return;
+
+  const page        = Math.max(1, parseInt(req.query.page  || '1',  10));
+  const limit       = Math.min(50, parseInt(req.query.limit || '20', 10));
+  const portfolioId = parseInt(req.query.portfolioId, 10) || null;
+
+  let pid = portfolioId;
+  if (!pid) {
+    const [[p]] = await pool.query('SELECT id FROM portfolios WHERE clerk_id = ? ORDER BY created_at ASC LIMIT 1', [clerkId]);
+    if (!p) return fail(res, ERRORS.NOT_FOUND, 'No portfolios found');
+    pid = p.id;
+  } else {
+    const [[p]] = await pool.query('SELECT id FROM portfolios WHERE id = ? AND clerk_id = ?', [pid, clerkId]);
+    if (!p) return fail(res, ERRORS.NOT_FOUND, 'Portfolio not found');
+  }
+
+  const [orders] = await pool.query(
+    `SELECT id, asset_type, symbol, side, quantity, price, total, realized_pnl,
+            order_type, status, executed_at, created_at
+     FROM orders WHERE portfolio_id = ? AND status = 'filled'
+     ORDER BY executed_at DESC LIMIT ? OFFSET ?`,
+    [pid, limit, (page - 1) * limit]
+  );
+  const [[{ total: totalCount }]] = await pool.query(
+    `SELECT COUNT(*) AS total FROM orders WHERE portfolio_id = ? AND status = 'filled'`, [pid]
+  );
+
+  return success(res, {
+    portfolioId: pid, page, limit,
+    total: Number(totalCount),
+    pages: Math.ceil(Number(totalCount) / limit),
+    orders: orders.map(o => ({
+      id:          o.id,
+      assetType:   o.asset_type,
+      symbol:      o.symbol,
+      side:        o.side,
+      quantity:    Number(o.quantity),
+      price:       Number(o.price),
+      total:       Number(o.total),
+      realizedPnl: o.realized_pnl != null ? Number(o.realized_pnl) : null,
+      orderType:   o.order_type,
+      executedAt:  o.executed_at,
+    })),
+  });
+}));
+
+// ── GET /discord/stats/:discordId ─────────────────────────────────────────────
+// P&L stats across all portfolios for a linked user.
+
+router.get('/discord/stats/:discordId', guard(async (req, res) => {
+  const clerkId = await requireLinked(req.params.discordId, res);
+  if (!clerkId) return;
+
+  const [[{ totalCash }]] = await pool.query(
+    'SELECT COALESCE(SUM(cash_balance), 0) AS totalCash FROM portfolios WHERE clerk_id = ?',
+    [clerkId]
+  );
+
+  const [[orderStats]] = await pool.query(
+    `SELECT
+       COUNT(*)                                                              AS totalOrders,
+       COUNT(CASE WHEN o.side = 'sell' AND o.realized_pnl IS NOT NULL THEN 1 END) AS totalClosed,
+       COUNT(CASE WHEN o.side = 'sell' AND o.realized_pnl > 0          THEN 1 END) AS winningTrades,
+       COALESCE(SUM(CASE WHEN o.side = 'sell' THEN o.realized_pnl END), 0)         AS realisedPnl,
+       MAX(CASE WHEN o.side = 'sell' THEN o.realized_pnl END)                      AS bestTrade,
+       MIN(CASE WHEN o.side = 'sell' THEN o.realized_pnl END)                      AS worstTrade
+     FROM orders o
+     JOIN portfolios p ON o.portfolio_id = p.id
+     WHERE p.clerk_id = ? AND o.status = 'filled'`,
+    [clerkId]
+  );
+
+  const [portfolios] = await pool.query(
+    'SELECT id, name, cash_balance FROM portfolios WHERE clerk_id = ? ORDER BY created_at ASC',
+    [clerkId]
+  );
+
+  const closed  = Number(orderStats.totalClosed) || 0;
+  const winning = Number(orderStats.winningTrades) || 0;
+
+  return success(res, {
+    cashBalance:   Number(totalCash),
+    portfolioCount: portfolios.length,
+    portfolios:    portfolios.map(p => ({ id: p.id, name: p.name, cashBalance: Number(p.cash_balance) })),
+    totalOrders:   Number(orderStats.totalOrders),
+    totalClosed:   closed,
+    winningTrades: winning,
+    winRate:       closed > 0 ? parseFloat(((winning / closed) * 100).toFixed(1)) : null,
+    realisedPnl:   parseFloat(Number(orderStats.realisedPnl).toFixed(2)),
+    bestTrade:     orderStats.bestTrade  != null ? parseFloat(Number(orderStats.bestTrade).toFixed(2))  : null,
+    worstTrade:    orderStats.worstTrade != null ? parseFloat(Number(orderStats.worstTrade).toFixed(2)) : null,
+  });
+}));
+
+// ── GET /discord/watchlist/:discordId ─────────────────────────────────────────
+// All items from the user's default watchlist.
+
+router.get('/discord/watchlist/:discordId', guard(async (req, res) => {
+  const clerkId = await requireLinked(req.params.discordId, res);
+  if (!clerkId) return;
+
+  const [[wl]] = await pool.query(
+    'SELECT id, name FROM watchlists WHERE clerk_id = ? ORDER BY created_at ASC LIMIT 1',
+    [clerkId]
+  );
+  if (!wl) return success(res, { watchlistId: null, name: null, items: [] });
+
+  const [items] = await pool.query(
+    'SELECT asset_type, symbol, added_at FROM watchlist_items WHERE watchlist_id = ? ORDER BY added_at ASC',
+    [wl.id]
+  );
+
+  return success(res, {
+    watchlistId: wl.id,
+    name:        wl.name,
+    items:       items.map(i => ({ assetType: i.asset_type, symbol: i.symbol, addedAt: i.added_at })),
+  });
+}));
+
+// ── POST /discord/watchlist/:discordId ────────────────────────────────────────
+// Add an asset to the user's default watchlist.
+// Body: { symbol, assetType }
+
+router.post('/discord/watchlist/:discordId', guard(async (req, res) => {
+  const clerkId = await requireLinked(req.params.discordId, res);
+  if (!clerkId) return;
+
+  const { symbol: rawSymbol, assetType = 'stock' } = req.body;
+  if (!isValidSymbol(rawSymbol))    return fail(res, ERRORS.INVALID_VALUE, 'Invalid symbol');
+  if (!isValidAssetType(assetType)) return fail(res, ERRORS.INVALID_VALUE, `Invalid assetType: ${assetType}`);
+  const symbol = rawSymbol.toUpperCase();
+
+  let [[wl]] = await pool.query('SELECT id FROM watchlists WHERE clerk_id = ? ORDER BY created_at ASC LIMIT 1', [clerkId]);
+  if (!wl) {
+    const [r] = await pool.query('INSERT INTO watchlists (clerk_id, name) VALUES (?, ?)', [clerkId, 'My Watchlist']);
+    wl = { id: r.insertId };
+  }
+
+  await pool.query(
+    'INSERT IGNORE INTO watchlist_items (watchlist_id, asset_type, symbol) VALUES (?, ?, ?)',
+    [wl.id, assetType, symbol]
+  );
+  return success(res, { ok: true, watchlistId: wl.id, symbol, assetType });
+}));
+
+// ── DELETE /discord/watchlist/:discordId ──────────────────────────────────────
+// Remove an asset from the user's default watchlist.
+// Body: { symbol, assetType }
+
+router.delete('/discord/watchlist/:discordId', guard(async (req, res) => {
+  const clerkId = await requireLinked(req.params.discordId, res);
+  if (!clerkId) return;
+
+  const { symbol: rawSymbol, assetType = 'stock' } = req.body;
+  if (!isValidSymbol(rawSymbol)) return fail(res, ERRORS.INVALID_VALUE, 'Invalid symbol');
+  const symbol = rawSymbol.toUpperCase();
+
+  const [[wl]] = await pool.query('SELECT id FROM watchlists WHERE clerk_id = ? ORDER BY created_at ASC LIMIT 1', [clerkId]);
+  if (!wl) return success(res, { ok: true });
+
+  await pool.query(
+    'DELETE FROM watchlist_items WHERE watchlist_id = ? AND asset_type = ? AND symbol = ?',
+    [wl.id, assetType, symbol]
+  );
+  return success(res, { ok: true });
+}));
+
+// ── GET /discord/alerts/:discordId ────────────────────────────────────────────
+// All untriggered price alerts for a user.
+
+router.get('/discord/alerts/:discordId', guard(async (req, res) => {
+  const clerkId = await requireLinked(req.params.discordId, res);
+  if (!clerkId) return;
+
+  const [alerts] = await pool.query(
+    `SELECT id, asset_type, symbol, direction, threshold, note, created_at
+     FROM server_price_alerts WHERE clerk_id = ? AND triggered = 0
+     ORDER BY created_at DESC`,
+    [clerkId]
+  );
+
+  return success(res, {
+    count: alerts.length,
+    alerts: alerts.map(a => ({
+      id:        a.id,
+      assetType: a.asset_type,
+      symbol:    a.symbol,
+      direction: a.direction,
+      threshold: Number(a.threshold),
+      note:      a.note ?? null,
+      createdAt: a.created_at,
+    })),
+  });
+}));
+
+// ── POST /discord/alerts/:discordId ───────────────────────────────────────────
+// Create a price alert stored server-side.
+// Body: { symbol, assetType, direction, threshold, note? }
+
+router.post('/discord/alerts/:discordId', guard(async (req, res) => {
+  const clerkId = await requireLinked(req.params.discordId, res);
+  if (!clerkId) return;
+
+  const { symbol: rawSymbol, assetType = 'stock', direction, threshold: rawThreshold, note } = req.body;
+  if (!isValidSymbol(rawSymbol))               return fail(res, ERRORS.INVALID_VALUE, 'Invalid symbol');
+  if (!isValidAssetType(assetType))            return fail(res, ERRORS.INVALID_VALUE, `Invalid assetType: ${assetType}`);
+  if (direction !== 'above' && direction !== 'below') return fail(res, ERRORS.INVALID_VALUE, 'direction must be "above" or "below"');
+  const threshold = parseFloat(rawThreshold);
+  if (!isFinite(threshold) || threshold <= 0)  return fail(res, ERRORS.INVALID_VALUE, 'threshold must be a positive number');
+
+  // Limit: 10 active alerts per user
+  const [[{ cnt }]] = await pool.query(
+    'SELECT COUNT(*) AS cnt FROM server_price_alerts WHERE clerk_id = ? AND triggered = 0',
+    [clerkId]
+  );
+  if (Number(cnt) >= 10) return fail(res, ERRORS.QUOTA_EXCEEDED, 'Maximum 10 active alerts per account');
+
+  const [r] = await pool.query(
+    `INSERT INTO server_price_alerts (clerk_id, asset_type, symbol, direction, threshold, note)
+     VALUES (?, ?, ?, ?, ?, ?)`,
+    [clerkId, assetType, rawSymbol.toUpperCase(), direction, threshold, note?.slice(0, 200) || null]
+  );
+
+  return success(res, { id: r.insertId, symbol: rawSymbol.toUpperCase(), assetType, direction, threshold, note: note || null });
+}));
+
+// ── DELETE /discord/alerts/:discordId/:alertId ────────────────────────────────
+// Delete an alert (user-requested or triggered by the bot poller).
+
+router.delete('/discord/alerts/:discordId/:alertId', guard(async (req, res) => {
+  const clerkId = await requireLinked(req.params.discordId, res);
+  if (!clerkId) return;
+
+  const alertId = parseInt(req.params.alertId, 10);
+  const [r] = await pool.query(
+    'DELETE FROM server_price_alerts WHERE id = ? AND clerk_id = ?',
+    [alertId, clerkId]
+  );
+  if (r.affectedRows === 0) return fail(res, ERRORS.NOT_FOUND, 'Alert not found');
+  return success(res, { ok: true });
+}));
+
+// ── GET /discord/alerts/pending ───────────────────────────────────────────────
+// All untriggered alerts for every linked user — used by the bot's alert poller.
+// Returns discord_user_id alongside each alert so the bot knows who to notify.
+
+router.get('/discord/alerts/pending', guard(async (req, res) => {
+  const [alerts] = await pool.query(
+    `SELECT a.id, u.discord_id AS discordUserId,
+            a.asset_type, a.symbol, a.direction, a.threshold, a.note
+     FROM server_price_alerts a
+     JOIN user_profiles u ON a.clerk_id = u.clerk_id
+     WHERE a.triggered = 0 AND u.discord_id IS NOT NULL
+     ORDER BY a.created_at ASC`
+  );
+
+  return success(res, {
+    count: alerts.length,
+    alerts: alerts.map(a => ({
+      id:           a.id,
+      discordUserId: a.discordUserId,
+      assetType:    a.asset_type,
+      symbol:       a.symbol,
+      direction:    a.direction,
+      threshold:    Number(a.threshold),
+      note:         a.note ?? null,
+    })),
+  });
+}));
+
+// ── POST /discord/alerts/:alertId/trigger ─────────────────────────────────────
+// Mark an alert as triggered (called by bot after firing the notification).
+
+router.post('/discord/alerts/:alertId/trigger', guard(async (req, res) => {
+  const alertId = parseInt(req.params.alertId, 10);
+  if (!alertId) return fail(res, ERRORS.VALIDATION_ERROR, 'Invalid alertId');
+
+  await pool.query(
+    'UPDATE server_price_alerts SET triggered = 1, triggered_at = NOW() WHERE id = ? AND triggered = 0',
+    [alertId]
+  );
+  return success(res, { ok: true });
+}));
+
+// ── GET /discord/pending/:discordId ───────────────────────────────────────────
+// Pending (limit/stop) orders waiting to be filled.
+// ?portfolioId= optionally scopes to one portfolio.
+
+router.get('/discord/pending/:discordId', guard(async (req, res) => {
+  const clerkId = await requireLinked(req.params.discordId, res);
+  if (!clerkId) return;
+
+  const portfolioId = parseInt(req.query.portfolioId, 10) || null;
+
+  let portfolioFilter = '';
+  const params = [clerkId];
+  if (portfolioId) { portfolioFilter = 'AND o.portfolio_id = ?'; params.push(portfolioId); }
+
+  const [orders] = await pool.query(
+    `SELECT o.id, o.portfolio_id, p.name AS portfolioName,
+            o.asset_type, o.symbol, o.side, o.quantity, o.order_type,
+            o.trigger_price, o.created_at
+     FROM orders o
+     JOIN portfolios p ON o.portfolio_id = p.id
+     WHERE p.clerk_id = ? AND o.status = 'pending' ${portfolioFilter}
+     ORDER BY o.created_at DESC`,
+    params
+  );
+
+  return success(res, {
+    count: orders.length,
+    orders: orders.map(o => ({
+      id:            o.id,
+      portfolioId:   o.portfolio_id,
+      portfolioName: o.portfolioName,
+      assetType:     o.asset_type,
+      symbol:        o.symbol,
+      side:          o.side,
+      quantity:      Number(o.quantity),
+      orderType:     o.order_type,
+      triggerPrice:  Number(o.trigger_price),
+      createdAt:     o.created_at,
+    })),
+  });
+}));
+
+// ── DELETE /discord/pending/:discordId/:orderId ────────────────────────────────
+// Cancel a pending limit/stop order.
+
+router.delete('/discord/pending/:discordId/:orderId', guard(async (req, res) => {
+  const clerkId = await requireLinked(req.params.discordId, res);
+  if (!clerkId) return;
+
+  const orderId = parseInt(req.params.orderId, 10);
+  if (!orderId) return fail(res, ERRORS.VALIDATION_ERROR, 'Invalid orderId');
+
+  const [[order]] = await pool.query(
+    `SELECT o.id FROM orders o
+     JOIN portfolios p ON o.portfolio_id = p.id
+     WHERE o.id = ? AND p.clerk_id = ? AND o.status = 'pending'`,
+    [orderId, clerkId]
+  );
+  if (!order) return fail(res, ERRORS.NOT_FOUND, 'Pending order not found');
+
+  await pool.query("UPDATE orders SET status = 'cancelled' WHERE id = ?", [orderId]);
+  return success(res, { ok: true });
+}));
+
 // ── DELETE /discord/user/:discordId ──────────────────────────────────────────
 // Removes the Discord link from a Polymart account.
 
