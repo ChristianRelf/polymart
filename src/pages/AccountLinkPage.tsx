@@ -136,8 +136,7 @@ export default function AccountLinkPage({ onNavigate }: Props) {
 
   // ── Render ────────────────────────────────────────────────────────────────
 
-  const formattedCode = code ? `${code.slice(0, 3)} ${code.slice(3)}` : "— — —"
-  const linkedDate    = status?.discordLinkedAt
+  const linkedDate = status?.discordLinkedAt
     ? new Date(status.discordLinkedAt).toLocaleDateString("en-US", { month: "long", day: "numeric", year: "numeric" })
     : null
 
@@ -169,18 +168,18 @@ export default function AccountLinkPage({ onNavigate }: Props) {
       </div>
 
       {/* Logos */}
-      <div className="flex items-center gap-3 mb-8">
+      <div className="flex items-center mb-8">
         <img
           src="/polymartlogoblack.png"
           alt="Polymart"
-          className="h-7 brightness-0 invert select-none"
+          className="h-10 brightness-0 invert select-none"
           draggable={false}
         />
-        <span className="text-zinc-600 text-xl font-thin select-none">×</span>
+        <span className="mx-2.5 text-zinc-600 text-2xl font-thin select-none">×</span>
         <img
           src="/discord (1).svg"
           alt="Discord"
-          className="pm-discord h-7 w-7 select-none"
+          className="pm-discord h-10 w-10 select-none"
           draggable={false}
         />
       </div>
@@ -259,9 +258,15 @@ export default function AccountLinkPage({ onNavigate }: Props) {
                 <Loader2 className="w-8 h-8 animate-spin text-zinc-500" />
               </div>
             ) : (
-              <p className="text-6xl font-mono font-bold tracking-[0.35em] text-white select-all tabular-nums leading-none">
-                {formattedCode}
-              </p>
+              <div className="flex items-center gap-5 select-all" aria-label={code ?? undefined}>
+                <span className="text-6xl font-mono font-bold tracking-[0.2em] text-white tabular-nums leading-none whitespace-nowrap">
+                  {code?.slice(0, 3) ?? "—"}
+                </span>
+                <span className="text-zinc-600 text-2xl font-thin select-none leading-none">·</span>
+                <span className="text-6xl font-mono font-bold tracking-[0.2em] text-white tabular-nums leading-none whitespace-nowrap">
+                  {code?.slice(3) ?? "—"}
+                </span>
+              </div>
             )}
 
             {/* Countdown bar — CSS animated for perfect smoothness */}
