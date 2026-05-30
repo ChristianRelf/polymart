@@ -308,6 +308,23 @@ CREATE TABLE IF NOT EXISTS community_community_reports (
   UNIQUE KEY uk_community_report (community_id, reporter_clerk_id)
 ) ENGINE=InnoDB;
 
+-- ── discord_link_codes ───────────────────────────────────────────────────────
+-- Temporary 6-digit codes used to link a Polymart account to a Discord user.
+-- Codes expire after 30 seconds and are single-use.
+CREATE TABLE IF NOT EXISTS discord_link_codes (
+  id            INT          NOT NULL AUTO_INCREMENT,
+  clerk_user_id VARCHAR(64)  NOT NULL,
+  code          CHAR(6)      NOT NULL,
+  expires_at    DATETIME     NOT NULL,
+  used          TINYINT(1)   NOT NULL DEFAULT 0,
+  PRIMARY KEY (id),
+  UNIQUE KEY uq_dlc_code (code),
+  KEY idx_dlc_clerk (clerk_user_id),
+  KEY idx_dlc_expires (expires_at),
+  CONSTRAINT fk_dlc_user FOREIGN KEY (clerk_user_id)
+    REFERENCES user_profiles(clerk_id) ON DELETE CASCADE
+) ENGINE=InnoDB;
+
 -- ── admin_audit_log ───────────────────────────────────────────────────────────
 CREATE TABLE IF NOT EXISTS admin_audit_log (
   id              INT           NOT NULL AUTO_INCREMENT,

@@ -1,0 +1,1663 @@
+# Polymart Discord Bot — Complete Build Guide
+# For AI assistants building production-ready bots on Polymart data
+#
+# Base URL: https://polymart.co/api/v1  |  No auth  |  10s tick
+# Full API reference: https://polymart.co/llms.txt
+
+---
+
+## Tech Stack
+
+- Runtime:        Node.js 20+
+- Discord:        discord.js v14
+- Commands:       Slash commands (ApplicationCommand)
+- Database:       better-sqlite3 (synchronous, WAL-mode, per-guild user data)
+- Charts:         canvas (node-canvas — price history graphs as PNG attachments)
+- HTTP:           native fetch (Node 18+) or undici
+- Multi-server:   single process, one SQLite file, guild_id on every row
+- Account linking: Discord users can link to their polymart.co account for portfolio sync
+
+---
+
+## Directory Structure
+
+```
+polymart-bot/
+├── src/
+│   ├── index.js          — entry point, client setup, event handlers
+│   ├── deploy.js         — register slash commands with Discord
+│   ├── db.js             — SQLite setup, all prepared statements
+│   ├── api.js            — Polymart API wrapper with caching
+│   ├── chart.js          — canvas chart renderer
+│   ├── commands/
+│   │   ├── market/       — stock.js, stocks.js, top.js, market.js, sector.js,
+│   │   │                   leaderboard.js, search.js, forex.js, crypto.js,
+│   │   │                   cryptomarket.js, news.js, macro.js, info.js
+│   │   ├── portfolio/    — balance.js, buy.js, sell.js, portfolio.js,
+│   │   │                   history.js, profit.js, watchlist.js,
+│   │   │                   alert.js, daily.js, serverleaderboard.js
+│   │   └── admin/        — setup.js, config.js, give.js, take.js,
+│   │                       resetuser.js, announce.js, setchannel.js
+│   └── utils.js          — shared embed helpers, formatters
+├── data/
+│   └── polymart.db       — SQLite database (auto-created)
+├── .env
+└── package.json
+```
+
+---
+
+## package.json
+
+```json
+{
+  "name": "polymart-bot",
+  "version": "1.0.0",
+  "type": "module",
+  "scripts": {
+    "start":  "node src/index.js",
+    "deploy": "node src/deploy.js"
+  },
+  "dependencies": {
+    "discord.js":      "^14.15.0",
+    "better-sqlite3":  "^9.4.3",
+    "canvas":          "^2.11.2"
+  }
+}
+```
+
+```
+npm install
+npm run deploy   ← register slash commands once
+npm start        ← run the bot
+```
+
+---
+
+## .env
+
+```
+DISCORD_TOKEN=your_bot_token
+CLIENT_ID=your_application_id
+BOT_API_KEY=<shared secret from Polymart server .env BOT_API_KEY>
+POLYMART_BASE_URL=https://polymart.co/api/v1
+```
+
+BOT_API_KEY must match the `BOT_API_KEY` environment variable on the Polymart server.
+All `/bot/discord/*` requests include `Authorization: Bearer ${process.env.BOT_API_KEY}`.
+
+---
+
+## src/db.js — SQLite setup with WAL optimisation
+
+```js
+import Database from 'better-sqlite3';
+import { mkdirSync } from 'fs';
+
+mkdirSync('./data', { recursive: true });
+
+const db = new Database('./data/polymart.db');
+
+// Performance pragmas — run once on open
+db.pragma('journal_mode = WAL');       // concurrent reads + one writer
+db.pragma('synchronous = NORMAL');     // safe + fast (not FULL)
+db.pragma('cache_size = -32000');      // 32 MB page cache
+db.pragma('temp_store = MEMORY');      // temp tables in RAM
+db.pragma('mmap_size = 268435456');    // 256 MB memory-mapped I/O
+db.pragma('foreign_keys = ON');
+
+// ── Schema ─────────────────────────────────────────────────────────────────
+
+db.exec(`
+  CREATE TABLE IF NOT EXISTS guild_config (
+    guild_id          TEXT PRIMARY KEY,
+    starting_balance  REAL    NOT NULL DEFAULT 10000,
+    trading_fee_pct   REAL    NOT NULL DEFAULT 0.001,
+    daily_bonus       REAL    NOT NULL DEFAULT 500,
+    trade_channel_id  TEXT,
+    alert_channel_id  TEXT,
+    announce_channel_id TEXT,
+    setup_by          TEXT,
+    created_at        INTEGER NOT NULL DEFAULT (unixepoch())
+  );
+
+  CREATE TABLE IF NOT EXISTS users (
+    guild_id    TEXT NOT NULL,
+    user_id     TEXT NOT NULL,
+    balance     REAL NOT NULL DEFAULT 10000,
+    last_daily  INTEGER NOT NULL DEFAULT 0,
+    created_at  INTEGER NOT NULL DEFAULT (unixepoch()),
+    PRIMARY KEY (guild_id, user_id)
+  );
+
+  CREATE TABLE IF NOT EXISTS holdings (
+    guild_id    TEXT NOT NULL,
+    user_id     TEXT NOT NULL,
+    ticker      TEXT NOT NULL,
+    asset_type  TEXT NOT NULL DEFAULT 'stock',
+    shares      REAL NOT NULL DEFAULT 0,
+    avg_cost    REAL NOT NULL DEFAULT 0,
+    PRIMARY KEY (guild_id, user_id, ticker)
+  );
+
+  CREATE TABLE IF NOT EXISTS trades (
+    id          INTEGER PRIMARY KEY AUTOINCREMENT,
+    guild_id    TEXT NOT NULL,
+    user_id     TEXT NOT NULL,
+    ticker      TEXT NOT NULL,
+    asset_type  TEXT NOT NULL DEFAULT 'stock',
+    side        TEXT NOT NULL,
+    shares      REAL NOT NULL,
+    price       REAL NOT NULL,
+    total       REAL NOT NULL,
+    fee         REAL NOT NULL DEFAULT 0,
+    created_at  INTEGER NOT NULL DEFAULT (unixepoch())
+  );
+
+  CREATE TABLE IF NOT EXISTS watchlist (
+    guild_id    TEXT NOT NULL,
+    user_id     TEXT NOT NULL,
+    ticker      TEXT NOT NULL,
+    asset_type  TEXT NOT NULL DEFAULT 'stock',
+    added_at    INTEGER NOT NULL DEFAULT (unixepoch()),
+    PRIMARY KEY (guild_id, user_id, ticker)
+  );
+
+  -- Polymart account links (global — not per-guild)
+  CREATE TABLE IF NOT EXISTS polymart_links (
+    discord_user_id TEXT    PRIMARY KEY,
+    clerk_user_id   TEXT    NOT NULL,
+    portfolio_id    INTEGER NOT NULL,
+    display_name    TEXT,
+    linked_at       INTEGER NOT NULL DEFAULT (unixepoch())
+  );
+
+  CREATE TABLE IF NOT EXISTS price_alerts (
+    id          INTEGER PRIMARY KEY AUTOINCREMENT,
+    guild_id    TEXT NOT NULL,
+    channel_id  TEXT NOT NULL,
+    user_id     TEXT NOT NULL,
+    ticker      TEXT NOT NULL,
+    asset_type  TEXT NOT NULL DEFAULT 'stock',
+    direction   TEXT NOT NULL,
+    threshold   REAL NOT NULL,
+    created_at  INTEGER NOT NULL DEFAULT (unixepoch())
+  );
+
+  CREATE INDEX IF NOT EXISTS idx_trades_guild_user   ON trades(guild_id, user_id);
+  CREATE INDEX IF NOT EXISTS idx_holdings_guild_user ON holdings(guild_id, user_id);
+  CREATE INDEX IF NOT EXISTS idx_alerts_ticker       ON price_alerts(ticker, asset_type);
+`);
+
+// ── Prepared statements (prepare once, reuse many times) ──────────────────
+
+export const stmt = {
+  // Guild config
+  getConfig:    db.prepare('SELECT * FROM guild_config WHERE guild_id = ?'),
+  upsertConfig: db.prepare(`
+    INSERT INTO guild_config (guild_id, starting_balance, trading_fee_pct, daily_bonus, setup_by)
+    VALUES (?, ?, ?, ?, ?)
+    ON CONFLICT(guild_id) DO UPDATE SET
+      starting_balance = excluded.starting_balance,
+      trading_fee_pct  = excluded.trading_fee_pct,
+      daily_bonus      = excluded.daily_bonus,
+      setup_by         = excluded.setup_by
+  `),
+  setChannel: db.prepare(`
+    INSERT INTO guild_config (guild_id, setup_by) VALUES (?, ?)
+    ON CONFLICT(guild_id) DO UPDATE SET
+      ${/* column substituted at call time */'?'} = ?
+  `),  // use updateChannel() helper below
+
+  // Users
+  getUser: db.prepare(`
+    SELECT * FROM users WHERE guild_id = ? AND user_id = ?
+  `),
+  upsertUser: db.prepare(`
+    INSERT INTO users (guild_id, user_id, balance)
+    VALUES (?, ?, ?)
+    ON CONFLICT(guild_id, user_id) DO NOTHING
+  `),
+  updateBalance: db.prepare(`
+    UPDATE users SET balance = ? WHERE guild_id = ? AND user_id = ?
+  `),
+  setLastDaily: db.prepare(`
+    UPDATE users SET last_daily = ? WHERE guild_id = ? AND user_id = ?
+  `),
+
+  // Holdings
+  getHolding: db.prepare(`
+    SELECT * FROM holdings WHERE guild_id = ? AND user_id = ? AND ticker = ?
+  `),
+  getAllHoldings: db.prepare(`
+    SELECT * FROM holdings WHERE guild_id = ? AND user_id = ? AND shares > 0
+  `),
+  upsertHolding: db.prepare(`
+    INSERT INTO holdings (guild_id, user_id, ticker, asset_type, shares, avg_cost)
+    VALUES (?, ?, ?, ?, ?, ?)
+    ON CONFLICT(guild_id, user_id, ticker) DO UPDATE SET
+      shares   = excluded.shares,
+      avg_cost = excluded.avg_cost
+  `),
+
+  // Trades
+  insertTrade: db.prepare(`
+    INSERT INTO trades (guild_id, user_id, ticker, asset_type, side, shares, price, total, fee)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+  `),
+  getTrades: db.prepare(`
+    SELECT * FROM trades WHERE guild_id = ? AND user_id = ?
+    ORDER BY created_at DESC LIMIT ? OFFSET ?
+  `),
+
+  // Watchlist
+  getWatchlist:    db.prepare('SELECT * FROM watchlist WHERE guild_id = ? AND user_id = ?'),
+  addWatch:        db.prepare('INSERT OR IGNORE INTO watchlist (guild_id, user_id, ticker, asset_type) VALUES (?, ?, ?, ?)'),
+  removeWatch:     db.prepare('DELETE FROM watchlist WHERE guild_id = ? AND user_id = ? AND ticker = ?'),
+
+  // Polymart account links (keyed by Discord user ID, not guild)
+  getLink:       db.prepare('SELECT * FROM polymart_links WHERE discord_user_id = ?'),
+  saveLink:      db.prepare(`
+    INSERT INTO polymart_links (discord_user_id, clerk_user_id, portfolio_id, display_name)
+    VALUES (?, ?, ?, ?)
+    ON CONFLICT(discord_user_id) DO UPDATE SET
+      clerk_user_id = excluded.clerk_user_id,
+      portfolio_id  = excluded.portfolio_id,
+      display_name  = excluded.display_name,
+      linked_at     = unixepoch()
+  `),
+  deleteLink:    db.prepare('DELETE FROM polymart_links WHERE discord_user_id = ?'),
+
+  // Alerts
+  getAlerts:       db.prepare('SELECT * FROM price_alerts WHERE guild_id = ? AND user_id = ?'),
+  getAllAlerts:     db.prepare('SELECT * FROM price_alerts'),
+  insertAlert:     db.prepare('INSERT INTO price_alerts (guild_id, channel_id, user_id, ticker, asset_type, direction, threshold) VALUES (?, ?, ?, ?, ?, ?, ?)'),
+  deleteAlert:     db.prepare('DELETE FROM price_alerts WHERE id = ? AND user_id = ?'),
+  deleteAlertById: db.prepare('DELETE FROM price_alerts WHERE id = ?'),
+
+  // Server leaderboard
+  serverLeaderboard: db.prepare(`
+    SELECT user_id, balance FROM users WHERE guild_id = ? ORDER BY balance DESC LIMIT 10
+  `),
+};
+
+// ── Helpers ───────────────────────────────────────────────────────────────
+
+export function getOrCreateUser(guildId, userId, startingBalance = 10000) {
+  stmt.upsertUser.run(guildId, userId, startingBalance);
+  return stmt.getUser.get(guildId, userId);
+}
+
+export function getConfig(guildId) {
+  return stmt.getConfig.get(guildId) ?? {
+    starting_balance: 10000,
+    trading_fee_pct:  0.001,
+    daily_bonus:      500,
+    trade_channel_id: null,
+    alert_channel_id: null,
+  };
+}
+
+// Wrapped transaction for buy/sell — atomic balance + holding + trade insert
+export const executeTrade = db.transaction((guildId, userId, ticker, assetType, side, shares, price, fee) => {
+  const user    = stmt.getUser.get(guildId, userId);
+  const holding = stmt.getHolding.get(guildId, userId, ticker);
+  const total   = shares * price;
+
+  if (side === 'buy') {
+    if (user.balance < total + fee) return { ok: false, error: 'Insufficient balance.' };
+    const newBalance = user.balance - total - fee;
+    const oldShares  = holding?.shares ?? 0;
+    const oldCost    = holding?.avg_cost ?? 0;
+    const newShares  = oldShares + shares;
+    const newAvgCost = (oldShares * oldCost + total) / newShares;
+    stmt.updateBalance.run(newBalance, guildId, userId);
+    stmt.upsertHolding.run(guildId, userId, ticker, assetType, newShares, newAvgCost);
+    stmt.insertTrade.run(guildId, userId, ticker, assetType, 'buy', shares, price, total, fee);
+    return { ok: true, newBalance, newShares, avgCost: newAvgCost };
+  }
+
+  if (side === 'sell') {
+    if (!holding || holding.shares < shares) return { ok: false, error: `You only hold ${holding?.shares ?? 0} shares.` };
+    const newBalance = user.balance + total - fee;
+    const newShares  = holding.shares - shares;
+    stmt.updateBalance.run(newBalance, guildId, userId);
+    stmt.upsertHolding.run(guildId, userId, ticker, assetType, newShares, holding.avg_cost);
+    stmt.insertTrade.run(guildId, userId, ticker, assetType, 'sell', shares, price, total, fee);
+    return { ok: true, newBalance, newShares, pnl: (price - holding.avg_cost) * shares };
+  }
+});
+
+export default db;
+```
+
+---
+
+## src/api.js — Polymart API wrapper with short-lived cache
+
+```js
+const BASE = 'https://polymart.co/api/v1';
+
+// Simple TTL cache so repeated slash commands in the same tick don't double-hit the API
+const cache = new Map();
+const TTL = 8_000; // 8 seconds — just under the 10s tick
+
+async function apiFetch(path) {
+  const now = Date.now();
+  const hit  = cache.get(path);
+  if (hit && now - hit.ts < TTL) return hit.data;
+
+  const res = await fetch(`${BASE}${path}`);
+  if (!res.ok) {
+    const body = await res.text();
+    throw new Error(`API ${res.status} on ${path}: ${body}`);
+  }
+  const data = await res.json();
+  cache.set(path, { data, ts: now });
+  return data;
+}
+
+export const api = {
+  market:          ()       => apiFetch('/getMarket'),
+  stock:           (t)      => apiFetch(`/getStock?ticker=${t}`),
+  stocks:          (s)      => apiFetch(s ? `/getStocks?sector=${s}` : '/getStocks'),
+  sector:          (s)      => apiFetch(`/getSector?sector=${s}`),
+  sectors:         ()       => apiFetch('/getSectors'),
+  topMovers:       (n = 5)  => apiFetch(`/getTopMovers?limit=${n}`),
+  leaderboard:     (by, dir, n) => apiFetch(`/getLeaderboard?by=${by}&dir=${dir}&limit=${n}`),
+  history:         (t, n)   => apiFetch(`/getHistory?ticker=${t}&limit=${n}`),
+  search:          (q)      => apiFetch(`/search?q=${encodeURIComponent(q)}`),
+  events:          (n)      => apiFetch(`/getEvents?limit=${n}`),
+  macro:           ()       => apiFetch('/getMacro'),
+  info:            (t)      => apiFetch(`/info?ticker=${t}`),
+
+  forexPairs:      (cat)    => apiFetch(cat ? `/forex/getPairs?category=${cat}` : '/forex/getPairs'),
+  forexPair:       (p)      => apiFetch(`/forex/getPair?pair=${p}`),
+  forexHistory:    (p, n)   => apiFetch(`/forex/getHistory?pair=${p}&limit=${n}`),
+  forexTop:        (n)      => apiFetch(`/forex/getTopMovers?limit=${n}`),
+  forexOverview:   ()       => apiFetch('/forex/getMarketOverview'),
+  forexSearch:     (q)      => apiFetch(`/forex/search?q=${encodeURIComponent(q)}`),
+
+  cryptoCoins:     (cat)    => apiFetch(cat ? `/crypto/getCoins?category=${cat}` : '/crypto/getCoins'),
+  cryptoCoin:      (s)      => apiFetch(`/crypto/getCoin?symbol=${s}`),
+  cryptoHistory:   (s, n)   => apiFetch(`/crypto/getHistory?symbol=${s}&limit=${n}`),
+  cryptoTop:       (n)      => apiFetch(`/crypto/getTopMovers?limit=${n}`),
+  cryptoOverview:  ()       => apiFetch('/crypto/getMarketOverview'),
+  cryptoSearch:    (q)      => apiFetch(`/crypto/search?q=${encodeURIComponent(q)}`),
+  cryptoLeaderboard: (by, dir, n, cat) => apiFetch(`/crypto/getLeaderboard?by=${by}&dir=${dir}&limit=${n}${cat ? `&category=${cat}` : ''}`),
+};
+
+// Auto-detect asset type from identifier
+export function detectAssetType(identifier) {
+  if (/^[A-Z]{6}$/.test(identifier)) return 'forex';
+  if (identifier.endsWith('X') && identifier.length <= 8) return 'crypto';
+  return 'stock';
+}
+
+// Get current price for any asset type
+export async function getCurrentPrice(ticker, assetType) {
+  if (assetType === 'forex') {
+    const p = await api.forexPair(ticker);
+    return p.price;
+  }
+  if (assetType === 'crypto') {
+    const c = await api.cryptoCoin(ticker);
+    return c.price;
+  }
+  const s = await api.stock(ticker);
+  return s.price;
+}
+```
+
+---
+
+## src/chart.js — Canvas chart renderer
+
+```js
+import { createCanvas } from 'canvas';
+
+const W = 800, H = 400;
+const PAD = { top: 40, right: 30, bottom: 50, left: 70 };
+
+export function drawPriceChart({ history, label, currentPrice, changePct, color = '#6366f1' }) {
+  const canvas = createCanvas(W, H);
+  const ctx    = canvas.getContext('2d');
+
+  const prices = history.length > 0 ? history : [currentPrice];
+  const minP   = Math.min(...prices) * 0.999;
+  const maxP   = Math.max(...prices) * 1.001;
+  const range  = maxP - minP || 1;
+
+  const innerW = W - PAD.left - PAD.right;
+  const innerH = H - PAD.top  - PAD.bottom;
+
+  // x/y projection
+  const px = i   => PAD.left  + (i / (prices.length - 1 || 1)) * innerW;
+  const py = val => PAD.top   + (1 - (val - minP) / range) * innerH;
+
+  // ── Background ──────────────────────────────────────────────────────────
+  ctx.fillStyle = '#0f0f1a';
+  ctx.fillRect(0, 0, W, H);
+
+  // ── Grid lines ──────────────────────────────────────────────────────────
+  ctx.strokeStyle = '#1e1e3a';
+  ctx.lineWidth = 1;
+  for (let i = 0; i <= 5; i++) {
+    const y = PAD.top + (i / 5) * innerH;
+    ctx.beginPath(); ctx.moveTo(PAD.left, y); ctx.lineTo(W - PAD.right, y); ctx.stroke();
+  }
+  for (let i = 0; i <= 6; i++) {
+    const x = PAD.left + (i / 6) * innerW;
+    ctx.beginPath(); ctx.moveTo(x, PAD.top); ctx.lineTo(x, H - PAD.bottom); ctx.stroke();
+  }
+
+  // ── Price line ──────────────────────────────────────────────────────────
+  const lineColor = changePct >= 0 ? '#22c55e' : '#ef4444';
+
+  // Gradient fill under line
+  const grad = ctx.createLinearGradient(0, PAD.top, 0, H - PAD.bottom);
+  grad.addColorStop(0, lineColor + '55');
+  grad.addColorStop(1, lineColor + '00');
+
+  ctx.beginPath();
+  prices.forEach((p, i) => i === 0 ? ctx.moveTo(px(i), py(p)) : ctx.lineTo(px(i), py(p)));
+  ctx.lineTo(px(prices.length - 1), H - PAD.bottom);
+  ctx.lineTo(PAD.left, H - PAD.bottom);
+  ctx.closePath();
+  ctx.fillStyle = grad;
+  ctx.fill();
+
+  // Line itself
+  ctx.beginPath();
+  prices.forEach((p, i) => i === 0 ? ctx.moveTo(px(i), py(p)) : ctx.lineTo(px(i), py(p)));
+  ctx.strokeStyle = lineColor;
+  ctx.lineWidth = 2.5;
+  ctx.lineJoin = 'round';
+  ctx.stroke();
+
+  // ── Current price dashed line ────────────────────────────────────────────
+  const curY = py(currentPrice);
+  ctx.setLineDash([6, 4]);
+  ctx.strokeStyle = lineColor + 'aa';
+  ctx.lineWidth = 1;
+  ctx.beginPath(); ctx.moveTo(PAD.left, curY); ctx.lineTo(W - PAD.right, curY); ctx.stroke();
+  ctx.setLineDash([]);
+
+  // ── Y-axis labels ─────────────────────────────────────────────────────────
+  ctx.fillStyle = '#9ca3af';
+  ctx.font = '13px monospace';
+  ctx.textAlign = 'right';
+  for (let i = 0; i <= 5; i++) {
+    const val = minP + (1 - i / 5) * range;
+    const y   = PAD.top + (i / 5) * innerH;
+    ctx.fillText(val < 1 ? val.toFixed(5) : val < 100 ? val.toFixed(3) : val.toFixed(2), PAD.left - 8, y + 4);
+  }
+
+  // ── Title and change ─────────────────────────────────────────────────────
+  ctx.textAlign = 'left';
+  ctx.font = 'bold 20px sans-serif';
+  ctx.fillStyle = '#f9fafb';
+  ctx.fillText(label, PAD.left, 26);
+
+  const changeStr = `${changePct >= 0 ? '+' : ''}${changePct.toFixed(2)}%`;
+  ctx.font = 'bold 16px monospace';
+  ctx.fillStyle = lineColor;
+  ctx.fillText(changeStr, PAD.left + ctx.measureText(label).width + 12, 26);
+
+  // Current price top-right
+  ctx.textAlign = 'right';
+  ctx.font = 'bold 18px monospace';
+  ctx.fillStyle = '#f9fafb';
+  ctx.fillText(
+    currentPrice < 1 ? currentPrice.toFixed(5) : currentPrice < 100 ? currentPrice.toFixed(3) : currentPrice.toFixed(2),
+    W - PAD.right, 26
+  );
+
+  // ── X-axis label ─────────────────────────────────────────────────────────
+  ctx.textAlign = 'center';
+  ctx.font = '12px sans-serif';
+  ctx.fillStyle = '#6b7280';
+  ctx.fillText(`Last ${prices.length} ticks`, W / 2, H - 12);
+
+  return canvas.toBuffer('image/png');
+}
+```
+
+---
+
+## src/utils.js — Shared embed helpers
+
+```js
+import { EmbedBuilder, AttachmentBuilder } from 'discord.js';
+import { drawPriceChart } from './chart.js';
+
+export const GREEN = 0x22c55e;
+export const RED   = 0xef4444;
+export const BLUE  = 0x6366f1;
+export const GOLD  = 0xf59e0b;
+
+export const sign  = n => `${n >= 0 ? '+' : ''}${n.toFixed(2)}%`;
+export const cash  = n => `$${n.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+export const priceFmt = (n, decimals = 4) => n < 1 ? n.toFixed(5) : n < 100 ? n.toFixed(decimals) : n.toFixed(2);
+export const colorOf = n => n >= 0 ? GREEN : RED;
+
+// Build a chart attachment and embed image URL
+export function chartAttachment(history, label, currentPrice, changePct) {
+  const buf = drawPriceChart({ history, label, currentPrice, changePct });
+  const att = new AttachmentBuilder(buf, { name: 'chart.png' });
+  return att;
+}
+
+// Standard error embed
+export function errorEmbed(message) {
+  return new EmbedBuilder().setColor(RED).setDescription(`❌ ${message}`);
+}
+
+// Standard success embed
+export function successEmbed(message) {
+  return new EmbedBuilder().setColor(GREEN).setDescription(`✅ ${message}`);
+}
+
+// Require guild setup — returns null if setup complete, reply string if not
+export function requireSetup(config, interaction) {
+  if (!config.setup_by) {
+    interaction.reply({ embeds: [errorEmbed('This server has not been set up yet. An admin must run `/setup` first.')], ephemeral: true });
+    return false;
+  }
+  return true;
+}
+```
+
+---
+
+## src/index.js — Entry point
+
+```js
+import { Client, GatewayIntentBits, Collection } from 'discord.js';
+import { readdirSync } from 'fs';
+import { join, dirname } from 'path';
+import { fileURLToPath } from 'url';
+import { startAlertPoller } from './alertPoller.js';
+
+const __dirname = dirname(fileURLToPath(import.meta.url));
+
+const client = new Client({ intents: [GatewayIntentBits.Guilds] });
+client.commands = new Collection();
+
+// Load all commands
+const commandFolders = ['market', 'portfolio', 'admin'];
+for (const folder of commandFolders) {
+  const files = readdirSync(join(__dirname, 'commands', folder)).filter(f => f.endsWith('.js'));
+  for (const file of files) {
+    const cmd = await import(`./commands/${folder}/${file}`);
+    client.commands.set(cmd.default.data.name, cmd.default);
+  }
+}
+
+client.once('ready', () => {
+  console.log(`Logged in as ${client.user.tag}`);
+  startAlertPoller(client);
+});
+
+client.on('interactionCreate', async interaction => {
+  if (!interaction.isChatInputCommand()) return;
+  const cmd = client.commands.get(interaction.commandName);
+  if (!cmd) return;
+
+  try {
+    await cmd.execute(interaction);
+  } catch (err) {
+    console.error(`/${interaction.commandName} error:`, err);
+    const msg = { content: '❌ Something went wrong. Please try again.', ephemeral: true };
+    interaction.replied || interaction.deferred
+      ? interaction.followUp(msg)
+      : interaction.reply(msg);
+  }
+});
+
+client.login(process.env.DISCORD_TOKEN);
+```
+
+---
+
+## src/deploy.js — Register slash commands
+
+```js
+import { REST, Routes } from 'discord.js';
+import { readdirSync } from 'fs';
+import { join, dirname } from 'path';
+import { fileURLToPath } from 'url';
+import 'dotenv/config';
+
+const __dirname = dirname(fileURLToPath(import.meta.url));
+const commands  = [];
+const folders   = ['market', 'portfolio', 'admin'];
+
+for (const folder of folders) {
+  const files = readdirSync(join(__dirname, 'commands', folder)).filter(f => f.endsWith('.js'));
+  for (const f of files) {
+    const cmd = await import(`./commands/${folder}/${f}`);
+    commands.push(cmd.default.data.toJSON());
+  }
+}
+
+const rest = new REST({ version: '10' }).setToken(process.env.DISCORD_TOKEN);
+await rest.put(Routes.applicationCommands(process.env.CLIENT_ID), { body: commands });
+console.log(`Registered ${commands.length} commands.`);
+```
+
+---
+
+## Polymart Bot API helper
+
+```js
+// src/botApi.js — calls Polymart's bot-specific endpoints
+const BASE = process.env.POLYMART_BASE_URL ?? 'https://polymart.co/api/v1';
+const KEY  = process.env.BOT_API_KEY;
+
+export async function botApi(method, path, body) {
+  const res = await fetch(`${BASE}/bot${path}`, {
+    method,
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${KEY}`,
+    },
+    ...(body ? { body: JSON.stringify(body) } : {}),
+  });
+  const json = await res.json();
+  if (!res.ok) throw new Error(json.error?.message || json.error || `Bot API error ${res.status}`);
+  return json.data ?? json;
+}
+```
+
+---
+
+## Linked-user trade routing pattern
+
+All portfolio commands check for a Polymart link first. Linked users get server-authoritative
+portfolio data; unlinked users fall back to local SQLite.
+
+```js
+// In any portfolio command (buy, sell, portfolio, balance, profit, history):
+import { stmt } from '../../db.js';
+import { botApi } from '../../botApi.js';
+
+async function execute(interaction) {
+  await interaction.deferReply({ ephemeral: true });
+  const link = stmt.getLink.get(interaction.user.id);
+
+  if (link) {
+    try {
+      // Use Polymart server — linked user path
+      const data = await botApi('GET', `/discord/portfolio/${interaction.user.id}`);
+      // ... build embed from data.positions, data.cashBalance
+    } catch (err) {
+      if (err.message.includes('404') || err.message.includes('No Polymart account')) {
+        // Link was removed from the website — clean up locally and fall back
+        stmt.deleteLink.run(interaction.user.id);
+        // fall through to local SQLite path below
+      } else {
+        return interaction.editReply({ content: `❌ Polymart API error: ${err.message}` });
+      }
+    }
+  }
+
+  // Local SQLite path (unlinked users, or after stale-link cleanup)
+  // ... existing SQLite logic
+}
+```
+
+For `/buy` and `/sell` on a linked user:
+```js
+const result = await botApi('POST', '/discord/order', {
+  discordUserId: interaction.user.id,
+  portfolioId:   link.portfolio_id,   // from polymart_links row
+  symbol:        ticker,
+  assetType,
+  side:          'buy',              // or 'sell'
+  quantity,
+});
+// result: { ok, side, symbol, quantity, executedPrice, total, realizedPnl, newCashBalance }
+```
+
+---
+
+## COMMAND REFERENCE — 30 Slash Commands
+
+### ── MARKET COMMANDS (13) ────────────────────────────────────────────────────
+
+### /stock <ticker>
+
+Shows full stock detail with chart.
+
+```js
+// commands/market/stock.js
+import { SlashCommandBuilder, EmbedBuilder, AttachmentBuilder } from 'discord.js';
+import { api } from '../../api.js';
+import { chartAttachment, sign, cash, colorOf, BLUE } from '../../utils.js';
+
+export default {
+  data: new SlashCommandBuilder()
+    .setName('stock')
+    .setDescription('Get detailed stock info with price chart')
+    .addStringOption(o => o.setName('ticker').setDescription('Stock ticker e.g. APEX').setRequired(true)),
+
+  async execute(interaction) {
+    await interaction.deferReply();
+    const ticker = interaction.options.getString('ticker').toUpperCase();
+
+    const [s, hist] = await Promise.all([
+      api.stock(ticker),
+      api.history(ticker, 80),
+    ]);
+
+    const att = chartAttachment(hist.history, `${s.ticker} — ${s.name}`, s.price, s.change);
+
+    const embed = new EmbedBuilder()
+      .setTitle(`${s.ticker} — ${s.name}`)
+      .setColor(colorOf(s.change))
+      .setImage('attachment://chart.png')
+      .addFields(
+        { name: 'Price',      value: `$${s.price.toFixed(2)}`,          inline: true },
+        { name: 'Change',     value: sign(s.change),                    inline: true },
+        { name: 'RSI',        value: s.rsi.toFixed(1),                  inline: true },
+        { name: 'Volume',     value: s.volume.toLocaleString(),         inline: true },
+        { name: 'Sector',     value: s.sector,                          inline: true },
+        { name: 'Streak',     value: `${s.streak > 0 ? '↑' : '↓'} ${Math.abs(s.streak)} ticks`, inline: true },
+        { name: '52w Hi',     value: `$${s.high52w.toFixed(2)}`,        inline: true },
+        { name: '52w Lo',     value: `$${s.low52w.toFixed(2)}`,         inline: true },
+        { name: 'ATH',        value: `$${s.allTimeHigh.toFixed(2)}`,    inline: true },
+        { name: 'Bid / Ask',  value: `$${s.bid.toFixed(2)} / $${s.ask.toFixed(2)}`, inline: true },
+        { name: 'MACD',       value: s.macd.toFixed(4),                 inline: true },
+        { name: 'BB Width',   value: s.bbBw?.toFixed(4) ?? '—',         inline: true },
+      )
+      .setFooter({ text: `VWAP $${s.vwap?.toFixed(2) ?? '—'} • Beta ${s.beta?.toFixed(2) ?? '—'} • ATR ${s.atr?.toFixed(2) ?? '—'}` });
+
+    await interaction.editReply({ embeds: [embed], files: [att] });
+  },
+};
+```
+
+---
+
+### /stocks [sector]
+
+Lists all stocks in a sector or the full market.
+
+```js
+// commands/market/stocks.js
+// Options: sector (optional string)
+// Builds a paginated embed showing top movers per sector or full list.
+// Calls: api.stocks(sector) — returns ticker map
+// Display: sorted by change desc, show top 15 as inline fields
+```
+
+---
+
+### /top [limit]
+
+Top gainers and losers.
+
+```js
+// commands/market/top.js
+import { SlashCommandBuilder, EmbedBuilder } from 'discord.js';
+import { api } from '../../api.js';
+import { sign, colorOf, BLUE } from '../../utils.js';
+
+export default {
+  data: new SlashCommandBuilder()
+    .setName('top')
+    .setDescription('Top gainers and losers this tick')
+    .addIntegerOption(o => o.setName('limit').setDescription('How many per side, 1–10').setMinValue(1).setMaxValue(10)),
+
+  async execute(interaction) {
+    await interaction.deferReply();
+    const limit = interaction.options.getInteger('limit') ?? 5;
+    const { gainers, losers } = await api.topMovers(limit);
+
+    const fmt = arr => arr.map((s, i) =>
+      `\`${String(i+1).padStart(2)}\` **${s.ticker}** ${sign(s.change)} @ $${s.price.toFixed(2)}`
+    ).join('\n');
+
+    const embed = new EmbedBuilder()
+      .setTitle('Top Movers')
+      .setColor(BLUE)
+      .addFields(
+        { name: '📈 Gainers', value: fmt(gainers) || '—', inline: true },
+        { name: '📉 Losers',  value: fmt(losers)  || '—', inline: true },
+      );
+
+    await interaction.editReply({ embeds: [embed] });
+  },
+};
+```
+
+---
+
+### /market
+
+Global market snapshot.
+
+```js
+// commands/market/market.js
+// Calls: api.market()
+// Shows: index, indexChangePct, fearGreed/label, vix, interestRate, inflation,
+//        gainers/losers/unchanged, topGainer, topLoser, upStreak, downStreak
+```
+
+---
+
+### /sector <key>
+
+Sector breakdown with top stocks.
+
+```js
+// commands/market/sector.js
+// Options: key (required, choices: tech, ai, crypto, bio, green, finance, gaming,
+//          health, defence, retail, media, auto, realty, travel, energy, logistics,
+//          agri, food, space, meme)
+// Calls: api.sector(key)
+// Shows: avgChange, newsStack, momentum, top 5 stocks by change
+```
+
+---
+
+### /leaderboard [by] [dir] [limit]
+
+Rank stocks by any metric.
+
+```js
+// commands/market/leaderboard.js
+// Options: by (choices: change/price/volume/rsi/ath/streak/atr/beta), dir (asc/desc), limit (1–20)
+// Calls: api.leaderboard(by, dir, limit)
+// Shows: numbered list as embed description
+```
+
+---
+
+### /search <query>
+
+Search across all three asset classes at once.
+
+```js
+// commands/market/search.js
+// Options: query (required string)
+// Calls in parallel: api.search(q), api.forexSearch(q), api.cryptoSearch(q)
+// Shows: up to 5 results per asset class in one embed
+```
+
+---
+
+### /forex <pair>
+
+Currency pair detail with chart.
+
+```js
+// commands/market/forex.js
+// Options: pair (required string, e.g. EURUSD)
+// Calls in parallel: api.forexPair(pair), api.forexHistory(pair, 80)
+// Chart: drawPriceChart(history, label, price, changePct)
+// Shows: price, changePct, spreadPips, activeSession, RSI, pivotP/R1/S1, bid/ask
+```
+
+---
+
+### /crypto <symbol>
+
+Crypto coin detail with chart.
+
+```js
+// commands/market/crypto.js
+// Options: symbol (required string, e.g. BTCX)
+// Calls in parallel: api.cryptoCoin(symbol), api.cryptoHistory(symbol, 80)
+// Chart: drawPriceChart(history, label, price, changePct)
+// Shows: price, changePct, marketCap, dominance, RSI, ath/pctFromAth, category
+```
+
+---
+
+### /cryptomarket
+
+Crypto market overview.
+
+```js
+// commands/market/cryptomarket.js
+// Calls: api.cryptoOverview()
+// Shows: totalMarketCap, btcDominance, bullishCount, bearishCount, topGainer, topLoser
+```
+
+---
+
+### /news [limit]
+
+Recent market-moving events.
+
+```js
+// commands/market/news.js
+// Options: limit (1–15, default 8)
+// Calls: api.events(limit)
+// Shows: list with 🟢/🔴 emoji, effect %, sector tag, and event text
+```
+
+---
+
+### /macro
+
+Macroeconomic environment.
+
+```js
+// commands/market/macro.js
+// Calls: api.macro()
+// Shows: interestRate, inflation, gdpGrowth, fearGreed/label, vix,
+//        advanceDecline, newHighs, newLows, crashCooldown, boomCooldown
+```
+
+---
+
+### /info <ticker>
+
+Company profile, analyst rating, and generated news.
+
+```js
+// commands/market/info.js
+// Options: ticker (required)
+// Calls: api.info(ticker)
+// Shows: company description, sector, analyst rating (Strong Buy/Buy/Hold/Underperform),
+//        current price/change, macro context, up to 3 news headlines
+```
+
+---
+
+### ── PORTFOLIO COMMANDS (10) ─────────────────────────────────────────────────
+
+### /balance  (alias: /bal)
+
+Show your cash balance and total portfolio value.
+
+```js
+// commands/portfolio/balance.js
+import { SlashCommandBuilder, EmbedBuilder } from 'discord.js';
+import { getOrCreateUser, stmt, getConfig } from '../../db.js';
+import { api } from '../../api.js';
+import { cash, colorOf, GOLD } from '../../utils.js';
+
+export default {
+  data: new SlashCommandBuilder()
+    .setName('balance')
+    .setDescription('Show your balance and portfolio value'),
+
+  async execute(interaction) {
+    await interaction.deferReply({ ephemeral: true });
+    const { guildId, user } = interaction;
+    const config = getConfig(guildId);
+    const dbUser = getOrCreateUser(guildId, user.id, config.starting_balance);
+
+    // Fetch live prices for all holdings
+    const holdings = stmt.getAllHoldings.all(guildId, user.id);
+    let portfolioValue = 0;
+    const priceResults = await Promise.allSettled(
+      holdings.map(h => {
+        if (h.asset_type === 'forex')  return api.forexPair(h.ticker).then(p => p.price);
+        if (h.asset_type === 'crypto') return api.cryptoCoin(h.ticker).then(c => c.price);
+        return api.stock(h.ticker).then(s => s.price);
+      })
+    );
+    holdings.forEach((h, i) => {
+      const price = priceResults[i].status === 'fulfilled' ? priceResults[i].value : h.avg_cost;
+      portfolioValue += h.shares * price;
+    });
+
+    const totalValue  = dbUser.balance + portfolioValue;
+    const invested    = holdings.reduce((s, h) => s + h.shares * h.avg_cost, 0);
+    const unrealised  = portfolioValue - invested;
+
+    const embed = new EmbedBuilder()
+      .setTitle(`${user.username}'s Account`)
+      .setColor(colorOf(unrealised))
+      .addFields(
+        { name: 'Cash Balance',     value: cash(dbUser.balance),   inline: true },
+        { name: 'Portfolio Value',  value: cash(portfolioValue),   inline: true },
+        { name: 'Total Value',      value: cash(totalValue),       inline: true },
+        { name: 'Invested',         value: cash(invested),         inline: true },
+        { name: 'Unrealised P&L',   value: cash(unrealised),       inline: true },
+        { name: 'Holdings',         value: String(holdings.length), inline: true },
+      );
+
+    await interaction.editReply({ embeds: [embed] });
+  },
+};
+```
+
+---
+
+### /buy <ticker> <shares>
+
+Buy shares of any asset at current market price.
+
+```js
+// commands/portfolio/buy.js
+import { SlashCommandBuilder, EmbedBuilder } from 'discord.js';
+import { getOrCreateUser, getConfig, executeTrade } from '../../db.js';
+import { api, detectAssetType, getCurrentPrice } from '../../api.js';
+import { cash, sign, colorOf, successEmbed, errorEmbed } from '../../utils.js';
+
+export default {
+  data: new SlashCommandBuilder()
+    .setName('buy')
+    .setDescription('Buy shares of a stock, forex pair, or crypto coin')
+    .addStringOption(o => o.setName('ticker').setDescription('Ticker/symbol/pair').setRequired(true))
+    .addNumberOption(o => o.setName('shares').setDescription('Number of shares/units').setRequired(true).setMinValue(0.0001))
+    .addStringOption(o => o.setName('type').setDescription('Asset type (auto-detected if omitted)')
+      .addChoices({ name: 'Stock', value: 'stock' }, { name: 'Crypto', value: 'crypto' }, { name: 'Forex', value: 'forex' })),
+
+  async execute(interaction) {
+    await interaction.deferReply({ ephemeral: true });
+    const { guildId, user } = interaction;
+    const ticker    = interaction.options.getString('ticker').toUpperCase();
+    const shares    = interaction.options.getNumber('shares');
+    const assetType = interaction.options.getString('type') ?? detectAssetType(ticker);
+    const config    = getConfig(guildId);
+
+    let price;
+    try {
+      price = await getCurrentPrice(ticker, assetType);
+    } catch {
+      return interaction.editReply({ embeds: [errorEmbed(`Asset not found: ${ticker}`)] });
+    }
+
+    getOrCreateUser(guildId, user.id, config.starting_balance);
+    const fee    = shares * price * config.trading_fee_pct;
+    const result = executeTrade(guildId, user.id, ticker, assetType, 'buy', shares, price, fee);
+
+    if (!result.ok) return interaction.editReply({ embeds: [errorEmbed(result.error)] });
+
+    const embed = new EmbedBuilder()
+      .setColor(0x22c55e)
+      .setTitle('✅ Order Filled — BUY')
+      .addFields(
+        { name: 'Asset',       value: ticker,                              inline: true },
+        { name: 'Type',        value: assetType,                           inline: true },
+        { name: 'Shares',      value: shares.toLocaleString(),             inline: true },
+        { name: 'Price',       value: cash(price),                         inline: true },
+        { name: 'Total Cost',  value: cash(shares * price),                inline: true },
+        { name: 'Fee',         value: cash(fee),                           inline: true },
+        { name: 'New Balance', value: cash(result.newBalance),             inline: true },
+        { name: 'Avg Cost',    value: cash(result.avgCost),                inline: true },
+        { name: 'Total Held',  value: result.newShares.toLocaleString(),   inline: true },
+      );
+
+    await interaction.editReply({ embeds: [embed] });
+  },
+};
+```
+
+---
+
+### /sell <ticker> <shares>
+
+Sell shares at current market price. Use "all" to sell full position.
+
+```js
+// commands/portfolio/sell.js
+// Options: ticker (required), shares (required number OR string "all")
+// Note: for "all" support, accept as string option and parse:
+//   if (value.toLowerCase() === 'all') shares = holding.shares
+// Calls: getCurrentPrice(ticker, assetType), executeTrade(..., 'sell', ...)
+// Shows: realised P&L, new balance, remaining shares held
+```
+
+---
+
+### /portfolio
+
+All open positions with live P&L.
+
+```js
+// commands/portfolio/portfolio.js
+// Calls: stmt.getAllHoldings, then getCurrentPrice for each (Promise.allSettled)
+// Shows: one field per holding — ticker, shares, avg cost, current price, P&L%
+// If no holdings: show "No open positions."
+```
+
+---
+
+### /history [page]
+
+Your recent trade history (paginated, 10 per page).
+
+```js
+// commands/portfolio/history.js
+// Options: page (optional integer, default 1)
+// Calls: stmt.getTrades(guildId, userId, 10, (page-1)*10)
+// Shows: table of date, ticker, side (BUY/SELL), shares, price, total, fee
+// Format dates: new Date(row.created_at * 1000).toLocaleDateString()
+```
+
+---
+
+### /profit
+
+Summary P&L — unrealised, realised, total.
+
+```js
+// commands/portfolio/profit.js
+// Realised: sum all SELL trades total minus (avg_cost * shares) at time of sell
+//   Simplified: SELECT SUM(total - fee) FROM trades WHERE side='sell'
+//            -  SELECT SUM(total)      FROM trades WHERE side='buy' per ticker
+// Unrealised: current portfolio value - invested cost
+// Shows: realised P&L, unrealised P&L, total P&L, win rate (% of profitable sells)
+```
+
+---
+
+### /watchlist <action> [ticker]
+
+Manage your watchlist. Subcommands: add, remove, view.
+
+```js
+// commands/portfolio/watchlist.js
+import { SlashCommandBuilder, EmbedBuilder } from 'discord.js';
+import { stmt, getConfig, getOrCreateUser } from '../../db.js';
+import { detectAssetType } from '../../api.js';
+import { BLUE, errorEmbed } from '../../utils.js';
+
+export default {
+  data: new SlashCommandBuilder()
+    .setName('watchlist')
+    .setDescription('Manage your watchlist')
+    .addSubcommand(s => s.setName('view').setDescription('View your watchlist'))
+    .addSubcommand(s => s.setName('add')
+      .setDescription('Add an asset to your watchlist')
+      .addStringOption(o => o.setName('ticker').setDescription('Ticker/symbol/pair').setRequired(true)))
+    .addSubcommand(s => s.setName('remove')
+      .setDescription('Remove an asset')
+      .addStringOption(o => o.setName('ticker').setDescription('Ticker to remove').setRequired(true))),
+
+  async execute(interaction) {
+    const sub     = interaction.options.getSubcommand();
+    const { guildId, user } = interaction;
+    const config  = getConfig(guildId);
+    getOrCreateUser(guildId, user.id, config.starting_balance);
+
+    if (sub === 'view') {
+      const list = stmt.getWatchlist.all(guildId, user.id);
+      if (!list.length) return interaction.reply({ embeds: [errorEmbed('Your watchlist is empty.')], ephemeral: true });
+
+      // Fetch live prices in parallel
+      const prices = await Promise.allSettled(list.map(w => {
+        if (w.asset_type === 'forex')  return import('../../api.js').then(m => m.api.forexPair(w.ticker));
+        if (w.asset_type === 'crypto') return import('../../api.js').then(m => m.api.cryptoCoin(w.ticker));
+        return import('../../api.js').then(m => m.api.stock(w.ticker));
+      }));
+
+      const lines = list.map((w, i) => {
+        const d = prices[i].status === 'fulfilled' ? prices[i].value : null;
+        const change = d ? (d.change ?? d.changePct ?? 0) : 0;
+        const price  = d ? d.price : 0;
+        return `**${w.ticker}** \`${w.asset_type}\` — $${price.toFixed(4)} ${change >= 0 ? '▲' : '▼'}${Math.abs(change).toFixed(2)}%`;
+      });
+
+      return interaction.reply({ embeds: [new EmbedBuilder().setTitle('Your Watchlist').setColor(BLUE).setDescription(lines.join('\n'))], ephemeral: true });
+    }
+
+    if (sub === 'add') {
+      const ticker = interaction.options.getString('ticker').toUpperCase();
+      const type   = detectAssetType(ticker);
+      stmt.addWatch.run(guildId, user.id, ticker, type);
+      return interaction.reply({ content: `Added **${ticker}** to your watchlist.`, ephemeral: true });
+    }
+
+    if (sub === 'remove') {
+      const ticker = interaction.options.getString('ticker').toUpperCase();
+      stmt.removeWatch.run(guildId, user.id, ticker);
+      return interaction.reply({ content: `Removed **${ticker}** from your watchlist.`, ephemeral: true });
+    }
+  },
+};
+```
+
+---
+
+### /alert <action>
+
+Set, list, or clear price alerts. Subcommands: set, list, clear.
+
+```js
+// commands/portfolio/alert.js
+// Subcommand: set — options: ticker, direction (above/below), price
+//   Calls: stmt.insertAlert.run(guildId, interaction.channelId, userId, ticker, type, dir, threshold)
+// Subcommand: list — stmt.getAlerts.all(guildId, userId) → show as embed
+// Subcommand: clear — options: id (integer) → stmt.deleteAlert.run(id, userId)
+// Max 5 alerts per user per guild (check before inserting)
+```
+
+---
+
+### /link <code>
+
+Link your Discord account to polymart.co for portfolio sync.
+
+```js
+// commands/portfolio/link.js
+import { SlashCommandBuilder, EmbedBuilder } from 'discord.js';
+import { stmt } from '../../db.js';
+import { botApi } from '../../botApi.js';
+import { GOLD, errorEmbed } from '../../utils.js';
+
+export default {
+  data: new SlashCommandBuilder()
+    .setName('link')
+    .setDescription('Link your Discord to your Polymart account')
+    .addStringOption(o =>
+      o.setName('code')
+       .setDescription('The 6-digit code from polymart.co/account')
+       .setRequired(true)
+       .setMinLength(6)
+       .setMaxLength(7)   // allow "123 456" with space
+    ),
+
+  async execute(interaction) {
+    await interaction.deferReply({ ephemeral: true });
+
+    const rawCode = interaction.options.getString('code').replace(/\s/g, '');
+    if (!/^\d{6}$/.test(rawCode)) {
+      return interaction.editReply({ embeds: [errorEmbed('Code must be a 6-digit number.')] });
+    }
+
+    // Check if already linked
+    const existing = stmt.getLink.get(interaction.user.id);
+    if (existing) {
+      return interaction.editReply({ embeds: [errorEmbed(`Already linked to **${existing.display_name ?? 'a Polymart account'}**. Run \`/unlink\` first.`)] });
+    }
+
+    let result;
+    try {
+      result = await botApi('POST', '/discord/verify', {
+        code:            rawCode,
+        discordUserId:   interaction.user.id,
+        discordUsername: interaction.user.username,
+      });
+    } catch (err) {
+      const msg = err.message.toLowerCase();
+      if (msg.includes('expired') || msg.includes('not found') || msg.includes('already used')) {
+        return interaction.editReply({ embeds: [errorEmbed('Code not found, expired, or already used. Generate a new one at polymart.co/account.')] });
+      }
+      return interaction.editReply({ embeds: [errorEmbed(`Link failed: ${err.message}`)] });
+    }
+
+    // Cache the link locally
+    stmt.saveLink.run(
+      interaction.user.id,
+      result.clerkId,
+      result.defaultPortfolioId,
+      result.displayName,
+    );
+
+    const embed = new EmbedBuilder()
+      .setTitle('✅ Linked to Polymart')
+      .setColor(GOLD)
+      .setDescription(`Your Discord is now linked to **${result.displayName}** on polymart.co.\n\nYour trades and portfolio are now synced — use \`/portfolio\` to check your positions.`)
+      .addFields(
+        { name: 'Portfolio', value: result.portfolioName ?? 'Default',        inline: true },
+        { name: 'Cash',      value: result.cashBalance != null ? `$${Number(result.cashBalance).toLocaleString('en-US', { minimumFractionDigits: 2 })}` : '—', inline: true },
+      );
+
+    await interaction.editReply({ embeds: [embed] });
+  },
+};
+```
+
+---
+
+### /unlink
+
+Disconnect your Discord from your polymart.co account.
+
+```js
+// commands/portfolio/unlink.js
+import { SlashCommandBuilder } from 'discord.js';
+import { stmt } from '../../db.js';
+import { botApi } from '../../botApi.js';
+import { successEmbed, errorEmbed } from '../../utils.js';
+
+export default {
+  data: new SlashCommandBuilder()
+    .setName('unlink')
+    .setDescription('Disconnect your Discord from your Polymart account'),
+
+  async execute(interaction) {
+    await interaction.deferReply({ ephemeral: true });
+
+    const link = stmt.getLink.get(interaction.user.id);
+    if (!link) {
+      return interaction.editReply({ embeds: [errorEmbed('Your Discord is not linked to any Polymart account.')] });
+    }
+
+    try {
+      await botApi('DELETE', `/discord/user/${interaction.user.id}`);
+    } catch (err) {
+      // If the link was already removed server-side (404), still clean up locally
+      if (!err.message.includes('404')) {
+        return interaction.editReply({ embeds: [errorEmbed(`Unlink failed: ${err.message}`)] });
+      }
+    }
+
+    stmt.deleteLink.run(interaction.user.id);
+
+    await interaction.editReply({
+      embeds: [successEmbed('Unlinked from Polymart. Your future trades in this server will use the local balance.')],
+    });
+  },
+};
+```
+
+---
+
+### /daily
+
+Claim your daily bonus cash.
+
+```js
+// commands/portfolio/daily.js
+import { SlashCommandBuilder } from 'discord.js';
+import { getOrCreateUser, getConfig, stmt } from '../../db.js';
+import { cash, successEmbed, errorEmbed } from '../../utils.js';
+
+export default {
+  data: new SlashCommandBuilder()
+    .setName('daily')
+    .setDescription('Claim your daily bonus'),
+
+  async execute(interaction) {
+    const { guildId, user } = interaction;
+    const config  = getConfig(guildId);
+    const dbUser  = getOrCreateUser(guildId, user.id, config.starting_balance);
+    const now     = Math.floor(Date.now() / 1000);
+    const elapsed = now - dbUser.last_daily;
+    const cooldown = 86400; // 24 hours
+
+    if (elapsed < cooldown) {
+      const remaining = cooldown - elapsed;
+      const h = Math.floor(remaining / 3600);
+      const m = Math.floor((remaining % 3600) / 60);
+      return interaction.reply({ embeds: [errorEmbed(`Daily already claimed. Next in **${h}h ${m}m**.`)], ephemeral: true });
+    }
+
+    const newBalance = dbUser.balance + config.daily_bonus;
+    stmt.updateBalance.run(newBalance, guildId, user.id);
+    stmt.setLastDaily.run(now, guildId, user.id);
+
+    await interaction.reply({ embeds: [successEmbed(`Claimed ${cash(config.daily_bonus)} daily bonus! New balance: ${cash(newBalance)}`)] });
+  },
+};
+```
+
+---
+
+### /serverleaderboard
+
+Richest users in this server by cash balance.
+
+```js
+// commands/portfolio/serverleaderboard.js
+// Calls: stmt.serverLeaderboard.all(guildId) — top 10 by balance
+// Fetch Discord user tags via client.users.fetch(userId) for each
+// Shows: numbered embed with username and balance
+```
+
+---
+
+### ── ADMIN / STAFF COMMANDS (7) ──────────────────────────────────────────────
+
+All admin commands check `interaction.memberPermissions.has('ManageGuild')` before executing.
+
+### /setup
+
+First-time server configuration. Run once by an admin.
+
+```js
+// commands/admin/setup.js
+import { SlashCommandBuilder, EmbedBuilder, PermissionFlagsBits } from 'discord.js';
+import { stmt, getConfig } from '../../db.js';
+import { GOLD } from '../../utils.js';
+
+export default {
+  data: new SlashCommandBuilder()
+    .setName('setup')
+    .setDescription('Configure the Polymart bot for this server')
+    .setDefaultMemberPermissions(PermissionFlagsBits.ManageGuild)
+    .addNumberOption(o => o.setName('starting_balance').setDescription('Starting balance per user (default: 10000)'))
+    .addNumberOption(o => o.setName('daily_bonus').setDescription('Daily bonus amount (default: 500)'))
+    .addNumberOption(o => o.setName('trading_fee').setDescription('Trading fee % e.g. 0.1 for 0.1% (default: 0.1)')),
+
+  async execute(interaction) {
+    const startingBalance = interaction.options.getNumber('starting_balance') ?? 10000;
+    const dailyBonus      = interaction.options.getNumber('daily_bonus') ?? 500;
+    const feePct          = (interaction.options.getNumber('trading_fee') ?? 0.1) / 100;
+
+    stmt.upsertConfig.run(interaction.guildId, startingBalance, feePct, dailyBonus, interaction.user.id);
+
+    const embed = new EmbedBuilder()
+      .setTitle('✅ Polymart Bot Configured')
+      .setColor(GOLD)
+      .addFields(
+        { name: 'Starting Balance', value: `$${startingBalance.toLocaleString()}`,  inline: true },
+        { name: 'Daily Bonus',      value: `$${dailyBonus.toLocaleString()}`,        inline: true },
+        { name: 'Trading Fee',      value: `${(feePct * 100).toFixed(2)}%`,          inline: true },
+      )
+      .setDescription('Users can now use `/balance`, `/buy`, `/sell`, and all portfolio commands.\nRun `/config` to update settings or set channel overrides.');
+
+    await interaction.reply({ embeds: [embed] });
+  },
+};
+```
+
+---
+
+### /config
+
+View or update server configuration.
+
+```js
+// commands/admin/config.js
+// setDefaultMemberPermissions(PermissionFlagsBits.ManageGuild)
+// Subcommands:
+//   view — show current guild_config row
+//   set starting_balance <amount> — update starting_balance
+//   set daily_bonus <amount>      — update daily_bonus
+//   set trading_fee <pct>         — update trading_fee_pct
+//   setchannel trades <#channel>  — set trade_channel_id
+//   setchannel alerts <#channel>  — set alert_channel_id
+//   setchannel announce <#channel> — set announce_channel_id
+```
+
+---
+
+### /give <user> <amount>
+
+Give a user bonus cash (admin only).
+
+```js
+// commands/admin/give.js
+// setDefaultMemberPermissions(PermissionFlagsBits.ManageGuild)
+// Options: user (required UserOption), amount (required positive number)
+// Calls: getOrCreateUser, then stmt.updateBalance with balance + amount
+// Replies publicly so the gift is visible
+```
+
+---
+
+### /take <user> <amount>
+
+Remove cash from a user (admin only).
+
+```js
+// commands/admin/take.js
+// setDefaultMemberPermissions(PermissionFlagsBits.ManageGuild)
+// Same as /give but subtracts. Floor at 0 — cannot go negative.
+```
+
+---
+
+### /resetuser <user>
+
+Reset a user's balance and holdings to defaults (admin only).
+
+```js
+// commands/admin/resetuser.js
+// setDefaultMemberPermissions(PermissionFlagsBits.ManageGuild)
+// Options: user (required UserOption), confirm (required boolean — must be true)
+// Actions (in a transaction):
+//   UPDATE users SET balance = starting_balance WHERE guild_id = ? AND user_id = ?
+//   DELETE FROM holdings WHERE guild_id = ? AND user_id = ?
+//   DELETE FROM trades   WHERE guild_id = ? AND user_id = ?
+// Reply: ephemeral confirmation
+```
+
+---
+
+### /announce
+
+Post a live market update to the announce channel.
+
+```js
+// commands/admin/announce.js
+// setDefaultMemberPermissions(PermissionFlagsBits.ManageGuild)
+// Calls: api.market() and api.topMovers(3) in parallel
+// Builds a rich embed and sends it to config.announce_channel_id
+// If no announce channel set, replies with error
+```
+
+---
+
+### /setchannel <type> <channel>
+
+Set channel overrides (trades, alerts, announcements).
+
+```js
+// commands/admin/setchannel.js
+// setDefaultMemberPermissions(PermissionFlagsBits.ManageGuild)
+// Options: type (choices: trades/alerts/announcements), channel (ChannelOption)
+// Updates the appropriate column in guild_config
+// These channel IDs are used by the alert poller and /announce
+```
+
+---
+
+## src/alertPoller.js — Background price alert system
+
+```js
+import { EmbedBuilder } from 'discord.js';
+import { stmt } from './db.js';
+import { api, detectAssetType } from './api.js';
+import { sign, colorOf, cash } from './utils.js';
+
+export function startAlertPoller(client) {
+  // Poll every 12 seconds — slightly after each 10s tick
+  setInterval(() => runAlertCheck(client), 12_000);
+}
+
+async function runAlertCheck(client) {
+  const alerts = stmt.getAllAlerts.all();
+  if (!alerts.length) return;
+
+  // Group by asset type and batch-fetch prices
+  const stockSymbols  = [...new Set(alerts.filter(a => a.asset_type === 'stock').map(a => a.ticker))];
+  const cryptoSymbols = [...new Set(alerts.filter(a => a.asset_type === 'crypto').map(a => a.ticker))];
+  const forexPairs    = [...new Set(alerts.filter(a => a.asset_type === 'forex').map(a => a.ticker))];
+
+  const prices = {};
+
+  // Stocks: one /getStocks call covers all tickers
+  if (stockSymbols.length) {
+    try {
+      const all = await api.stocks();
+      for (const t of stockSymbols) if (all[t]) prices[t] = all[t].price;
+    } catch {}
+  }
+
+  // Crypto: one /crypto/getCoins call covers all
+  if (cryptoSymbols.length) {
+    try {
+      const all = await api.cryptoCoins();
+      for (const s of cryptoSymbols) if (all[s]) prices[s] = all[s].price;
+    } catch {}
+  }
+
+  // Forex: one /forex/getPairs call covers all
+  if (forexPairs.length) {
+    try {
+      const all = await api.forexPairs();
+      for (const p of forexPairs) if (all[p]) prices[p] = all[p].price;
+    } catch {}
+  }
+
+  for (const alert of alerts) {
+    const price = prices[alert.ticker];
+    if (price == null) continue;
+
+    const triggered =
+      alert.direction === 'above' ? price >= alert.threshold :
+      alert.direction === 'below' ? price <= alert.threshold : false;
+
+    if (!triggered) continue;
+
+    // Fire the alert
+    try {
+      const channel = await client.channels.fetch(alert.channel_id);
+      const embed = new EmbedBuilder()
+        .setTitle('🔔 Price Alert Triggered')
+        .setColor(colorOf(alert.direction === 'above' ? 1 : -1))
+        .addFields(
+          { name: 'Asset',      value: alert.ticker,                   inline: true },
+          { name: 'Condition',  value: `${alert.direction} ${cash(alert.threshold)}`, inline: true },
+          { name: 'Now',        value: cash(price),                    inline: true },
+        );
+      await channel.send({ content: `<@${alert.user_id}>`, embeds: [embed] });
+    } catch {}
+
+    // Delete the alert after firing (one-shot)
+    stmt.deleteAlertById.run(alert.id);
+  }
+}
+```
+
+---
+
+## Multi-guild architecture notes
+
+- **One process, one SQLite file**: `guild_id` is the first column on every row — no cross-guild data leakage.
+- **WAL mode**: Handles concurrent reads from many guilds without locking. Up to ~1000 active guilds with no performance issues on a single VPS.
+- **No per-guild sharding needed** until you approach Discord's 2500 guild shard threshold.
+- **Ephemeral replies**: All portfolio/balance commands use `ephemeral: true` so private data is not visible to other users.
+- **Config isolation**: Each guild runs independent `starting_balance`, `fee_pct`, and `daily_bonus`. New guilds default to 10000/0.1%/$500.
+- **API caching**: The 8-second in-memory cache in api.js prevents redundant API calls when multiple users in the same server trigger commands simultaneously.
+
+---
+
+## Setup guide for server owners
+
+1. **Invite the bot** with the `applications.commands` and `bot` scopes, and `Send Messages`, `Embed Links`, `Attach Files` permissions.
+2. **Run `/setup`** (requires Manage Server permission) to initialise your guild with default or custom settings.
+3. **(Optional)** Run `/setchannel trades #your-channel` to redirect trade confirmations.
+4. **(Optional)** Run `/setchannel alerts #your-channel` to redirect price alerts.
+5. **Give users `/daily`** to claim starter cash. New users auto-register on first command.
+6. Users can now `/buy`, `/sell`, `/portfolio`, `/balance`, `/stock`, `/crypto`, `/forex`, etc.
+
+---
+
+## Rate limit notes
+
+- Polymart API: 400 tokens/60s per IP. Heavy routes cost 3: `/getStocks`, `/getHistory`, `/getLeaderboard`, `/forex/getCorrelations`
+- The 8s cache in api.js means bursty Discord activity is absorbed. A single `/getStocks` is shared across all simultaneous requests.
+- The alert poller uses two batch calls (getStocks + getCoins + getPairs = 5 tokens) every 12 seconds = 25 tokens/minute, well within limits.
+- For large bots (1000+ guilds), consider pointing the API cache at a Redis instance and replacing the in-process Map.
+
+---
+
+## Full API reference
+
+https://polymart.co/llms.txt
+
+Human-readable docs:
+https://polymart.co/#/docs/api

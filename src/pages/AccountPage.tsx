@@ -8,6 +8,7 @@ import { Separator } from "@/components/ui/separator"
 import { Switch } from "@/components/ui/switch"
 import { Loader2, AlertCircle, CheckCircle2, Camera, CreditCard, ShieldCheck, TrendingUp, TrendingDown, Activity, Clock, Ticket, Users, Flag, Shield } from "lucide-react"
 import { useAccount } from "@/hooks/useAccount"
+import { DiscordLinkSection } from "@/components/account/DiscordLinkSection"
 import type { Route } from "@/App"
 
 interface UserProfile {
@@ -706,6 +707,9 @@ export default function AccountPage({ onNavigate, onNavigateToCommunity }: Props
           )}
         </CardContent>
       </Card>
+
+      {/* Discord integration */}
+      <DiscordLinkSection onNavigate={onNavigate} />
 
       {/* Support ticket history */}
       <TicketHistory tickets={tickets} onNavigate={onNavigate} />

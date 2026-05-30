@@ -40,6 +40,7 @@ import AccountPage from "@/pages/AccountPage"
 import AdminPage from "@/pages/AdminPage"
 import UserProfilePage from "@/pages/UserProfilePage"
 import TradingTerminalPage from "@/pages/TradingTerminalPage"
+import AccountLinkPage from "@/pages/AccountLinkPage"
 import CommunityStandardsPage from "@/pages/CommunityStandardsPage"
 import LegalHubPage from "@/pages/LegalHubPage"
 import LeaderboardPage from "@/pages/LeaderboardPage"
@@ -53,7 +54,7 @@ export type Route =
   | "kofi-terms" | "kofi-privacy" | "community-post" | "legal"
   | "communities" | "sub-community" | "sub-community-mod" | "community-admin"
   | "user-profile"
-  | "sign-in" | "sign-up" | "dashboard" | "portfolio" | "account" | "admin"
+  | "sign-in" | "sign-up" | "dashboard" | "portfolio" | "account" | "account-link" | "admin"
   | "trading-terminal"
   | "bug-report" | "suggestion"
   | "community-standards"
@@ -90,6 +91,7 @@ const HASH_MAP: Record<string, Route> = {
   "/sign-up": "sign-up",
   "/dashboard": "dashboard",
   "/account": "account",
+  "/account/link": "account-link",
   "/admin": "admin",
   "/community-admin": "community-admin",
   "/terminal": "trading-terminal",
@@ -129,6 +131,7 @@ const ROUTE_HASH: Record<Route, string> = {
   dashboard: "/dashboard",
   portfolio: "/dashboard",
   account: "/account",
+  "account-link": "/account/link",
   admin: "/admin",
   "community-admin": "/community-admin",
   "user-profile": "/u",
@@ -734,7 +737,7 @@ export default function App() {
     setRouteParams({ profileId })
   }
 
-  const isAccountRoute = route === "dashboard" || route === "portfolio" || route === "account" || route === "admin" || route === "trading-terminal"
+  const isAccountRoute = route === "dashboard" || route === "portfolio" || route === "account" || route === "account-link" || route === "admin" || route === "trading-terminal"
   const isTerminal = route === "trading-terminal"
 
   if (route === "panel-popout") {
@@ -809,6 +812,11 @@ export default function App() {
           {route === "account" && (
             <ProtectedRoute onRedirect={() => go("sign-in")}>
               <AccountPage onNavigate={go} onNavigateToCommunity={goToSubCommunity} />
+            </ProtectedRoute>
+          )}
+          {route === "account-link" && (
+            <ProtectedRoute onRedirect={() => go("sign-in")}>
+              <AccountLinkPage onNavigate={go} />
             </ProtectedRoute>
           )}
           {route === "admin" && (

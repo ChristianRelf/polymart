@@ -17,6 +17,7 @@ import usersRouter from "./PolyAPI/UsersAPI.js";
 import leaderboardRouter from "./PolyAPI/LeaderboardAPI.js";
 import botFeedbackRouter from "./PolyAPI/BotFeedbackAPI.js";
 import toolsRouter from "./PolyAPI/ToolsAPI.js";
+import discordBotRouter from "./PolyAPI/DiscordBotAPI.js";
 import { PolyEngineTick } from "./PolyEngine/tick.js";
 import { createDbAdapter, registerDbSubscribers } from "./PolyEngine/DataAdapter.js";
 
@@ -84,6 +85,9 @@ app.use("/api/v1/bot-feedback", botFeedbackRouter);
 
 // ── Community tools & plugins ─────────────────────────────────────────────────
 app.use("/api/v1/tools", restrictedCors, toolsRouter);
+
+// ── Discord bot API (pre-shared BOT_API_KEY, not Clerk JWT) ───────────────────
+app.use("/api/v1/bot", discordBotRouter);
 
 // ── Share embed route ─────────────────────────────────────────────────────────
 // Serves an OG-tagged HTML page for /s/:shareId so Discord/Slack/etc can unfurl
@@ -528,6 +532,43 @@ async function applyMigrations() {
        WHERE profile_id IS NOT NULL AND profile_id NOT REGEXP '^[0-9]{9,16}$'`
     );
     console.log(`[polymart] Migration: fixed ${badProfileCnt} malformed profile_id(s)`);
+  }
+
+  // Add discord_id, discord_username, discord_linked_at to user_profiles.
+  const [[{ discordIdCnt }]] = await dbUser.query(
+    `SELECT COUNT(*) AS discordIdCnt FROM INFORMATION_SCHEMA.COLUMNS
+     WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'user_profiles' AND COLUMN_NAME = 'discord_id'`
+  );
+  if (!discordIdCnt) {
+    await dbUser.query(`ALTER TABLE user_profiles
+      ADD COLUMN discord_id        VARCHAR(30)  DEFAULT NULL,
+      ADD COLUMN discord_username  VARCHAR(100) DEFAULT NULL,
+      ADD COLUMN discord_linked_at DATETIME     DEFAULT NULL`);
+    await dbUser.query(`ALTER TABLE user_profiles ADD UNIQUE INDEX uq_discord_id (discord_id)`);
+    console.log("[polymart] Migration: added discord link columns to user_profiles");
+  }
+
+  // Create discord_link_codes table for pairing codes.
+  const [[{ dlcCnt }]] = await dbUser.query(
+    `SELECT COUNT(*) AS dlcCnt FROM INFORMATION_SCHEMA.TABLES
+     WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'discord_link_codes'`
+  );
+  if (!dlcCnt) {
+    await dbUser.query(`
+      CREATE TABLE discord_link_codes (
+        id            INT          NOT NULL AUTO_INCREMENT,
+        clerk_user_id VARCHAR(64)  NOT NULL,
+        code          CHAR(6)      NOT NULL,
+        expires_at    DATETIME     NOT NULL,
+        used          TINYINT(1)   NOT NULL DEFAULT 0,
+        PRIMARY KEY (id),
+        UNIQUE KEY uq_dlc_code (code),
+        KEY idx_dlc_clerk   (clerk_user_id),
+        KEY idx_dlc_expires (expires_at),
+        CONSTRAINT fk_dlc_user FOREIGN KEY (clerk_user_id)
+          REFERENCES user_profiles(clerk_id) ON DELETE CASCADE
+      ) ENGINE=InnoDB`);
+    console.log("[polymart] Migration: created discord_link_codes table");
   }
 
   // Add show_on_leaderboard to user_profiles.

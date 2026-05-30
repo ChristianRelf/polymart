@@ -12,6 +12,7 @@ import { Webhook }   from 'svix';
 import { dbUser as pool, dbMarket } from '../db.js';
 import TIER_CONFIG from '../tier-config.js';
 import { resolvePrice, isValidAssetType, isValidSymbol } from '../PolyEngine/AssetResolver.js';
+import { executeMarketOrder } from '../PolyEngine/OrderExecutor.js';
 import { createRouter } from './Router.js';
 import { requireAuth, rateLimit } from './Middleware.js';
 import { success, fail, guard, ERRORS, HTTP } from './Protocol.js';
@@ -302,80 +303,39 @@ router.post('/portfolios/:id/orders',
     }
 
     // ── Market order (immediate execution) ──────────────────────────────────
-    const total = parseFloat((currentPrice * quantity).toFixed(4));
-    const conn  = await pool.getConnection();
+    const conn = await pool.getConnection();
     try {
       await conn.beginTransaction();
 
-      let realizedPnl = null;
-
-      if (side === 'buy') {
-        if (Number(portfolio.cash_balance) < total) {
-          await conn.rollback();
+      let result;
+      try {
+        result = await executeMarketOrder(conn, {
+          portfolioId,
+          cashBalance:  Number(portfolio.cash_balance),
+          assetType:    asset_type,
+          symbol:       symbol.toUpperCase(),
+          side,
+          quantity,
+          currentPrice,
+          notes:        notes || null,
+          maxPositions: limits.maxPositions,
+        });
+      } catch (orderErr) {
+        await conn.rollback();
+        if (orderErr.type === 'INSUFFICIENT_BALANCE')
           return fail(res, ERRORS.VALIDATION_ERROR, 'Insufficient cash balance', HTTP.BAD_REQUEST);
-        }
-
-        const [[existing]] = await conn.query(
-          'SELECT * FROM positions WHERE portfolio_id = ? AND asset_type = ? AND symbol = ?',
-          [portfolioId, asset_type, symbol.toUpperCase()]
-        );
-
-        if (!existing) {
-          const [[{ cnt }]] = await conn.query('SELECT COUNT(*) as cnt FROM positions WHERE portfolio_id = ?', [portfolioId]);
-          if (cnt >= limits.maxPositions) {
-            await conn.rollback();
-            return fail(res, ERRORS.QUOTA_EXCEEDED,
-              `Your ${limits.label} plan allows a maximum of ${limits.maxPositions} open positions per portfolio.`,
-              HTTP.FORBIDDEN
-            );
-          }
-          await conn.query(
-            'INSERT INTO positions (portfolio_id, asset_type, symbol, quantity, avg_cost) VALUES (?,?,?,?,?)',
-            [portfolioId, asset_type, symbol.toUpperCase(), quantity, currentPrice]
-          );
-        } else {
-          const newQty = Number(existing.quantity) + quantity;
-          const newAvg = (Number(existing.avg_cost) * Number(existing.quantity) + currentPrice * quantity) / newQty;
-          await conn.query(
-            'UPDATE positions SET quantity = ?, avg_cost = ? WHERE id = ?',
-            [newQty, parseFloat(newAvg.toFixed(4)), existing.id]
-          );
-        }
-
-        await conn.query('UPDATE portfolios SET cash_balance = cash_balance - ? WHERE id = ?', [total, portfolioId]);
-
-      } else {
-        const [[existing]] = await conn.query(
-          'SELECT * FROM positions WHERE portfolio_id = ? AND asset_type = ? AND symbol = ?',
-          [portfolioId, asset_type, symbol.toUpperCase()]
-        );
-        if (!existing || Number(existing.quantity) < quantity) {
-          await conn.rollback();
+        if (orderErr.type === 'QUOTA_EXCEEDED')
+          return fail(res, ERRORS.QUOTA_EXCEEDED,
+            `Your ${limits.label} plan allows a maximum of ${limits.maxPositions} open positions per portfolio.`,
+            HTTP.FORBIDDEN);
+        if (orderErr.type === 'INSUFFICIENT_POSITION')
           return fail(res, ERRORS.VALIDATION_ERROR, 'Insufficient position size to sell', HTTP.BAD_REQUEST);
-        }
-
-        realizedPnl = parseFloat(((currentPrice - Number(existing.avg_cost)) * quantity).toFixed(4));
-
-        const newQty = parseFloat((Number(existing.quantity) - quantity).toFixed(4));
-        if (newQty === 0) {
-          await conn.query('DELETE FROM positions WHERE id = ?', [existing.id]);
-        } else {
-          await conn.query('UPDATE positions SET quantity = ? WHERE id = ?', [newQty, existing.id]);
-        }
-
-        await conn.query('UPDATE portfolios SET cash_balance = cash_balance + ? WHERE id = ?', [total, portfolioId]);
+        throw orderErr;
       }
-
-      await conn.query(
-        `INSERT INTO orders (portfolio_id, asset_type, symbol, side, quantity, price, total, notes,
-                             order_type, status, realized_pnl, executed_at)
-         VALUES (?,?,?,?,?,?,?,?,'market','filled',?,NOW())`,
-        [portfolioId, asset_type, symbol.toUpperCase(), side, quantity, currentPrice, total, notes || null, realizedPnl]
-      );
 
       await conn.commit();
       const [[updated]] = await pool.query('SELECT * FROM portfolios WHERE id = ?', [portfolioId]);
-      return success(res, { ok: true, portfolio: updated, executedPrice: currentPrice, total });
+      return success(res, { ok: true, portfolio: updated, executedPrice: currentPrice, total: result.total });
 
     } catch (err) {
       await conn.rollback();
@@ -649,6 +609,75 @@ router.get('/orders/recent', guard(async (req, res) => {
     [req.userId]
   );
   return success(res, orders);
+}));
+
+// ── POST /discord/generate ────────────────────────────────────────────────────
+// Generates a single-use 6-digit pairing code valid for 30 seconds.
+// Deletes any unexpired existing code for this user before creating a new one.
+// Rate-limited to 1 call per 25 seconds per user.
+
+const generateLinkCode = () => String(Math.floor(Math.random() * 900000) + 100000);
+
+router.post('/discord/generate',
+  rateLimit({ windowMs: 25_000, max: 1, label: 'discord-generate', cost: 1 }),
+  guard(async (req, res) => {
+    // Clean up any existing codes for this user
+    await pool.query(
+      'DELETE FROM discord_link_codes WHERE clerk_user_id = ?',
+      [req.userId]
+    );
+
+    // Purge all expired codes globally (used or not) to keep the table tidy
+    await pool.query('DELETE FROM discord_link_codes WHERE expires_at < NOW()');
+
+    // Retry on the rare 6-digit collision with another active code
+    let code;
+    const expiresAt = new Date(Date.now() + 30_000);
+    for (let attempt = 0; attempt < 3; attempt++) {
+      code = generateLinkCode();
+      try {
+        await pool.query(
+          'INSERT INTO discord_link_codes (clerk_user_id, code, expires_at) VALUES (?, ?, ?)',
+          [req.userId, code, expiresAt]
+        );
+        break;
+      } catch (e) {
+        if (e.code !== 'ER_DUP_ENTRY' || attempt === 2) throw e;
+      }
+    }
+
+    return success(res, { code, expiresAt });
+  })
+);
+
+// ── GET /discord/status ───────────────────────────────────────────────────────
+// Returns the current Discord link status for the authenticated user.
+
+router.get('/discord/status', guard(async (req, res) => {
+  const [[user]] = await pool.query(
+    'SELECT discord_id, discord_username, discord_linked_at FROM user_profiles WHERE clerk_id = ?',
+    [req.userId]
+  );
+
+  if (!user) return fail(res, ERRORS.NOT_FOUND, 'User not found');
+
+  return success(res, {
+    linked:          !!user.discord_id,
+    discordId:       user.discord_id ?? null,
+    discordUsername: user.discord_username ?? null,
+    discordLinkedAt: user.discord_linked_at ?? null,
+  });
+}));
+
+// ── DELETE /discord/unlink ────────────────────────────────────────────────────
+// Removes the Discord link from the authenticated user's account.
+
+router.delete('/discord/unlink', guard(async (req, res) => {
+  await pool.query(
+    'UPDATE user_profiles SET discord_id = NULL, discord_username = NULL, discord_linked_at = NULL WHERE clerk_id = ?',
+    [req.userId]
+  );
+  return success(res, { ok: true });
 }));
 
 export default router;

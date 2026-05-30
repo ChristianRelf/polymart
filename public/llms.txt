@@ -2,14 +2,18 @@
 # https://polymart.co/llms.txt
 # Format: llms.txt v1 (https://llmstxt.org)
 #
-# Polymart is a persistent simulated stock market with 132 fictional tickers
-# across 20 sectors. All data is entirely fictional - not financial advice.
-# The simulation ticks every 5 seconds. No API key or authentication required.
+# Polymart is a persistent simulated financial market with three asset classes:
+#   - Stocks:  132 fictional tickers across 20 sectors
+#   - Forex:   39 simulated currency pairs (major, minor, exotic)
+#   - Crypto:  132 simulated cryptocurrencies across 12 categories
+#
+# All data is entirely fictional — not financial advice.
+# Simulation ticks every 10 seconds. No API key required.
 
-> Polymart is a simulated stock exchange accessible via an open REST API.
+> Polymart exposes three simulated markets via an open REST API.
 > All endpoints are GET requests returning JSON. Base URL: https://polymart.co
-> No authentication. No rate limit for normal usage (60 req/min per IP).
-> Prices update every 5 seconds via a server-side simulation engine.
+> No authentication. Rate limit: 400 tokens per 60s per IP (heavy routes cost 3 each).
+> Prices update every 10 seconds via a server-side simulation engine.
 
 ---
 
@@ -18,30 +22,39 @@
 - Base URL: https://polymart.co
 - All endpoints: GET, returning JSON
 - Authentication: none required
-- Tick interval: 5 seconds (prices update every tick)
+- Tick interval: 10 seconds (all three markets update together)
 - Stocks: 132 tickers across 20 sectors
-- History: up to 400 price points per stock (oldest first)
+- Forex: 39 currency pairs (major / minor / exotic)
+- Crypto: 132 coins across 12 categories
+- History: up to 400 price points per asset (oldest first)
+
+Heavy routes (cost 3 tokens each): /getStocks, /getHistory, /getLeaderboard, /forex/getCorrelations
 
 ---
 
-## Endpoints
+## STOCKS API
 
 ### GET /api/v1/getMarket
-Global market snapshot - index value, fear & greed, macro variables, movers.
+Global stock market snapshot.
 
 Response fields:
 - index (number): Current market index value
 - indexChange (number): Absolute change from previous tick
 - indexChangePct (number): Percentage change from previous tick
 - fearGreed (number): Fear & Greed score, 0–100
-- fearGreedLabel (string): One of: Extreme Fear, Fear, Cautious, Neutral, Greed, High Greed, Extreme Greed
+- fearGreedLabel (string): Extreme Fear | Fear | Cautious | Neutral | Greed | High Greed | Extreme Greed
+- vix (number): Simulated volatility index
+- marketSession (string): open | closed | pre | after
+- advanceDecline (number): Advance/decline ratio
+- newHighs (number): Stocks at new 52w highs this tick
+- newLows (number): Stocks at new 52w lows this tick
 - interestRate (number): Simulated interest rate (%)
 - inflation (number): Simulated inflation rate (%)
 - gdpGrowth (number): Simulated GDP growth rate (%)
 - gainers (number): Stocks with positive tick change
 - losers (number): Stocks with negative tick change
 - unchanged (number): Flat stocks this tick
-- totalStocks (number): Total stocks in the simulation
+- totalStocks (number): Total stocks in simulation
 - topGainer (object {ticker, pct}): Biggest gainer this tick
 - topLoser (object {ticker, pct}): Biggest loser this tick
 - upStreak (number): Consecutive index up-ticks
@@ -54,24 +67,33 @@ Example: https://polymart.co/api/v1/getMarket
 ---
 
 ### GET /api/v1/getStocks
-All 132 stocks as a map keyed by ticker symbol. Optional sector filter.
+All 132 stocks as a map keyed by ticker symbol.
 
 Query parameters:
 - sector (string, optional): Filter by sector key (e.g. tech, crypto, ai)
 
-Response: object keyed by ticker symbol (e.g. "APEX"), each value containing:
+Response: object keyed by ticker symbol, each value containing:
 - name (string): Company name
 - sector (string): Sector key
-- mcap (string): Market cap tier - large | mid | small
+- mcap (string): large | mid | small
 - price (number): Current price
 - change (number): % change from previous tick
 - volume (number): Cumulative simulated volume
-- rsi (number): Relative Strength Index, 0–100
+- buyVolume, sellVolume (number): Directional volume
+- orderFlow (number): Buy pressure, −50 to +50; positive = more buying
+- rsi (number): RSI, 0–100
 - streak (number): Consecutive up (+) or down (−) ticks
-- hi52w (number): 52-week simulated high
-- lo52w (number): 52-week simulated low
-- volatility (number): Base volatility coefficient
-- trend (number): Directional trend bias
+- hi52w, lo52w (number): 52-week high/low
+- bid, ask, spreadPct (number): Current bid/ask/spread
+- vwap (number): Volume-weighted average price
+- session (string): Current session state
+- halted (boolean): true if trading is halted
+- atr (number): Average True Range
+- beta (number): Beta relative to index
+- macd, macdSignal, macdHist (number): MACD indicators
+- bbUpper, bbMiddle, bbLower, bbBw (number): Bollinger Bands
+- sma20, sma50 (number): Simple moving averages
+- volatility, trend (number | null): Simulation parameters from stock definition
 
 Example: https://polymart.co/api/v1/getStocks
 Example (filtered): https://polymart.co/api/v1/getStocks?sector=crypto
@@ -79,32 +101,22 @@ Example (filtered): https://polymart.co/api/v1/getStocks?sector=crypto
 ---
 
 ### GET /api/v1/getStock
-Full detail for a single stock, including price history and sector peers.
+Full detail for a single stock including price history, candles, and sector peers.
 
 Query parameters:
 - ticker (string, required): Ticker symbol, case-insensitive (e.g. APEX)
 
-Response fields:
+Response fields (superset of getStocks, plus):
 - ticker (string): Ticker symbol
-- name (string): Company name
-- sector (string): Sector key
-- mcap (string): Market cap tier
-- price (number): Current price
 - previousPrice (number): Price at previous tick
 - openPrice (number): Price at simulation open
-- change (number): % change tick-over-tick
 - changeSinceOpen (number): % change from open price
-- high52w (number): 52-week high
-- low52w (number): 52-week low
 - allTimeHigh (number): All-time simulated high
-- volume (number): Cumulative volume
-- rsi (number): RSI, 0–100
 - momentum (number): Price momentum factor
-- streak (number): Consecutive tick direction
 - insiderBias (number): Hidden insider pressure, −0.01 to 0.01
-- volatility (number): Volatility coefficient
-- trend (number): Directional trend bias
+- ema12, ema26 (number): Exponential moving averages
 - history (number[]): Price history, up to 400 entries, oldest first
+- candles (object[]): OHLCV candle data
 - sectorPeers (string[]): Tickers of other stocks in the same sector
 - updatedAt (ISO 8601): Timestamp of last update
 
@@ -113,12 +125,14 @@ Example: https://polymart.co/api/v1/getStock?ticker=APEX
 ---
 
 ### GET /api/v1/getSectors
-All 20 sectors with average change, momentum, and news impact.
+All 20 sectors with aggregate statistics.
 
-Response: object keyed by sector key (e.g. "tech"), each value containing:
+Response: object keyed by sector key, each value containing:
 - label (string): Human-readable sector name
 - icon (string): Emoji icon
 - avgChange (number): Average % change across sector stocks
+- avgRsi (number): Average RSI
+- avgBeta (number): Average beta
 - newsStack (number): Accumulated news impact score (decays over time)
 - momentum (number): Sector price momentum
 - tickers (string[]): All ticker symbols in this sector
@@ -135,32 +149,29 @@ Query parameters:
 - sector (string, required): Sector key (e.g. crypto)
 
 Response fields:
-- key (string): Sector key
-- label (string): Sector name
-- icon (string): Emoji icon
-- avgChange (number): Average % change
-- newsStack (number): News impact score
-- momentum (number): Sector momentum
-- stocks (object[]): Array of {ticker, name, price, change, volume, rsi}
-- updatedAt (ISO 8601): Timestamp of last update
+- key, label, icon, avgChange, newsStack, momentum
+- stocks (object[]): Array of {ticker, name, price, change, volume, rsi, bid, ask, spreadPct, vwap, macd, macdHist, bbBw, session, halted}
+- updatedAt (ISO 8601)
 
 Example: https://polymart.co/api/v1/getSector?sector=crypto
 
 ---
 
 ### GET /api/v1/getEvents
-Recent market events - flash crashes, sector booms, FDA approvals, meme frenzies, etc.
+Recent market events — flash crashes, sector booms, FDA approvals, meme frenzies, etc.
 
 Query parameters:
-- limit (number, optional): Max events to return, 1–30, default 10
-- sector (string, optional): Filter to events for a specific sector
+- limit (number, optional): Max events, 1–40, default 10
+- sector (string, optional): Filter to a specific sector
+- category (string, optional): Filter by event category
 
 Response: array of event objects, each containing:
 - id (uuid): Unique event ID
 - text (string): Event description
 - effect (number): Price effect magnitude; negative = bearish
-- sector (string | null): Affected sector, or null for market-wide events
+- sector (string | null): Affected sector key, or null for market-wide events
 - weight (number): Impact weight, 1–3
+- category (string | null): Event category
 - firedAt (ISO 8601): When the event fired
 
 Example: https://polymart.co/api/v1/getEvents?limit=5
@@ -174,7 +185,7 @@ Query parameters:
 - limit (number, optional): Stocks per list, 1–20, default 5
 
 Response fields:
-- gainers (object[]): {ticker, name, sector, price, change, volume, rsi}, best first
+- gainers (object[]): {ticker, name, sector, price, change, volume, rsi, atr, beta, session, halted}, best first
 - losers (object[]): Same shape, worst first
 
 Example: https://polymart.co/api/v1/getTopMovers?limit=5
@@ -182,18 +193,16 @@ Example: https://polymart.co/api/v1/getTopMovers?limit=5
 ---
 
 ### GET /api/v1/getLeaderboard
-All stocks ranked by any numeric field. Good for Discord bot leaderboard commands.
+All stocks ranked by any numeric field.
 
 Query parameters:
-- by (string, optional): Sort field - change | price | volume | rsi | ath | streak; default: change
+- by (string, optional): change | price | volume | rsi | ath | streak | atr | beta | spreadPct | bbBw; default: change
 - dir (string, optional): asc | desc; default: desc
 - limit (number, optional): Max results, 1–132; default: 10
 
 Response fields:
-- sortedBy (string): Field used for sorting
-- direction (string): asc or desc
-- count (number): Number of results returned
-- stocks (object[]): {ticker, name, sector, mcap, price, change, volume, rsi, ath, streak}
+- sortedBy (string), direction (string), count (number)
+- stocks (object[]): {ticker, name, sector, mcap, price, change, volume, rsi, ath, streak, atr, beta, spreadPct, bbBw}
 
 Example: https://polymart.co/api/v1/getLeaderboard?by=change&limit=10
 
@@ -203,14 +212,14 @@ Example: https://polymart.co/api/v1/getLeaderboard?by=change&limit=10
 Current macroeconomic environment variables.
 
 Response fields:
-- interestRate (number): Interest rate (%)
-- inflation (number): Inflation rate (%)
-- gdpGrowth (number): GDP growth rate (%)
-- fearGreed (number): Fear & Greed score, 0–100
-- fearGreedLabel (string): Sentiment label
-- crashCooldown (number): Ticks until next crash is possible; 0 = ready
-- boomCooldown (number): Ticks until next boom is possible; 0 = ready
-- updatedAt (ISO 8601): Timestamp of last update
+- interestRate, inflation, gdpGrowth (number): Macro rates (%)
+- fearGreed (number): 0–100; fearGreedLabel (string)
+- vix (number): Volatility index
+- marketSession (string): Session state
+- advanceDecline, newHighs, newLows (number): Market breadth indicators
+- crashCooldown (number): Ticks until next crash possible; 0 = ready
+- boomCooldown (number): Ticks until next boom possible
+- updatedAt (ISO 8601)
 
 Example: https://polymart.co/api/v1/getMacro
 
@@ -221,14 +230,13 @@ Raw price history for a single stock.
 
 Query parameters:
 - ticker (string, required): Ticker symbol (e.g. VOID)
-- limit (number, optional): Data points to return, 1–400; default: 100
+- limit (number, optional): Data points, 1–400; default: 100
 
 Response fields:
-- ticker (string): Ticker symbol
-- name (string): Company name
-- count (number): Number of data points returned
+- ticker, name, count
 - history (number[]): Price array, oldest first
-- updatedAt (ISO 8601): Timestamp of last update
+- candles (object[]): OHLCV candle data
+- updatedAt (ISO 8601)
 
 Example: https://polymart.co/api/v1/getHistory?ticker=VOID&limit=50
 
@@ -238,91 +246,466 @@ Example: https://polymart.co/api/v1/getHistory?ticker=VOID&limit=50
 Full-text search across ticker symbols, company names, and sector keys.
 
 Query parameters:
-- q (string, required): Search query (matches ticker, name, or sector)
+- q (string, required): Search query
 
 Response fields:
-- query (string): The search query as submitted
-- count (number): Number of matching results
-- results (object[]): {ticker, name, sector, price, change}
+- query, count
+- results (object[]): {ticker, name, sector, price, change, rsi, session}
 
 Example: https://polymart.co/api/v1/search?q=moon
 
 ---
 
+### GET /api/v1/info
+Detailed company info for a stock including analyst rating, news, and macro context.
+
+Query parameters:
+- ticker (string, required): Ticker symbol
+
+Response fields (includes everything from getStock, plus):
+- companyName, description, founded, employees, headquarters, ceo, website
+- sectorKey, sectorLabel, sectorIcon
+- peers (string[]): Sector peer tickers
+- market (object): Full price/indicator snapshot
+- macro (object): {fearGreed, interestRate, inflation, gdpGrowth, vix}
+- analystRating (object): {rating, score, analystCount}
+  - rating: Strong Buy | Buy | Hold | Underperform
+- news (string[]): Generated news headlines for this ticker
+
+Example: https://polymart.co/api/v1/info?ticker=APEX
+
+---
+
 ### GET /api/v1/getHealth
-API health check - confirms simulation is running and reports data freshness.
+API health check.
 
 Response fields:
 - status (string): ok | uninitialised
-- tickCount (number): Total ticks completed
-- secondsSinceLastTick (number | null): Seconds elapsed since last tick wrote to DB
-- stale (boolean): true if last tick was more than 30 seconds ago
-- totalStocks (number): Total stocks defined in the simulation
-- totalSectors (number): Total sectors defined
-- updatedAt (ISO 8601 | null): Timestamp of last successful tick
+- tickCount, secondsSinceLastTick, stale, totalStocks, totalSectors
+- vix, marketSession, fearGreed
+- updatedAt (ISO 8601 | null)
 
 Example: https://polymart.co/api/v1/getHealth
 
 ---
 
-## Valid Sector Keys
+### GET /api/v1/rss
+Market events as an RSS 2.0 feed (also accepts /rss.xml).
+
+Query parameters:
+- limit (number, optional): Max items, 1–100; default 40
+- sector (string, optional): Filter to sector
+
+Response: application/rss+xml
+
+Example: https://polymart.co/api/v1/rss?limit=10
+
+---
+
+### GET /api/v1/sims
+List of active simulations with metadata.
+
+Response: array of {id, label, icon, status, description, assets, tickInterval, ...}
+
+Example: https://polymart.co/api/v1/sims
+
+---
+
+## FOREX API
+
+### GET /api/v1/forex/getPairs
+All forex pairs as a map keyed by pair symbol.
+
+Query parameters:
+- category (string, optional): major | minor | exotic
+
+Response: object keyed by pair (e.g. "EURUSD"), each containing:
+- pair, base, quote, category
+- baseName, quoteName, baseCountry, quoteCountry, baseFlag, quoteFlag
+- price, prevPrice, change, changePct (number)
+- bid, ask, spread, spreadPips (number)
+- hiSession, loSession (number): Session high/low
+- hi52w, lo52w (number): 52-week high/low
+- volume, rsi, momentum, atr (number)
+- macd, macdSignal, macdHist (number)
+- stochK, stochD, cci (number)
+- bbUpper, bbMiddle, bbLower, bbBw (number)
+- sma20, sma50 (number)
+- pipSize, decimals (number)
+- pivotP, pivotR1, pivotR2, pivotS1, pivotS2 (number): Daily pivot levels
+- pctFrom52wHigh, pctFrom52wLow (number)
+- activeSession (string): Currently active trading sessions
+- updatedAt (ISO 8601)
+
+Example: https://polymart.co/api/v1/forex/getPairs
+Example (filtered): https://polymart.co/api/v1/forex/getPairs?category=major
+
+---
+
+### GET /api/v1/forex/getPair
+Full detail for a single currency pair including history and economic context.
+
+Query parameters:
+- pair (string, required): Pair symbol, case-insensitive (e.g. EURUSD)
+
+Response: all fields from getPairs, plus:
+- description (string): Pair description
+- economicDrivers (string[]): Key economic factors for this pair
+- factSheet (object): Additional metadata
+- history (number[]): Price history, up to 400 entries, oldest first
+- candles (object[]): OHLCV candle data
+
+Example: https://polymart.co/api/v1/forex/getPair?pair=EURUSD
+
+---
+
+### GET /api/v1/forex/getTopMovers
+Top N gainers and losers by % change.
+
+Query parameters:
+- limit (number, optional): Pairs per list, 1–14, default 5
+
+Response fields:
+- gainers (object[]): {pair, base, quote, category, baseFlag, quoteFlag, price, change, rsi}
+- losers (object[]): Same shape, worst first
+
+Example: https://polymart.co/api/v1/forex/getTopMovers?limit=5
+
+---
+
+### GET /api/v1/forex/getHistory
+Raw price history for a single pair.
+
+Query parameters:
+- pair (string, required): Pair symbol
+- limit (number, optional): Data points, 1–400; default: 60
+
+Response fields:
+- pair, base, quote, count
+- history (number[]): Oldest first
+- candles (object[]): OHLCV candle data
+- updatedAt (ISO 8601)
+
+Example: https://polymart.co/api/v1/forex/getHistory?pair=EURUSD&limit=60
+
+---
+
+### GET /api/v1/forex/search
+Search by pair symbol, base/quote currency code, or currency name.
+
+Query parameters:
+- q (string, required): Search query
+
+Response fields:
+- query, count
+- results (object[]): {pair, base, quote, category, baseName, quoteName, baseFlag, quoteFlag, price, change, rsi}
+
+Example: https://polymart.co/api/v1/forex/search?q=eur
+
+---
+
+### GET /api/v1/forex/getMarketOverview
+Aggregated forex market data including currency strength and session status.
+
+Response fields:
+- dollarIndex (number): USD strength vs basket
+- dollarIndexLabel (string): USD Strengthening | USD Weakening | USD Neutral
+- totalPairs, bullishPairs, bearishPairs (number)
+- topGainer, topLoser (object {pair, changePct})
+- avgVolatility (number)
+- currencyStrength (object[]): {code, strength, flag} sorted strongest first
+- sessions (object): {sydney, tokyo, london, newYork} each with {label, open, timezone, majorPairs}
+- updatedAt (ISO 8601)
+
+Example: https://polymart.co/api/v1/forex/getMarketOverview
+
+---
+
+### GET /api/v1/forex/getLeaderboard
+All pairs ranked by any metric.
+
+Query parameters:
+- by (string, optional): changePct | volume | rsi | atr | spread | bbBw; default: changePct
+- dir (string, optional): asc | desc; default: desc
+- limit (number, optional): Max results, 1–40; default: 10
+- category (string, optional): major | minor | exotic
+
+Response fields:
+- sortedBy, direction, category, count
+- pairs (object[]): Full pair objects with all indicators
+
+Example: https://polymart.co/api/v1/forex/getLeaderboard?by=atr&limit=10
+
+---
+
+### GET /api/v1/forex/getCandles
+OHLCV candle history for a pair.
+
+Query parameters:
+- pair (string, required): Pair symbol
+- limit (number, optional): Candles, 1–200; default: 48
+
+Response fields:
+- pair, base, quote, decimals, pipSize, count
+- candles (object[]): OHLCV entries
+- updatedAt (ISO 8601)
+
+Example: https://polymart.co/api/v1/forex/getCandles?pair=GBPUSD&limit=48
+
+---
+
+### GET /api/v1/forex/getCorrelations
+Pearson correlation matrix between pairs over a rolling window.
+
+Query parameters:
+- pairs (string, optional): Comma-separated pair symbols, max 20; default: all major pairs
+- window (number, optional): Rolling window size, 1–200; default: 60
+
+Response fields:
+- pairs (string[]): Pairs included
+- window (number): Window used
+- matrix (object): pairs × pairs matrix of correlation coefficients, −1 to 1
+
+Example: https://polymart.co/api/v1/forex/getCorrelations?pairs=EURUSD,GBPUSD,USDJPY&window=60
+
+Note: This is a heavy route (costs 3 tokens).
+
+---
+
+### GET /api/v1/forex/getSessions
+Current forex trading session status with active session pairs.
+
+Response fields:
+- utcTime (string): Current UTC time
+- openSessions (string[]): Names of currently open sessions
+- overlap (boolean): true if multiple sessions are open simultaneously
+- mostActiveSession (string): Highest-activity session
+- sessions (object[]): {id, label, timezone, utcOpen, utcClose, open, pairs}
+
+Sessions: sydney (21:00–06:00), tokyo (23:00–08:00), london (07:00–16:00), newYork (12:00–21:00)
+
+Example: https://polymart.co/api/v1/forex/getSessions
+
+---
+
+### GET /api/v1/forex/getCurrencies
+Per-currency strength scores derived from all pairs.
+
+Response fields:
+- count (number)
+- currencies (object[]): {code, country, flag, strength, pairsCount} sorted strongest first
+
+Example: https://polymart.co/api/v1/forex/getCurrencies
+
+---
+
+## CRYPTO API
+
+### GET /api/v1/crypto/getCoins
+All 132 crypto coins as a map keyed by symbol.
+
+Query parameters:
+- category (string, optional): l1 | l2 | exchange | defi | infra | oracle | meme | ai | gamefi | privacy | metaverse | stablecoin
+
+Response: object keyed by symbol (e.g. "BTCX"), each containing:
+- symbol, name, category
+- mcapTier (string): large | mid | small
+- blockchain, consensus (string)
+- circulatingSupply, totalSupply (number)
+- price, prevPrice, change, changePct (number)
+- bid, ask, spreadPct (number)
+- hi24h, lo24h, hi52w, lo52w, ath (number)
+- marketCap, dominance (number)
+- volume, buyVolume, sellVolume (number)
+- rsi, momentum, atr (number)
+- ema12, ema26 (number)
+- macd, macdSignal, macdHist (number)
+- stochK, stochD, cci (number)
+- bbUpper, bbMiddle, bbLower, bbBw (number)
+- sma20, sma50 (number)
+- streak (number): Consecutive up (+) or down (−) ticks
+- pctFrom52wHigh, pctFromAth (number)
+- volatility, trend (number | null)
+- description (string)
+- updatedAt (ISO 8601)
+
+Example: https://polymart.co/api/v1/crypto/getCoins
+Example (filtered): https://polymart.co/api/v1/crypto/getCoins?category=defi
+
+---
+
+### GET /api/v1/crypto/getCoin
+Full detail for a single coin including history, candles, and category peers.
+
+Query parameters:
+- symbol (string, required): Coin symbol, case-insensitive (e.g. BTCX)
+
+Response: all fields from getCoins, plus:
+- history (number[]): Price history, up to 400 entries, oldest first
+- candles (object[]): OHLCV candle data
+- categoryPeers (string[]): Other symbols in same category
+
+Example: https://polymart.co/api/v1/crypto/getCoin?symbol=BTCX
+
+---
+
+### GET /api/v1/crypto/getCategories
+All 12 crypto categories with aggregate statistics.
+
+Response: object keyed by category key, each value containing:
+- label (string): Human-readable category name
+- icon (string): Emoji icon
+- avgChange, avgRsi, avgDominance (number)
+- newsStack (number): Accumulated news impact
+- momentum (number): Category price momentum
+- symbols (string[]): All coin symbols in category
+- coinCount (number)
+
+Example: https://polymart.co/api/v1/crypto/getCategories
+
+---
+
+### GET /api/v1/crypto/getCategory
+Full detail for a single crypto category including constituent coins.
+
+Query parameters:
+- category (string, required): Category key
+
+Response fields:
+- key, label, icon, avgChange, newsStack, momentum
+- coins (object[]): {symbol, name, price, change, volume, rsi, marketCap, dominance, atr}
+- updatedAt (ISO 8601)
+
+Example: https://polymart.co/api/v1/crypto/getCategory?category=defi
+
+---
+
+### GET /api/v1/crypto/getMarketOverview
+Global crypto market summary.
+
+Response fields:
+- totalMarketCap (number): Sum of all coin market caps
+- total24hVolume (number): Sum of all coin volumes
+- btcDominance (number): BTCX dominance percentage
+- bullishCount, bearishCount, unchanged, totalCoins (number)
+- topGainer, topLoser (object {symbol, pct})
+
+Example: https://polymart.co/api/v1/crypto/getMarketOverview
+
+---
+
+### GET /api/v1/crypto/getTopMovers
+Top N crypto gainers and losers by % change.
+
+Query parameters:
+- limit (number, optional): Coins per list, 1–20; default: 5
+
+Response fields:
+- gainers (object[]): {symbol, name, category, price, changePct, volume, rsi, atr, marketCap, dominance}
+- losers (object[]): Same shape, worst first
+
+Example: https://polymart.co/api/v1/crypto/getTopMovers?limit=5
+
+---
+
+### GET /api/v1/crypto/getHistory
+Raw price history for a single coin.
+
+Query parameters:
+- symbol (string, required): Coin symbol
+- limit (number, optional): Data points, 1–400; default: 60
+
+Response fields:
+- symbol, name, count
+- history (number[]): Oldest first
+- candles (object[]): OHLCV candle data
+- updatedAt (ISO 8601)
+
+Example: https://polymart.co/api/v1/crypto/getHistory?symbol=BTCX&limit=60
+
+---
+
+### GET /api/v1/crypto/search
+Search by symbol, name, category, or blockchain.
+
+Query parameters:
+- q (string, required): Search query
+
+Response fields:
+- query, count
+- results (object[]): {symbol, name, category, blockchain, price, changePct, rsi}
+
+Example: https://polymart.co/api/v1/crypto/search?q=moon
+
+---
+
+### GET /api/v1/crypto/getLeaderboard
+All coins ranked by any metric.
+
+Query parameters:
+- by (string, optional): changePct | marketCap | dominance | volume | rsi | atr | bbBw; default: changePct
+- dir (string, optional): asc | desc; default: desc
+- limit (number, optional): Max results, 1–132; default: 10
+- category (string, optional): Filter to a category
+
+Response fields:
+- sortedBy, direction, category, count
+- coins (object[]): {symbol, name, category, mcapTier, price, changePct, volume, rsi, atr, marketCap, dominance, bbBw}
+
+Example: https://polymart.co/api/v1/crypto/getLeaderboard?by=marketCap&limit=10
+
+---
+
+## REST ALIASES  (/api/v1/market/*)
+
+These routes use a consistent envelope: { ok: true, data: ... } or { ok: false, error: ... }
+
+- GET /api/v1/market              — market state + last 5 events
+- GET /api/v1/market/stocks       — all stocks (raw DB rows); ?sector= filter supported
+- GET /api/v1/market/stocks/:ticker — single stock raw row
+- GET /api/v1/market/sectors      — all sector rows
+- GET /api/v1/market/forex        — all forex pairs (raw); ?category= filter supported
+- GET /api/v1/market/forex/:pair  — single pair raw row
+- GET /api/v1/market/events       — recent events; ?limit= (default 20, max 100)
+- GET /api/v1/market/snapshot     — full snapshot: market state + all stocks + all pairs + all sectors
+
+---
+
+## Valid Stock Sector Keys
 
 tech, food, space, meme, green, finance, gaming, health, crypto, defence,
 retail, media, auto, realty, travel, ai, bio, energy, logistics, agri
 
 ---
 
-## Usage Examples
+## Valid Forex Category Keys
 
-### Get the current price of a stock
-```
-GET https://polymart.co/api/v1/getStock?ticker=APEX
-```
-Returns full stock detail including history and sector peers.
+major, minor, exotic
 
-### Get a market overview
-```
-GET https://polymart.co/api/v1/getMarket
-```
-Returns index value, fear & greed score, macro variables, and top movers.
+---
 
-### Get all crypto sector stocks
-```
-GET https://polymart.co/api/v1/getStocks?sector=crypto
-```
+## Valid Crypto Category Keys
 
-### Get the top 5 gainers today
-```
-GET https://polymart.co/api/v1/getTopMovers?limit=5
-```
-
-### Search for a stock by name
-```
-GET https://polymart.co/api/v1/search?q=moon
-```
-
-### Get the last 50 price points for a stock
-```
-GET https://polymart.co/api/v1/getHistory?ticker=VOID&limit=50
-```
-
-### Rank all stocks by RSI descending
-```
-GET https://polymart.co/api/v1/getLeaderboard?by=rsi&dir=desc&limit=20
-```
+l1, l2, exchange, defi, infra, oracle, meme, ai, gamefi, privacy, metaverse, stablecoin
 
 ---
 
 ## Notes for AI Assistants
 
 - All data is fictional simulation data. Do not present it as real financial data.
-- Prices update every 5 seconds. Responses are always the latest tick.
-- Tickers are uppercase strings (e.g. APEX, VOID, LUNATEK).
-- Sector keys are lowercase strings (e.g. tech, crypto, ai).
-- The `history` array in getStock and getHistory is ordered oldest-first.
-- RSI values follow standard interpretation: below 30 = oversold, above 70 = overbought.
-- The `streak` field: positive = consecutive up-ticks, negative = consecutive down-ticks.
-- `insiderBias` is a hidden simulation variable - it subtly nudges price direction.
-- `fearGreedLabel` maps to: 0–10 Extreme Fear, 11–25 Fear, 26–40 Cautious,
-  41–59 Neutral, 60–74 Greed, 75–89 High Greed, 90–100 Extreme Greed.
-- The human-readable API docs are at: https://polymart.co/#/docs/api
+- Prices update every 10 seconds. Responses always return the latest tick.
+- Stock tickers are uppercase strings (e.g. APEX, VOID, LUNATEK).
+- Forex pairs are 6-character uppercase strings (e.g. EURUSD, GBPJPY).
+- Crypto symbols are uppercase strings ending in X by convention (e.g. BTCX, ETHX).
+- Sector keys are lowercase (e.g. tech, crypto, ai).
+- The `history` array is always ordered oldest-first.
+- RSI: below 30 = oversold, above 70 = overbought.
+- `streak`: positive = consecutive up-ticks, negative = consecutive down-ticks.
+- `insiderBias` (stocks): hidden simulation variable, −0.01 to 0.01, subtly nudges direction.
+- `orderFlow` (stocks): positive = more buying pressure, negative = more selling pressure.
+- `fearGreedLabel` maps: 0–12 Extreme Fear, 13–25 Fear, 26–40 Cautious, 41–60 Neutral,
+  61–75 Greed, 76–88 High Greed, 89–100 Extreme Greed.
+- Pivot levels (forex) are standard floor pivot calculations from session high/low/close.
+- Correlation matrix values range −1 (inverse) to +1 (identical movement).
+- Heavy routes (cost 3 tokens/call): /getStocks, /getHistory, /getLeaderboard, /forex/getCorrelations.
+- Human-readable API docs: https://polymart.co/#/docs/api
