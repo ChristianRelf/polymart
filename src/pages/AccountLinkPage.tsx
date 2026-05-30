@@ -4,14 +4,14 @@ import { Button } from "@/components/ui/button"
 import { ArrowLeft, RefreshCw, Loader2, Link2Off, CheckCircle2 } from "lucide-react"
 import type { Route } from "@/App"
 
-// Discord SVG logo (no extra dependency)
-function DiscordLogo({ className }: { className?: string }) {
-  return (
-    <svg className={className} viewBox="0 0 24 24" fill="currentColor">
-      <path d="M20.317 4.37a19.791 19.791 0 0 0-4.885-1.515.074.074 0 0 0-.079.037c-.21.375-.444.864-.608 1.25a18.27 18.27 0 0 0-5.487 0 12.64 12.64 0 0 0-.617-1.25.077.077 0 0 0-.079-.037A19.736 19.736 0 0 0 3.677 4.37a.07.07 0 0 0-.032.027C.533 9.046-.32 13.58.099 18.057c.002.022.013.044.03.056a19.9 19.9 0 0 0 5.993 3.03.078.078 0 0 0 .084-.028c.462-.63.874-1.295 1.226-1.994a.076.076 0 0 0-.041-.106 13.107 13.107 0 0 1-1.872-.892.077.077 0 0 1-.008-.128 10.2 10.2 0 0 0 .372-.292.074.074 0 0 1 .077-.01c3.928 1.793 8.18 1.793 12.062 0a.074.074 0 0 1 .078.01c.12.098.246.198.373.292a.077.077 0 0 1-.006.127 12.299 12.299 0 0 1-1.873.892.077.077 0 0 0-.041.107c.36.698.772 1.362 1.225 1.993a.076.076 0 0 0 .084.028 19.839 19.839 0 0 0 6.002-3.03.077.077 0 0 0 .032-.054c.5-5.177-.838-9.674-3.549-13.66a.061.061 0 0 0-.031-.03z" />
-    </svg>
-  )
-}
+const CODE_TTL = 30 // seconds
+
+const FEATURES = [
+  "Trade with /buy and /sell — synced to your Polymart portfolio",
+  "Check positions and balance with /portfolio",
+  "Order history unified across web and Discord",
+  "Alerts and watchlists carry across both",
+]
 
 interface DiscordStatus {
   linked: boolean
@@ -19,15 +19,6 @@ interface DiscordStatus {
   discordUsername: string | null
   discordLinkedAt: string | null
 }
-
-const CODE_TTL = 30
-
-const FEATURES = [
-  { text: "Trade with /buy and /sell in any Discord server" },
-  { text: "Your positions, cash, and orders sync in real time" },
-  { text: "Use /portfolio and /balance from Discord" },
-  { text: "Trade history unified across web and bot" },
-]
 
 interface Props {
   onNavigate: (r: Route) => void
@@ -38,7 +29,6 @@ export default function AccountLinkPage({ onNavigate }: Props) {
 
   const [status, setStatus]         = useState<DiscordStatus | null>(null)
   const [code, setCode]             = useState<string | null>(null)
-  const [expiresAt, setExpiresAt]   = useState<Date | null>(null)
   const [secondsLeft, setSecondsLeft] = useState(CODE_TTL)
   const [pageLoading, setPageLoading] = useState(true)
   const [generating, setGenerating] = useState(false)
@@ -47,21 +37,18 @@ export default function AccountLinkPage({ onNavigate }: Props) {
 
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null)
 
-  // ── API helpers ───────────────────────────────────────────────────────────
+  // ── API ───────────────────────────────────────────────────────────────────
 
   const withToken = useCallback(async <T,>(fn: (t: string) => Promise<T>): Promise<T> => {
     let token = await getToken()
-    if (!token) {
-      await new Promise(r => setTimeout(r, 300))
-      token = await getToken()
-    }
+    if (!token) { await new Promise(r => setTimeout(r, 300)); token = await getToken() }
     if (!token) throw new Error("Not authenticated")
     return fn(token)
   }, [getToken])
 
   async function apiCall(path: string, method = "GET", body?: object) {
     return withToken(async token => {
-      const res = await fetch(`/api/v1${path}`, {
+      const res  = await fetch(`/api/v1${path}`, {
         method,
         headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
         ...(body ? { body: JSON.stringify(body) } : {}),
@@ -72,7 +59,7 @@ export default function AccountLinkPage({ onNavigate }: Props) {
     })
   }
 
-  // ── Countdown ─────────────────────────────────────────────────────────────
+  // ── Countdown (text only — bar is CSS animated) ───────────────────────────
 
   function startCountdown(expiry: Date) {
     if (timerRef.current) clearInterval(timerRef.current)
@@ -80,25 +67,25 @@ export default function AccountLinkPage({ onNavigate }: Props) {
       const left = Math.max(0, Math.round((expiry.getTime() - Date.now()) / 1000))
       setSecondsLeft(left)
       if (left === 0) {
-        if (timerRef.current) clearInterval(timerRef.current)
+        clearInterval(timerRef.current!)
         generateCode()
       }
     }
     tick()
-    timerRef.current = setInterval(tick, 500)
+    timerRef.current = setInterval(tick, 1000)
   }
 
-  // ── Generate code ─────────────────────────────────────────────────────────
+  // ── Generate ──────────────────────────────────────────────────────────────
 
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   const generateCode = useCallback(async () => {
     setGenerating(true)
     setError(null)
     try {
       const data = await apiCall("/account/discord/generate", "POST")
-      const exp  = new Date(data.expiresAt)
       setCode(data.code as string)
-      setExpiresAt(exp)
-      startCountdown(exp)
+      setSecondsLeft(CODE_TTL)
+      startCountdown(new Date(data.expiresAt))
     } catch (e: unknown) {
       const msg = e instanceof Error ? e.message : String(e)
       if (!msg.toLowerCase().includes("rate")) setError(msg)
@@ -108,7 +95,7 @@ export default function AccountLinkPage({ onNavigate }: Props) {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [withToken])
 
-  // ── Load status on mount ──────────────────────────────────────────────────
+  // ── Mount ─────────────────────────────────────────────────────────────────
 
   useEffect(() => {
     let cancelled = false
@@ -119,7 +106,7 @@ export default function AccountLinkPage({ onNavigate }: Props) {
         setStatus(data as DiscordStatus)
         if (!data.linked) generateCode()
       } catch {
-        if (!cancelled) setError("Failed to load account status.")
+        if (!cancelled) setError("Failed to load status.")
       } finally {
         if (!cancelled) setPageLoading(false)
       }
@@ -147,233 +134,183 @@ export default function AccountLinkPage({ onNavigate }: Props) {
     }
   }
 
-  // ── Derived ───────────────────────────────────────────────────────────────
+  // ── Render ────────────────────────────────────────────────────────────────
 
-  const pct           = expiresAt ? Math.max(0, Math.min(100, (secondsLeft / CODE_TTL) * 100)) : 0
   const formattedCode = code ? `${code.slice(0, 3)} ${code.slice(3)}` : "— — —"
   const linkedDate    = status?.discordLinkedAt
     ? new Date(status.discordLinkedAt).toLocaleDateString("en-US", { month: "long", day: "numeric", year: "numeric" })
     : null
 
-  // ── Render ────────────────────────────────────────────────────────────────
-
   return (
-    <div className="flex min-h-[calc(100vh-4rem)]">
+    <div className="min-h-[calc(100vh-4rem)] bg-[#111113] flex flex-col items-center justify-center px-4 py-16">
 
-      {/* ── Left panel ──────────────────────────────────────────────────── */}
-      <div className="hidden lg:flex flex-col justify-between w-[48%] bg-foreground text-background px-12 py-14">
-        <div>
-          {/* Logos */}
-          <div className="flex items-center gap-3 mb-12">
-            <img
-              src="/polymartlogoblack.png"
-              alt="Polymart"
-              className="h-8 brightness-0 invert select-none"
-              draggable={false}
-            />
-            <span className="text-background/20 text-xl font-thin select-none">×</span>
-            <DiscordLogo className="h-8 w-8 text-[#7289da]" />
-          </div>
+      <style>{`
+        @keyframes pm-countdown {
+          0%   { width: 100%; background-color: #5865F2; }
+          66%  { width: 34%;  background-color: #5865F2; }
+          67%  { width: 33%;  background-color: #f59e0b; }
+          100% { width: 0%;   background-color: #ef4444; }
+        }
+        .pm-bar        { animation: pm-countdown ${CODE_TTL}s linear forwards; }
+        .pm-discord    { filter: invert(34%) sepia(99%) saturate(1500%) hue-rotate(218deg) brightness(98%) contrast(96%); }
+        .pm-discord-bg { background-color: #5865F226; }
+      `}</style>
 
-          <p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-background/40 mb-3">
-            Account Link
-          </p>
-          <h1 className="text-4xl font-bold leading-tight mb-4">
-            Your portfolio,<br />in Discord.
-          </h1>
-          <p className="text-background/60 text-base mb-10 max-w-sm leading-relaxed">
-            Link your Polymart account once, and every trade you make in Discord syncs directly to your portfolio — no duplicate data, no separate game.
-          </p>
-
-          <ul className="space-y-4">
-            {FEATURES.map(({ text }) => (
-              <li key={text} className="flex items-start gap-3">
-                <CheckCircle2 className="w-4 h-4 text-[#7289da] shrink-0 mt-0.5" />
-                <span className="text-sm text-background/75 leading-relaxed">{text}</span>
-              </li>
-            ))}
-          </ul>
-        </div>
-
-        {/* Bottom note */}
-        <p className="text-[11px] text-background/30 leading-relaxed max-w-xs">
-          The link is global — one Discord account to one Polymart account, across all servers the bot is in.
-        </p>
+      {/* Back */}
+      <div className="w-full max-w-sm mb-8">
+        <button
+          type="button"
+          onClick={() => onNavigate("account")}
+          className="flex items-center gap-1.5 text-sm text-zinc-500 hover:text-zinc-300 transition-colors cursor-pointer bg-transparent border-0 p-0"
+        >
+          <ArrowLeft className="w-3.5 h-3.5" />
+          Back to Account
+        </button>
       </div>
 
-      {/* ── Right panel ─────────────────────────────────────────────────── */}
-      <div className="flex-1 flex flex-col items-center justify-center px-6 py-12 bg-background">
+      {/* Logos */}
+      <div className="flex items-center gap-3 mb-8">
+        <img
+          src="/polymartlogoblack.png"
+          alt="Polymart"
+          className="h-7 brightness-0 invert select-none"
+          draggable={false}
+        />
+        <span className="text-zinc-600 text-xl font-thin select-none">×</span>
+        <img
+          src="/discord (1).svg"
+          alt="Discord"
+          className="pm-discord h-7 w-7 select-none"
+          draggable={false}
+        />
+      </div>
 
-        {/* Back link */}
-        <div className="w-full max-w-sm mb-6">
-          <button
-            type="button"
-            onClick={() => onNavigate("account")}
-            className="flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground transition-colors cursor-pointer bg-transparent border-0 p-0"
-          >
-            <ArrowLeft className="w-3.5 h-3.5" />
-            Back to Account
-          </button>
+      {/* Title */}
+      <p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-zinc-500 mb-2">
+        Account Link
+      </p>
+
+      {pageLoading ? (
+        <div className="flex items-center gap-2 text-zinc-500 mt-8">
+          <Loader2 className="w-5 h-5 animate-spin" />
+          <span className="text-sm">Loading…</span>
         </div>
 
-        {/* Mobile logos */}
-        <div className="flex items-center gap-3 mb-8 lg:hidden">
-          <img src="/polymartlogoblack.png" alt="Polymart" className="h-7 select-none dark:invert" draggable={false} />
-          <span className="text-muted-foreground text-lg font-thin">×</span>
-          <DiscordLogo className="h-7 w-7 text-[#5865F2]" />
-        </div>
+      ) : status?.linked ? (
+        /* ── Linked state ──────────────────────────────────────────────────── */
+        <div className="w-full max-w-sm flex flex-col items-center gap-6 mt-4">
+          <h2 className="text-2xl font-bold text-white">Connected</h2>
 
-        {pageLoading ? (
-          <div className="w-full max-w-sm flex flex-col items-center gap-3 text-muted-foreground">
-            <Loader2 className="w-6 h-6 animate-spin" />
-            <p className="text-sm">Loading…</p>
-          </div>
-        ) : status?.linked ? (
-
-          /* ── Linked state ──────────────────────────────────────────────── */
-          <div className="w-full max-w-sm space-y-6">
-            <div>
-              <p className="text-[11px] font-semibold uppercase tracking-[0.15em] text-muted-foreground mb-2">
-                Account Link
-              </p>
-              <h2 className="text-2xl font-bold text-foreground">Connected</h2>
+          <div className="w-full rounded-2xl border border-white/10 bg-white/5 p-8 flex flex-col items-center gap-5">
+            <div className="pm-discord-bg w-16 h-16 rounded-full flex items-center justify-center">
+              <img src="/discord (1).svg" alt="Discord" className="pm-discord w-8 h-8" />
             </div>
 
-            {/* Connected card */}
-            <div className="rounded-2xl border border-border bg-muted/20 p-6 flex flex-col items-center gap-4 text-center">
-              <div className="w-14 h-14 rounded-full bg-emerald-500/10 flex items-center justify-center">
-                <DiscordLogo className="w-7 h-7 text-[#5865F2]" />
-              </div>
-              <div>
-                <p className="text-sm text-muted-foreground mb-1">Connected as</p>
-                <p className="text-xl font-bold text-foreground">
-                  @{status.discordUsername ?? "Discord User"}
-                </p>
-                {linkedDate && (
-                  <p className="text-xs text-muted-foreground mt-1">Linked {linkedDate}</p>
-                )}
-              </div>
-
-              <div className="w-full pt-2 border-t border-border space-y-2 text-left">
-                {FEATURES.map(({ text }) => (
-                  <div key={text} className="flex items-center gap-2 text-xs text-muted-foreground">
-                    <CheckCircle2 className="w-3.5 h-3.5 text-emerald-500 shrink-0" />
-                    {text}
-                  </div>
-                ))}
-              </div>
+            <div className="text-center">
+              <p className="text-sm text-zinc-400 mb-1">Connected as</p>
+              <p className="text-2xl font-bold text-white">@{status.discordUsername ?? "Discord User"}</p>
+              {linkedDate && <p className="text-xs text-zinc-500 mt-1">Linked {linkedDate}</p>}
             </div>
 
-            {error && <p className="text-sm text-destructive">{error}</p>}
-
-            <Button
-              variant="outline"
-              className="w-full text-destructive hover:text-destructive border-destructive/30 hover:bg-destructive/5"
-              onClick={handleUnlink}
-              disabled={unlinking}
-            >
-              {unlinking
-                ? <Loader2 className="w-4 h-4 animate-spin mr-2" />
-                : <Link2Off className="w-4 h-4 mr-2" />}
-              Unlink Discord Account
-            </Button>
-
-            <p className="text-center text-xs text-muted-foreground">
-              Unlinking will revert Discord trades to the server's local balance.
-            </p>
-          </div>
-
-        ) : (
-
-          /* ── Unlinked — code entry ──────────────────────────────────────── */
-          <div className="w-full max-w-sm space-y-6">
-            <div>
-              <p className="text-[11px] font-semibold uppercase tracking-[0.15em] text-muted-foreground mb-2">
-                Account Link
-              </p>
-              <h2 className="text-2xl font-bold text-foreground">Pairing Code</h2>
-              <p className="text-sm text-muted-foreground mt-1">
-                Use this code in Discord to connect your account.
-              </p>
-            </div>
-
-            {/* Code card */}
-            <div className="rounded-2xl border border-border bg-muted/20 p-7 flex flex-col items-center gap-5">
-
-              {/* Code digits */}
-              <div className="flex flex-col items-center gap-2">
-                <p className="text-[10px] uppercase tracking-widest text-muted-foreground font-semibold">
-                  Your code
-                </p>
-                {generating ? (
-                  <div className="h-16 flex items-center">
-                    <Loader2 className="w-8 h-8 animate-spin text-muted-foreground" />
-                  </div>
-                ) : (
-                  <p className="text-6xl font-mono font-bold tracking-[0.3em] text-foreground select-all tabular-nums leading-none py-2">
-                    {formattedCode}
-                  </p>
-                )}
-              </div>
-
-              {/* Countdown bar */}
-              <div className="w-full space-y-2">
-                {/* eslint-disable-next-line react/forbid-component-props */}
-                <div
-                  className="w-full h-1.5 rounded-full bg-muted overflow-hidden"
-                  style={{ '--bar-pct': `${pct}%` } as React.CSSProperties}
-                >
-                  <div
-                    className={`h-full w-[var(--bar-pct)] rounded-full transition-all duration-500 ${
-                      secondsLeft > 10 ? "bg-[#5865F2]" : "bg-amber-500"
-                    }`}
-                  />
+            <div className="w-full border-t border-white/10 pt-4 space-y-2.5">
+              {FEATURES.map(text => (
+                <div key={text} className="flex items-start gap-2.5 text-sm text-zinc-400">
+                  <CheckCircle2 className="w-4 h-4 text-emerald-500 shrink-0 mt-0.5" />
+                  {text}
                 </div>
-                <div className="flex items-center justify-between text-[11px] text-muted-foreground">
-                  <span>Expires in {secondsLeft}s</span>
-                  <button
-                    type="button"
-                    onClick={() => generateCode()}
-                    disabled={generating}
-                    className="flex items-center gap-1 hover:text-foreground transition-colors disabled:opacity-40 cursor-pointer bg-transparent border-0 p-0"
-                  >
-                    <RefreshCw className={`w-3 h-3 ${generating ? "animate-spin" : ""}`} />
-                    New code
-                  </button>
-                </div>
-              </div>
-            </div>
-
-            {/* Step instructions */}
-            <ol className="space-y-3">
-              {([
-                { n: 1, body: <span>Open any Discord server with <strong className="text-foreground">Polymart Bot</strong>.</span> },
-                { n: 2, body: <span>Type <code className="bg-muted px-1.5 py-0.5 rounded text-xs font-mono">/link {code ?? "######"}</code> and send.</span> },
-                { n: 3, body: <span>This page will update automatically once linked.</span> },
-              ] as const).map(({ n, body }) => (
-                <li key={n} className="flex items-start gap-3 text-sm text-muted-foreground">
-                  <span className="shrink-0 w-5 h-5 rounded-full bg-muted flex items-center justify-center text-[10px] font-bold text-foreground mt-0.5">
-                    {n}
-                  </span>
-                  {body}
-                </li>
               ))}
-            </ol>
-
-            {error && <p className="text-sm text-destructive">{error}</p>}
-
-            <p className="text-center text-xs text-muted-foreground">
-              Don't have the bot?{" "}
-              <a
-                href="https://polymart.co/#/docs/api"
-                className="underline hover:text-foreground transition-colors"
-              >
-                Learn more
-              </a>
-            </p>
+            </div>
           </div>
-        )}
-      </div>
+
+          {error && <p className="text-sm text-red-400">{error}</p>}
+
+          <Button
+            variant="outline"
+            className="w-full border-red-500/30 text-red-400 hover:text-red-300 hover:bg-red-500/10 hover:border-red-500/50 bg-transparent"
+            onClick={handleUnlink}
+            disabled={unlinking}
+          >
+            {unlinking
+              ? <Loader2 className="w-4 h-4 animate-spin mr-2" />
+              : <Link2Off className="w-4 h-4 mr-2" />}
+            Unlink Discord Account
+          </Button>
+
+          <p className="text-center text-xs text-zinc-600">
+            Unlinking reverts Discord trades to the server's local balance.
+          </p>
+        </div>
+
+      ) : (
+        /* ── Unlinked — code ───────────────────────────────────────────────── */
+        <div className="w-full max-w-sm flex flex-col items-center gap-6 mt-4">
+          <h2 className="text-2xl font-bold text-white">Pairing Code</h2>
+
+          {/* Code card */}
+          <div className="w-full rounded-2xl border border-white/10 bg-white/5 p-8 flex flex-col items-center gap-6">
+
+            <p className="text-[10px] uppercase tracking-widest text-zinc-500 font-semibold">
+              Your code
+            </p>
+
+            {/* The code */}
+            {generating ? (
+              <div className="h-20 flex items-center justify-center">
+                <Loader2 className="w-8 h-8 animate-spin text-zinc-500" />
+              </div>
+            ) : (
+              <p className="text-6xl font-mono font-bold tracking-[0.35em] text-white select-all tabular-nums leading-none">
+                {formattedCode}
+              </p>
+            )}
+
+            {/* Countdown bar — CSS animated for perfect smoothness */}
+            <div className="w-full space-y-2">
+              <div className="w-full h-1 rounded-full bg-white/10 overflow-hidden">
+                {/* key=code restarts the CSS animation on every new code */}
+                <div
+                  key={code ?? "init"}
+                  className="pm-bar h-full rounded-full"
+                />
+              </div>
+              <div className="flex items-center justify-between text-[11px] text-zinc-500">
+                <span>{secondsLeft}s remaining</span>
+                <button
+                  type="button"
+                  onClick={() => generateCode()}
+                  disabled={generating}
+                  className="flex items-center gap-1 hover:text-zinc-300 transition-colors disabled:opacity-40 cursor-pointer bg-transparent border-0 p-0"
+                >
+                  <RefreshCw className={`w-3 h-3 ${generating ? "animate-spin" : ""}`} />
+                  New code
+                </button>
+              </div>
+            </div>
+          </div>
+
+          {/* Steps */}
+          <ol className="w-full space-y-3">
+            <li className="flex items-start gap-3 text-sm text-zinc-400">
+              <span className="shrink-0 w-5 h-5 rounded-full bg-white/10 flex items-center justify-center text-[10px] font-bold text-zinc-300 mt-0.5">1</span>
+              <span>Open any Discord server with <strong className="text-zinc-200 font-semibold">Polymart Bot</strong>.</span>
+            </li>
+            <li className="flex items-start gap-3 text-sm text-zinc-400">
+              <span className="shrink-0 w-5 h-5 rounded-full bg-white/10 flex items-center justify-center text-[10px] font-bold text-zinc-300 mt-0.5">2</span>
+              <span>Type <code className="bg-white/10 px-1.5 py-0.5 rounded text-xs font-mono text-zinc-200">/link {code ?? "######"}</code> and send.</span>
+            </li>
+            <li className="flex items-start gap-3 text-sm text-zinc-400">
+              <span className="shrink-0 w-5 h-5 rounded-full bg-white/10 flex items-center justify-center text-[10px] font-bold text-zinc-300 mt-0.5">3</span>
+              <span>This page updates automatically once linked.</span>
+            </li>
+          </ol>
+
+          {error && <p className="text-sm text-red-400">{error}</p>}
+
+          <p className="text-center text-xs text-zinc-600">
+            Your Polymart portfolio stays in sync across web and Discord.
+          </p>
+        </div>
+      )}
     </div>
   )
 }
