@@ -84,6 +84,7 @@ services:
       ALLOWED_ORIGINS: ${ALLOWED_ORIGINS:-http://localhost:5173}
       SUPPORT_EMAIL: ${SUPPORT_EMAIL:-support@polymart.co}
       RESEND_API_KEY: ${RESEND_API_KEY}
+      BOT_API_KEY: ${BOT_API_KEY}
     ports:
       - "${APP_PORT:-4000}:4000"
     volumes:
