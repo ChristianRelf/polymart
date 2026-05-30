@@ -69,7 +69,7 @@ export default function LegalHubPage({ onNavigate }: Props) {
       <div className="mb-12">
         <h1 className="text-4xl font-extrabold tracking-tight text-foreground mb-3">Legal & Policies</h1>
         <p className="text-sm text-muted-foreground max-w-xl leading-relaxed">
-          All legal documentation for POLYMART — the platform, Discord bot, and Ko-fi integrations.
+          All legal documentation for POLYMART - the platform, Discord bot, and Ko-fi integrations.
           We aim to keep these policies clear and plain-language.
         </p>
       </div>

@@ -25,7 +25,7 @@ function getStripe() {
 }
 
 // ── Stripe webhook handler ────────────────────────────────────────────────────
-// Exported separately — server.js mounts this with express.raw() BEFORE json().
+// Exported separately - server.js mounts this with express.raw() BEFORE json().
 
 export async function stripeWebhookHandler(req, res) {
   const sig    = req.headers['stripe-signature'];

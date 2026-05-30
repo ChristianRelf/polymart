@@ -61,7 +61,7 @@ class ServiceEntry {
     if (this._state === STATE.OPEN) {
       if (Date.now() - this._openedAt >= this.resetTimeoutMs) {
         this._state = STATE.HALF_OPEN;
-        console.log(`[Registry:${this.name}] Circuit HALF-OPEN — probing...`);
+        console.log(`[Registry:${this.name}] Circuit HALF-OPEN - probing...`);
       } else {
         throw new Error(`Circuit breaker OPEN for service "${this.name}"`);
       }
@@ -94,7 +94,7 @@ class ServiceEntry {
       this._state    = STATE.OPEN;
       this._openedAt = Date.now();
       console.error(
-        `[Registry:${this.name}] Circuit OPEN after ${this._failures} failures — ` +
+        `[Registry:${this.name}] Circuit OPEN after ${this._failures} failures - ` +
         `will retry in ${this.resetTimeoutMs / 1000}s`
       );
     }
@@ -125,7 +125,7 @@ class Registry {
   }
 
   /**
-   * Register a named service. Safe to call multiple times — re-registration
+   * Register a named service. Safe to call multiple times - re-registration
    * resets the circuit breaker for that service.
    *
    * @param {string} name
@@ -133,7 +133,7 @@ class Registry {
    */
   register(name, opts = {}) {
     if (this._services.has(name)) {
-      console.warn(`[Registry] Re-registering service "${name}" — resetting circuit breaker`);
+      console.warn(`[Registry] Re-registering service "${name}" - resetting circuit breaker`);
     }
     this._services.set(name, new ServiceEntry(name, opts));
     console.log(`[Registry] Registered service "${name}" (critical=${opts.critical ?? false})`);
@@ -147,7 +147,7 @@ class Registry {
    */
   call(name, fn) {
     const svc = this._services.get(name);
-    if (!svc) throw new Error(`[Registry] Unknown service "${name}" — did you register it?`);
+    if (!svc) throw new Error(`[Registry] Unknown service "${name}" - did you register it?`);
     return svc.call(fn);
   }
 

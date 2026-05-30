@@ -67,7 +67,7 @@ export function DiscordLinkSection({ onNavigate }: Props) {
                 </p>
               ) : (
                 <p className="text-xs text-muted-foreground mt-0.5">
-                  Not linked — connect to sync your portfolio
+                  Not linked - connect to sync your portfolio
                 </p>
               )}
             </div>

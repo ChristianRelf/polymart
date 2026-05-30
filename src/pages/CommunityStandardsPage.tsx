@@ -85,7 +85,7 @@ export default function CommunityStandardsPage({ onNavigate }: Props) {
           <RuleCard
             severity="critical"
             label="Hate Speech & Racial Slurs"
-            description="Any content that uses racial slurs, promotes hatred based on race, ethnicity, national origin, religion, gender, sexual orientation, disability, or any other protected characteristic. This includes coded language, dog whistles, and content designed to demean or dehumanise groups of people. Zero tolerance — immediate permanent ban on first offence."
+            description="Any content that uses racial slurs, promotes hatred based on race, ethnicity, national origin, religion, gender, sexual orientation, disability, or any other protected characteristic. This includes coded language, dog whistles, and content designed to demean or dehumanise groups of people. Zero tolerance - immediate permanent ban on first offence."
           />
           <RuleCard
             severity="critical"
@@ -100,7 +100,7 @@ export default function CommunityStandardsPage({ onNavigate }: Props) {
           <RuleCard
             severity="high"
             label="Financial Fraud & Pump-and-Dump"
-            description="Deliberately spreading false information to manipulate simulated asset prices, coordinating pump-and-dump schemes, or impersonating financial advisors. Polymart is a simulation platform — treat it with the same integrity you would real markets."
+            description="Deliberately spreading false information to manipulate simulated asset prices, coordinating pump-and-dump schemes, or impersonating financial advisors. Polymart is a simulation platform - treat it with the same integrity you would real markets."
           />
           <RuleCard
             severity="high"
@@ -110,7 +110,7 @@ export default function CommunityStandardsPage({ onNavigate }: Props) {
           <RuleCard
             severity="high"
             label="Misinformation"
-            description="Deliberately spreading provably false financial, economic, or factual information intended to mislead others. Speculation and opinion are fine — knowingly false statements are not."
+            description="Deliberately spreading provably false financial, economic, or factual information intended to mislead others. Speculation and opinion are fine - knowingly false statements are not."
           />
           <RuleCard
             severity="medium"
@@ -175,12 +175,12 @@ export default function CommunityStandardsPage({ onNavigate }: Props) {
       <Section icon={<MessageSquare className="w-4 h-4" />} title="Building a Healthy Community">
         <p>Beyond avoiding prohibited content, great communities are built on positive contributions:</p>
         <ul className="space-y-1.5 mt-2">
-          <li className="flex items-start gap-2"><span className="text-emerald-400 shrink-0 mt-0.5">→</span> Share your reasoning, not just conclusions — help others learn</li>
-          <li className="flex items-start gap-2"><span className="text-emerald-400 shrink-0 mt-0.5">→</span> Disagree respectfully — challenge ideas, not people</li>
-          <li className="flex items-start gap-2"><span className="text-emerald-400 shrink-0 mt-0.5">→</span> Welcome newcomers — everyone started somewhere</li>
-          <li className="flex items-start gap-2"><span className="text-emerald-400 shrink-0 mt-0.5">→</span> Acknowledge when you're wrong — markets humiliate everyone eventually</li>
-          <li className="flex items-start gap-2"><span className="text-emerald-400 shrink-0 mt-0.5">→</span> Be specific — vague hot takes help nobody</li>
-          <li className="flex items-start gap-2"><span className="text-emerald-400 shrink-0 mt-0.5">→</span> Check your sources — cite data when making factual claims</li>
+          <li className="flex items-start gap-2"><span className="text-emerald-400 shrink-0 mt-0.5">→</span> Share your reasoning, not just conclusions - help others learn</li>
+          <li className="flex items-start gap-2"><span className="text-emerald-400 shrink-0 mt-0.5">→</span> Disagree respectfully - challenge ideas, not people</li>
+          <li className="flex items-start gap-2"><span className="text-emerald-400 shrink-0 mt-0.5">→</span> Welcome newcomers - everyone started somewhere</li>
+          <li className="flex items-start gap-2"><span className="text-emerald-400 shrink-0 mt-0.5">→</span> Acknowledge when you're wrong - markets humiliate everyone eventually</li>
+          <li className="flex items-start gap-2"><span className="text-emerald-400 shrink-0 mt-0.5">→</span> Be specific - vague hot takes help nobody</li>
+          <li className="flex items-start gap-2"><span className="text-emerald-400 shrink-0 mt-0.5">→</span> Check your sources - cite data when making factual claims</li>
         </ul>
       </Section>
 
@@ -188,11 +188,11 @@ export default function CommunityStandardsPage({ onNavigate }: Props) {
       <Section icon={<Users className="w-4 h-4" />} title="For Community Moderators">
         <p>As a community owner or moderator, you agree to uphold these standards within your community and use moderation powers responsibly:</p>
         <ul className="space-y-1.5 mt-2">
-          <li className="flex items-start gap-2"><span className="text-blue-400 shrink-0 mt-0.5">→</span> Moderate consistently — apply the same standards to all members including friends</li>
-          <li className="flex items-start gap-2"><span className="text-blue-400 shrink-0 mt-0.5">→</span> Document your reasoning — use the mod log to record actions taken</li>
-          <li className="flex items-start gap-2"><span className="text-blue-400 shrink-0 mt-0.5">→</span> Don't abuse banning — bans should be for policy violations, not personal disagreements</li>
-          <li className="flex items-start gap-2"><span className="text-blue-400 shrink-0 mt-0.5">→</span> Report platform-level violations — escalate zero-tolerance content to admins immediately</li>
-          <li className="flex items-start gap-2"><span className="text-blue-400 shrink-0 mt-0.5">→</span> Set clear community rules — use the rules section to set expectations for your members</li>
+          <li className="flex items-start gap-2"><span className="text-blue-400 shrink-0 mt-0.5">→</span> Moderate consistently - apply the same standards to all members including friends</li>
+          <li className="flex items-start gap-2"><span className="text-blue-400 shrink-0 mt-0.5">→</span> Document your reasoning - use the mod log to record actions taken</li>
+          <li className="flex items-start gap-2"><span className="text-blue-400 shrink-0 mt-0.5">→</span> Don't abuse banning - bans should be for policy violations, not personal disagreements</li>
+          <li className="flex items-start gap-2"><span className="text-blue-400 shrink-0 mt-0.5">→</span> Report platform-level violations - escalate zero-tolerance content to admins immediately</li>
+          <li className="flex items-start gap-2"><span className="text-blue-400 shrink-0 mt-0.5">→</span> Set clear community rules - use the rules section to set expectations for your members</li>
         </ul>
         <p className="mt-3">
           Moderators who abuse their powers or fail to enforce these platform-wide standards may have their moderator role
@@ -204,7 +204,7 @@ export default function CommunityStandardsPage({ onNavigate }: Props) {
       <Section icon={<AlertTriangle className="w-4 h-4" />} title="Reporting & Appeals">
         <p>
           If you see content that violates these standards, use the flag/report button on any post or comment.
-          Do not engage with or repost prohibited content — this can inadvertently spread it further.
+          Do not engage with or repost prohibited content - this can inadvertently spread it further.
         </p>
         <p className="mt-2">
           If your content was removed and you believe it was in error, or if you were banned and wish to appeal,

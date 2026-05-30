@@ -135,7 +135,7 @@ export function PanelGrid({
 
   // Pending drag: mousedown captured before the 6px threshold is exceeded
   const pendingRef = useRef<{ id: string; type: PanelType; startX: number; startY: number } | null>(null)
-  // Ghost DOM element — position updated directly to avoid setState on every mousemove
+  // Ghost DOM element - position updated directly to avoid setState on every mousemove
   const ghostRef = useRef<HTMLDivElement | null>(null)
 
   // ── Divider drag ───────────────────────────────────────────────────────────
@@ -166,7 +166,7 @@ export function PanelGrid({
     const onMove = (e: MouseEvent) => {
       const pd = pendingRef.current
 
-      // Still in pending phase — check threshold
+      // Still in pending phase - check threshold
       if (pd && !panelDragRef.current) {
         if (Math.hypot(e.clientX - pd.startX, e.clientY - pd.startY) > 6) {
           document.body.style.cursor = "grabbing"
@@ -225,7 +225,7 @@ export function PanelGrid({
       window.removeEventListener("mousemove", onMove)
       window.removeEventListener("mouseup", onUp)
     }
-  }, []) // mount once — all data via refs
+  }, []) // mount once - all data via refs
 
   // ── Panel actions ──────────────────────────────────────────────────────────
   const handleRemove = useCallback((id: string) => {
@@ -261,7 +261,7 @@ export function PanelGrid({
           data-panel-id={node.id}
           className={`relative flex flex-col h-full w-full overflow-hidden bg-[oklch(0.14_0.004_264)] transition-opacity ${isDragging ? "opacity-40" : ""}`}
         >
-          {/* Header — drag handle */}
+          {/* Header - drag handle */}
           <div
             className="flex items-center gap-1.5 px-2 py-1 border-b border-white/5 bg-[oklch(0.16_0.004_264)] shrink-0 select-none cursor-grab active:cursor-grabbing"
             onMouseDown={e => {
@@ -364,7 +364,7 @@ export function PanelGrid({
     <div className="h-full w-full overflow-hidden bg-[oklch(0.11_0.004_264)]">
       {renderNode(layout, [])}
 
-      {/* Drag ghost — follows cursor via direct DOM style updates */}
+      {/* Drag ghost - follows cursor via direct DOM style updates */}
       {panelDrag && (
         <div
           ref={ghostRef}

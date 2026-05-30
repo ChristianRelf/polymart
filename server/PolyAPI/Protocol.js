@@ -70,7 +70,7 @@ export const ERRORS = Object.freeze({
  * Send a successful response.
  *
  * @param {import('express').Response} res
- * @param {unknown}  data     Payload — any serialisable value
+ * @param {unknown}  data     Payload - any serialisable value
  * @param {object}  [meta]   Optional metadata (pagination, counts, etc.)
  * @param {number}  [status] HTTP status (default 200)
  */

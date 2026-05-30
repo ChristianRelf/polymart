@@ -798,7 +798,7 @@ function RsiChart({ candles, period, color }: { candles: Candle[]; period: numbe
       ctx.stroke()
       const last = rsi.filter(v => v !== null).at(-1)
       ctx.fillStyle = "rgba(255,255,255,0.4)"; ctx.font = "10px 'DM Mono',monospace"; ctx.textAlign = "left"
-      ctx.fillText(`RSI(${period}) ${last?.toFixed(1) ?? "—"}`, pad.l + 4, pad.t - 1)
+      ctx.fillText(`RSI(${period}) ${last?.toFixed(1) ?? "-"}`, pad.l + 4, pad.t - 1)
     }} />
   )
 }
@@ -1642,7 +1642,7 @@ function RightPanel({
       if (orderType === "market") {
         onToast(`${side === "buy" ? "Bought" : "Sold"} ${qty} ${symbol} @ $${r.executedPrice?.toFixed(2) ?? "?"}`, "success")
       } else {
-        onToast(`${orderType.charAt(0).toUpperCase() + orderType.slice(1)} ${side} placed — ${qty} ${symbol} @ $${triggerPrice}`, "info")
+        onToast(`${orderType.charAt(0).toUpperCase() + orderType.slice(1)} ${side} placed - ${qty} ${symbol} @ $${triggerPrice}`, "info")
       }
       setQty(""); setOrderNotes(""); setTriggerPrice("")
       onTradeComplete()
@@ -1819,7 +1819,7 @@ function RightPanel({
                   <Button className={`w-full text-sm font-bold h-9 ${side === "buy" ? "bg-emerald-600 hover:bg-emerald-500" : "bg-red-600 hover:bg-red-500"}`}
                     disabled={placing || !symbol || !qty || parseFloat(qty) <= 0 || !selectedPortfolio}
                     onClick={handleTrade}>
-                    {placing ? <Loader2 className="w-4 h-4 animate-spin" /> : `${side === "buy" ? "Buy" : "Sell"} ${symbol || "—"}`}
+                    {placing ? <Loader2 className="w-4 h-4 animate-spin" /> : `${side === "buy" ? "Buy" : "Sell"} ${symbol || "-"}`}
                   </Button>
 
                   {/* Symbol positions */}
@@ -1936,7 +1936,7 @@ function RightPanel({
               {/* Alerts */}
               <div>
                 <p className="text-[10px] text-muted-foreground uppercase tracking-wider mb-2 flex items-center gap-1">
-                  <Bell className="w-3 h-3" /> Price Alerts — {symbol || "no symbol"}
+                  <Bell className="w-3 h-3" /> Price Alerts - {symbol || "no symbol"}
                 </p>
                 {alerts.length === 0 ? (
                   <p className="text-xs text-muted-foreground">No alerts. Use the alert tool on the chart.</p>
@@ -2123,7 +2123,7 @@ function RightPanel({
         <TabsContent value="notes" className="flex-1 overflow-y-auto mt-0">
           <div className="p-3 h-full flex flex-col gap-2">
             <p className="text-[10px] text-muted-foreground uppercase tracking-wider flex items-center gap-1">
-              <BookOpen className="w-3 h-3" /> Trade journal — {symbol || "no symbol"}
+              <BookOpen className="w-3 h-3" /> Trade journal - {symbol || "no symbol"}
             </p>
             <Textarea
               value={notes}
@@ -2404,24 +2404,24 @@ function BottomPanel({
                     },
                     {
                       label: "Win Rate",
-                      val: portfolioStats.win_rate != null ? `${portfolioStats.win_rate.toFixed(1)}%` : "—",
+                      val: portfolioStats.win_rate != null ? `${portfolioStats.win_rate.toFixed(1)}%` : "-",
                       color: portfolioStats.win_rate != null && portfolioStats.win_rate >= 50 ? "text-emerald-500" : "text-red-400",
                     },
                     {
                       label: "Avg P&L",
                       val: portfolioStats.avg_pnl != null
                         ? `${portfolioStats.avg_pnl >= 0 ? "+" : ""}$${portfolioStats.avg_pnl.toFixed(2)}`
-                        : "—",
+                        : "-",
                       color: portfolioStats.avg_pnl != null && portfolioStats.avg_pnl >= 0 ? "text-emerald-500" : "text-red-400",
                     },
                     {
                       label: "Best Trade",
-                      val: portfolioStats.best_trade != null ? `+$${portfolioStats.best_trade.toFixed(2)}` : "—",
+                      val: portfolioStats.best_trade != null ? `+$${portfolioStats.best_trade.toFixed(2)}` : "-",
                       color: "text-emerald-500",
                     },
                     {
                       label: "Worst Trade",
-                      val: portfolioStats.worst_trade != null ? `-$${Math.abs(portfolioStats.worst_trade).toFixed(2)}` : "—",
+                      val: portfolioStats.worst_trade != null ? `-$${Math.abs(portfolioStats.worst_trade).toFixed(2)}` : "-",
                       color: "text-red-400",
                     },
                     {

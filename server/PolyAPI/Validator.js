@@ -33,7 +33,7 @@
  * @returns {string|null}   Error message, or null if valid
  */
 
-// ── v — validator factory namespace ──────────────────────────────────────────
+// ── v - validator factory namespace ──────────────────────────────────────────
 
 export const v = {
 
@@ -191,7 +191,7 @@ export const v = {
   },
 
   /**
-   * Optional wrapper — makes any validator treat missing/null values as valid.
+   * Optional wrapper - makes any validator treat missing/null values as valid.
    * @param {FieldValidator} validator
    * @returns {FieldValidator}
    */

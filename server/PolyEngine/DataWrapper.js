@@ -79,7 +79,7 @@ function validateMarketPayload(payload) {
 }
 
 function validateEventPayload(payload) {
-  if (payload === null) return; // null = no event fired this tick — valid
+  if (payload === null) return; // null = no event fired this tick - valid
   if (!payload || typeof payload !== 'object')
     throw new TypeError('DataWrapper[events]: payload must be an object or null');
   if (typeof payload.text !== 'string' || !payload.text)
@@ -96,12 +96,12 @@ function validateCryptoPayload(payload) {
   if (!Array.isArray(payload.categories))
     throw new TypeError('DataWrapper[crypto]: payload.categories must be an array');
 
-  // Filter bad-price coins rather than throwing — keeps the tick loop alive
+  // Filter bad-price coins rather than throwing - keeps the tick loop alive
   // while the self-heal in CryptoSimulation corrects the state over subsequent ticks.
   const bad = payload.coins.filter(c => typeof c.symbol !== 'string' || !isFiniteNumber(c.price) || c.price <= 0);
   if (bad.length > 0) {
     for (const c of bad)
-      console.error(`[DataWrapper] crypto: coin ${c.symbol ?? '?'} has invalid price ${c.price} — excluded from publish`);
+      console.error(`[DataWrapper] crypto: coin ${c.symbol ?? '?'} has invalid price ${c.price} - excluded from publish`);
     payload.coins = payload.coins.filter(c => typeof c.symbol === 'string' && isFiniteNumber(c.price) && c.price > 0);
   }
 }
@@ -147,7 +147,7 @@ export class DataWrapper {
    * Returns an unsubscribe function.
    *
    * @param {string}   channel  One of: "stocks" | "forex" | "market" | "events"
-   * @param {Function} fn       Callback(payload) — may return a Promise
+   * @param {Function} fn       Callback(payload) - may return a Promise
    * @returns {() => void}      Unsubscribe function
    */
   subscribe(channel, fn) {
@@ -185,7 +185,7 @@ export class DataWrapper {
     if (!KNOWN_CHANNELS.has(channel))
       throw new RangeError(`DataWrapper.publish: unknown channel "${channel}"`);
 
-    // Validate before dispatch — throws on schema violations
+    // Validate before dispatch - throws on schema violations
     VALIDATORS[channel](payload);
 
     // Track stats
@@ -216,7 +216,7 @@ export class DataWrapper {
    * Atomically swaps _pending so any publish() calls that arrive during drain
    * are queued for the NEXT drain, not lost.
    *
-   * If drainTimeoutMs > 0 and subscribers stall, we abort waiting and warn —
+   * If drainTimeoutMs > 0 and subscribers stall, we abort waiting and warn -
    * the stalled promises continue running in the background but won't block ticks.
    *
    * @returns {Promise<void>}
@@ -224,7 +224,7 @@ export class DataWrapper {
   async drain() {
     if (this._pending.length === 0) return;
 
-    // Atomic swap — new publish()es during await go into fresh array
+    // Atomic swap - new publish()es during await go into fresh array
     const batch = this._pending;
     this._pending = [];
 
@@ -244,14 +244,14 @@ export class DataWrapper {
 
     if (timedOut) {
       console.warn(
-        `[DataWrapper] drain() timed out after ${this._drainTimeoutMs}ms — ` +
+        `[DataWrapper] drain() timed out after ${this._drainTimeoutMs}ms - ` +
         `${batch.length} subscriber promise(s) still pending (continuing without them)`
       );
     }
   }
 
   /**
-   * Publish a complete tick result in one call — convenience wrapper that
+   * Publish a complete tick result in one call - convenience wrapper that
    * publishes to all channels atomically (before drain).
    *
    * @param {{ stocks: object[]; marketState: object; sectors: object[]; newEvent: object|null }} stockResult

@@ -47,7 +47,7 @@ export function createRouter({ label, logging = true, catch404 = true } = {}) {
   }
 
   if (catch404) {
-    // Deferred — must be last; callers add their routes before export.
+    // Deferred - must be last; callers add their routes before export.
     // We use a trick: register a finaliser that attaches 404 after the module
     // finishes loading, on the next event loop tick.
     process.nextTick(() => {

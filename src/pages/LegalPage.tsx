@@ -14,7 +14,7 @@ const TERMS_SECTIONS = [
   },
   {
     title: "2. Nature of the Service",
-    body: "POLYMART is a simulated paper trading platform. All financial data, prices, company names, market events, and economic indicators presented are entirely fictional and generated algorithmically. All trading activity on this platform is simulated — no real money is involved and no real securities are bought or sold. Nothing on this platform constitutes real financial data, investment advice, or any representation of actual market conditions or real companies.",
+    body: "POLYMART is a simulated paper trading platform. All financial data, prices, company names, market events, and economic indicators presented are entirely fictional and generated algorithmically. All trading activity on this platform is simulated - no real money is involved and no real securities are bought or sold. Nothing on this platform constitutes real financial data, investment advice, or any representation of actual market conditions or real companies.",
   },
   {
     title: "3. No Financial Advice",
@@ -64,12 +64,12 @@ const PRIVACY_SECTIONS = [
     body: "Your account information is used to operate your account, provide the paper trading simulation, process Premium subscription payments via Stripe, and display your profile in community features. Server logs are used to monitor service health, diagnose issues, and detect abuse. We do not sell, share, or license your personal information to third parties for advertising or commercial purposes.",
   },
   {
-    title: "3. Authentication — Clerk",
+    title: "3. Authentication - Clerk",
     body: "Account creation, sign-in, and session management is handled by Clerk (clerk.com). Clerk processes your email address and authentication credentials on our behalf. When you sign in with a social provider (e.g. Google), Clerk manages that OAuth flow. Clerk's privacy policy governs how they handle authentication data. We receive a user identifier and basic profile fields (name, email, avatar) from Clerk.",
   },
   {
-    title: "4. Payments — Stripe",
-    body: "Premium subscription billing is processed by Stripe (stripe.com). When you subscribe, you are redirected to a Stripe-hosted checkout page. We do not store your payment card details — Stripe handles all card data under PCI-DSS compliance. We receive confirmation of your subscription status and a subscription identifier from Stripe. Stripe's privacy policy governs how they handle payment information.",
+    title: "4. Payments - Stripe",
+    body: "Premium subscription billing is processed by Stripe (stripe.com). When you subscribe, you are redirected to a Stripe-hosted checkout page. We do not store your payment card details - Stripe handles all card data under PCI-DSS compliance. We receive confirmation of your subscription status and a subscription identifier from Stripe. Stripe's privacy policy governs how they handle payment information.",
   },
   {
     title: "5. Cookies & Local Storage",
@@ -77,7 +77,7 @@ const PRIVACY_SECTIONS = [
   },
   {
     title: "6. Portfolio & Trading Data",
-    body: "All paper trading activity — portfolios, positions, orders, and watchlists — is stored in our database and associated with your account. This data is used to provide the simulation experience and display your trading history. It is not shared with third parties.",
+    body: "All paper trading activity - portfolios, positions, orders, and watchlists - is stored in our database and associated with your account. This data is used to provide the simulation experience and display your trading history. It is not shared with third parties.",
   },
   {
     title: "7. Community Content",
@@ -89,7 +89,7 @@ const PRIVACY_SECTIONS = [
   },
   {
     title: "9. Your Rights",
-    body: "You may update your display name and profile picture through your account settings at any time. You may request deletion of your account and associated personal data by contacting us — we will process requests within 30 days. If you are in a jurisdiction with data protection rights (such as the EU/EEA under GDPR or California under CCPA), you may also request a copy of your data.",
+    body: "You may update your display name and profile picture through your account settings at any time. You may request deletion of your account and associated personal data by contacting us - we will process requests within 30 days. If you are in a jurisdiction with data protection rights (such as the EU/EEA under GDPR or California under CCPA), you may also request a copy of your data.",
   },
   {
     title: "10. Security",

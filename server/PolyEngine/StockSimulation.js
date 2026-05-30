@@ -299,14 +299,14 @@ export class StockSimulation {
     if (!Array.isArray(stocks))                throw new TypeError('loadState: stocks must be an array');
     if (!Array.isArray(sectors))               throw new TypeError('loadState: sectors must be an array');
     this._market  = { ...buildInitialMarketState(), ...market };
-    // Validate each stock — coerce invalid prices to the definition's base price
+    // Validate each stock - coerce invalid prices to the definition's base price
     this._stocks  = stocks.map(s => {
       if (!s || typeof s.ticker !== 'string') return null;
       const price = Number(s.price);
       if (!isFinite(price) || price <= 0) {
         const def = STOCK_DEFS[s.ticker];
         const fallback = def?.basePrice ?? 1;
-        console.warn(`[StockSimulation] loadState: bad price for ${s.ticker} (${s.price}) — reset to ${fallback}`);
+        console.warn(`[StockSimulation] loadState: bad price for ${s.ticker} (${s.price}) - reset to ${fallback}`);
         return { ...s, price: fallback, prev_price: fallback };
       }
       return s;
@@ -528,7 +528,7 @@ export class StockSimulation {
       ) * (cm < 0 ? -1 : 1);
 
       np += -(np - fairValue) * 0.0008;
-      // NaN/Inf guard — any corrupted input in the expression above falls back to prev price
+      // NaN/Inf guard - any corrupted input in the expression above falls back to prev price
       if (!isFinite(np)) np = p;
       np  = Math.round(Math.max(0.05, Math.min(np, def.basePrice * 6)) * 100) / 100;
 
@@ -659,7 +659,7 @@ export class StockSimulation {
 
   /**
    * Assert basic invariants on the current simulation state.
-   * Throws if any invariant is violated — useful in tests and on startup.
+   * Throws if any invariant is violated - useful in tests and on startup.
    */
   validate() {
     const m = this._market;
@@ -673,7 +673,7 @@ export class StockSimulation {
       if (!isFinite(st.price) || st.price <= 0)
         throw new RangeError(`Stock ${st.ticker} has invalid price: ${st.price}`);
       if (st.price > (STOCK_DEFS[st.ticker]?.basePrice || 1) * 8)
-        throw new RangeError(`Stock ${st.ticker} price ${st.price} exceeds 8x base — possible runaway`);
+        throw new RangeError(`Stock ${st.ticker} price ${st.price} exceeds 8x base - possible runaway`);
     }
     return true;
   }

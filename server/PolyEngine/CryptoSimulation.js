@@ -218,7 +218,7 @@ export class CryptoSimulation {
       };
       if (!isFinite(price) || price <= 0) {
         const fallback = CRYPTO_DEFS[c.symbol].basePrice;
-        console.warn(`[CryptoSimulation] loadState: bad price for ${c.symbol} (${c.price}) — resetting all price fields to ${fallback}`);
+        console.warn(`[CryptoSimulation] loadState: bad price for ${c.symbol} (${c.price}) - resetting all price fields to ${fallback}`);
         // Reset ALL price-derived fields so the tick starts from a clean baseline.
         merged.price        = fallback;
         merged.prev_price   = fallback;
@@ -335,7 +335,7 @@ export class CryptoSimulation {
 
         // Self-heal: if price somehow reached 0 (bad DB seed, truncation rounding, etc.)
         if (!c.price || c.price <= 0) {
-          console.warn(`[CryptoSimulation] tick: zero price on ${c.symbol} — resetting to basePrice ${def.basePrice}`);
+          console.warn(`[CryptoSimulation] tick: zero price on ${c.symbol} - resetting to basePrice ${def.basePrice}`);
           c = { ...c, price: def.basePrice, prev_price: def.basePrice };
         }
 
@@ -384,7 +384,7 @@ export class CryptoSimulation {
         const maxPrice = isStable ? def.basePrice * 1.05 : c.price * 2.0;
         const np = fixPrice(Math.max(minPrice, Math.min(maxPrice, rawNew)));
 
-        // Detect runaway volatility — activate cooldown
+        // Detect runaway volatility - activate cooldown
         const tickReturn = Math.abs((np - c.price) / (c.price || 1));
         if (tickReturn > 0.40) updated.vol_cooldown = 5;
 
@@ -514,7 +514,7 @@ export class CryptoSimulation {
     return { coins: newCoins, categories: newCategories, newEvent };
   }
 
-  /** Basic sanity check — throws on invariant violations. */
+  /** Basic sanity check - throws on invariant violations. */
   validate() {
     for (const c of this._coins) {
       if (!isFinite(c.price) || c.price <= 0)

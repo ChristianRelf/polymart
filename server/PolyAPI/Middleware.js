@@ -3,11 +3,11 @@
  *
  * Composable Express middleware factories used by every PolyAPI router:
  *
- *   requireAuth()           — Clerk JWT check; attaches req.userId
- *   requireAdmin()          — Auth + admin role check via Clerk publicMetadata
- *   rateLimit(opts)         — Sliding-window per-user (or per-IP) rate limiter
- *   requestLogger(label)    — Prefixed console log with method, path, status, ms
- *   corsHeaders(origins)    — Fine-grained CORS with per-origin allow list
+ *   requireAuth()           - Clerk JWT check; attaches req.userId
+ *   requireAdmin()          - Auth + admin role check via Clerk publicMetadata
+ *   rateLimit(opts)         - Sliding-window per-user (or per-IP) rate limiter
+ *   requestLogger(label)    - Prefixed console log with method, path, status, ms
+ *   corsHeaders(origins)    - Fine-grained CORS with per-origin allow list
  *
  * All middleware call next()/respond consistently through Protocol helpers so
  * error shapes are always { ok: false, error: { code, message } }.
@@ -35,7 +35,7 @@ export function requireAuth() {
 
 /**
  * Require auth AND admin role (publicMetadata.role === 'admin').
- * Fetches the Clerk user once per request — result is cached on req.clerkUser.
+ * Fetches the Clerk user once per request - result is cached on req.clerkUser.
  */
 export function requireAdmin() {
   return [
@@ -78,7 +78,7 @@ export function rateLimit({
   /** @type {Map<string, { tokens: number; windowStart: number }>} */
   const store = new Map();
 
-  // Periodic cleanup — evict stale entries every 10 minutes
+  // Periodic cleanup - evict stale entries every 10 minutes
   const cleanup = setInterval(() => {
     const now = Date.now();
     for (const [k, v] of store) {
@@ -157,7 +157,7 @@ export function corsHeaders(allowedOrigins) {
 // ── notFound ──────────────────────────────────────────────────────────────────
 
 /**
- * 404 handler — attach at the end of a router to catch unmatched routes.
+ * 404 handler - attach at the end of a router to catch unmatched routes.
  */
 export function notFound() {
   return (req, res) => {
@@ -168,7 +168,7 @@ export function notFound() {
 // ── errorBoundary ─────────────────────────────────────────────────────────────
 
 /**
- * Express error-handler middleware — catches anything passed to next(err).
+ * Express error-handler middleware - catches anything passed to next(err).
  * Attach as app.use(errorBoundary()) after all routes.
  * @param {string} [label]
  */

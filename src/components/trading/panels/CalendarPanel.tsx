@@ -16,7 +16,7 @@ export function CalendarPanel() {
   return (
     <div className="flex flex-col h-full">
       <div className="px-3 py-1.5 border-b border-white/5 shrink-0">
-        <p className="text-[10px] text-muted-foreground">Economic Calendar — Simulated data</p>
+        <p className="text-[10px] text-muted-foreground">Economic Calendar - Simulated data</p>
       </div>
       <div className="flex-1 min-h-0 overflow-y-auto">
         {/* Header */}
@@ -37,7 +37,7 @@ export function CalendarPanel() {
             </div>
             <span className="w-8 text-center text-[9px] font-mono font-semibold text-muted-foreground shrink-0">{ev.currency}</span>
             <span className={`w-14 text-right text-[10px] font-mono shrink-0 ${ev.actual ? (ev.actual > ev.forecast ? "text-emerald-400" : "text-red-400") : "text-muted-foreground"}`}>
-              {ev.actual ?? "—"}
+              {ev.actual ?? "-"}
             </span>
             <span className="w-14 text-right text-[10px] font-mono text-muted-foreground shrink-0">{ev.forecast}</span>
             <span className="w-14 text-right text-[10px] font-mono text-muted-foreground/60 shrink-0">{ev.previous}</span>

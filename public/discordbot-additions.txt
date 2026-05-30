@@ -1,0 +1,231 @@
+# Polymart Discord Bot - New Additions
+# Summary of features added to the bot integration layer.
+# For full implementation details see: discordbot.txt
+
+---
+
+## Account Linking
+
+Users can connect their Discord account to their Polymart account at polymart.co/account/link.
+
+Flow:
+1. User visits polymart.co/account/link (must be signed in)
+2. A 6-digit pairing code is shown with a 30-second countdown
+3. User runs /link [code] in any Discord server with the bot
+4. Accounts are linked - the page updates automatically within 3 seconds
+5. All portfolio commands now use Polymart's server data instead of local SQLite
+
+The link is global (not per-server). One Discord account links to one Polymart account.
+Users can unlink from the website or with /unlink in Discord.
+
+New bot commands:
+  /link [code]   - Link Discord to a Polymart account using the pairing code
+  /unlink        - Disconnect from Polymart (reverts to local per-guild balance)
+
+Bot .env requirement:
+  BOT_API_KEY=<shared secret set in Polymart server .env>
+  POLYMART_BASE_URL=https://polymart.co/api/v1
+
+---
+
+## Synced Portfolio Data
+
+Once linked, all trading data is server-authoritative and visible on polymart.co.
+
+/buy <ticker> <quantity>
+  Executes a market order on the user's Polymart portfolio.
+  The trade appears instantly in the Dashboard on the website.
+
+/sell <ticker> <quantity>
+  Sells from the linked portfolio. Realised P&L is recorded server-side.
+
+/portfolio
+  Shows live positions and cash balance pulled from Polymart.
+  Same data as the Portfolio page on the website.
+
+/balance
+  Shows cash balance, portfolio value, unrealised P&L, and number of holdings.
+  Fetches from Polymart server, not local SQLite.
+
+---
+
+## Order History
+
+/history [page]
+  Paginated list of filled orders from the linked portfolio.
+  - Shows: side (BUY/SELL), symbol, quantity, price, total, realised P&L
+  - 10 orders per page
+  - Same orders visible at polymart.co/dashboard → portfolio
+
+API endpoint: GET /api/v1/bot/discord/history/:discordId?page=1&limit=20&portfolioId=
+
+---
+
+## P&L Stats
+
+/stats
+  Full trading performance summary across all portfolios.
+  - Total cash balance
+  - Number of portfolios
+  - Total orders executed
+  - Total closed positions
+  - Win rate (% of sells that were profitable)
+  - Total realised P&L
+  - Best trade / Worst trade
+
+API endpoint: GET /api/v1/bot/discord/stats/:discordId
+
+---
+
+## Watchlist Sync
+
+Watchlist items added via Discord appear on polymart.co and vice versa.
+Uses the user's default (first created) watchlist.
+
+/watchlist view
+  Shows all watchlist items with live prices and % change.
+
+/watchlist add <ticker> [type]
+  Adds a stock, forex pair, or crypto coin to the watchlist.
+  Appears immediately on polymart.co.
+
+/watchlist remove <ticker>
+  Removes from the watchlist on both Discord and the website.
+
+API endpoints:
+  GET    /api/v1/bot/discord/watchlist/:discordId
+  POST   /api/v1/bot/discord/watchlist/:discordId   { symbol, assetType }
+  DELETE /api/v1/bot/discord/watchlist/:discordId   { symbol, assetType }
+
+---
+
+## Server-Side Price Alerts
+
+Alerts are now stored on the Polymart server instead of local SQLite.
+They survive bot restarts, show on polymart.co, and fire as Discord DMs.
+
+/alert set <ticker> <above|below> <price> [note]
+  Creates a price alert stored on Polymart's server.
+  The alert also appears on the user's account page at polymart.co.
+  Maximum 10 active alerts per account.
+
+/alert list
+  Shows all active (untriggered) alerts with their conditions.
+
+/alert clear <id>
+  Deletes an alert by its ID (shown in /alert list).
+
+Firing:
+  When triggered, the bot sends a DM to the user with the asset, condition, and current price.
+  The alert is marked as triggered on the server (timestamp recorded).
+  Triggered alerts remain visible on the website as history.
+
+Alert poller runs every 12 seconds:
+  - Calls GET /api/v1/bot/discord/alerts/pending to get all untriggered alerts for all linked users
+  - Fetches current prices in one batch per asset class (stocks, crypto, forex)
+  - For each triggered alert: calls POST /api/v1/bot/discord/alerts/:id/trigger, then DMs the user
+  - Also handles local SQLite alerts for unlinked users in the same pass
+
+API endpoints:
+  GET    /api/v1/bot/discord/alerts/:discordId
+  POST   /api/v1/bot/discord/alerts/:discordId   { symbol, assetType, direction, threshold, note }
+  DELETE /api/v1/bot/discord/alerts/:discordId/:alertId
+  GET    /api/v1/bot/discord/alerts/pending            ← poller use only
+  POST   /api/v1/bot/discord/alerts/:alertId/trigger   ← poller use only
+
+---
+
+## Pending Orders
+
+Users can place limit and stop orders on polymart.co and manage them from Discord.
+
+/pending
+  Lists all pending (limit/stop) orders waiting to be filled.
+  Shows: symbol, side (BUY/SELL), order type, quantity, trigger price.
+
+/pending cancel <id>
+  Cancels a pending order by ID. The order is marked cancelled on the server.
+  Reflects immediately on polymart.co.
+
+API endpoints:
+  GET    /api/v1/bot/discord/pending/:discordId?portfolioId=
+  DELETE /api/v1/bot/discord/pending/:discordId/:orderId
+
+---
+
+## Bot API - Full Endpoint Reference
+
+All bot endpoints require: Authorization: Bearer <BOT_API_KEY>
+Base: https://polymart.co/api/v1
+
+LINKING
+  POST   /bot/discord/verify                        Claim pairing code, link accounts
+  DELETE /bot/discord/user/:discordId               Unlink a Discord account
+
+USER & PORTFOLIO
+  GET    /bot/discord/user/:discordId               Profile + portfolios list
+  GET    /bot/discord/portfolio/:discordId          Positions + cash balance
+  POST   /bot/discord/order                         Execute market order
+
+HISTORY & STATS
+  GET    /bot/discord/history/:discordId            Paginated filled orders
+  GET    /bot/discord/stats/:discordId              P&L performance summary
+
+WATCHLIST
+  GET    /bot/discord/watchlist/:discordId          View watchlist
+  POST   /bot/discord/watchlist/:discordId          Add item
+  DELETE /bot/discord/watchlist/:discordId          Remove item
+
+ALERTS
+  GET    /bot/discord/alerts/:discordId             User's active alerts
+  POST   /bot/discord/alerts/:discordId             Create alert
+  DELETE /bot/discord/alerts/:discordId/:alertId    Delete alert
+  GET    /bot/discord/alerts/pending                All alerts for poller
+  POST   /bot/discord/alerts/:alertId/trigger       Mark alert as triggered
+
+PENDING ORDERS
+  GET    /bot/discord/pending/:discordId            List pending orders
+  DELETE /bot/discord/pending/:discordId/:orderId   Cancel pending order
+
+---
+
+## Fallback Behaviour
+
+Commands always fall back gracefully if the user is not linked.
+
+Linked user   → uses Polymart server data (all of the above)
+Unlinked user → uses local per-guild SQLite balance and alerts
+
+The bot checks stmt.getLink.get(interaction.user.id) at the start of every
+portfolio command to determine which path to take. If the Polymart API returns
+a 404 (user unlinked from the website), the stale local link is auto-deleted
+and the user is prompted to re-link.
+
+---
+
+## New Tables (Polymart server DB)
+
+server_price_alerts
+  Stores price alerts for all users (created from website or Discord).
+  Columns: id, clerk_id, asset_type, symbol, direction, threshold, note,
+           triggered, created_at, triggered_at
+
+discord_link_codes
+  Temporary 6-digit pairing codes (30s TTL, single-use).
+  Columns: id, clerk_user_id, code, expires_at, used
+
+user_profiles additions
+  discord_id VARCHAR(30)     - linked Discord user ID (unique)
+  discord_username VARCHAR(100) - Discord username at time of link
+  discord_linked_at DATETIME  - timestamp of link
+
+---
+
+## polymart.co/account/link - The Linking Page
+
+Dark single-page design at /#/account/link (protected, requires sign-in).
+Shows Polymart × Discord logos, 6-digit code, 30s animated countdown bar.
+Page polls every 3 seconds while showing the code - auto-updates to "Connected"
+state as soon as the user runs /link in Discord, no manual refresh needed.
+Linked state shows Discord username, linked date, and feature list.
+Unlink button removes the link from both the website and Discord side.

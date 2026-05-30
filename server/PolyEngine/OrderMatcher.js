@@ -65,7 +65,7 @@ export async function matchPendingOrders(dbUser, dbMarket) {
         // Re-check cash balance at fill time
         const [[portfolio]] = await conn.query('SELECT cash_balance FROM portfolios WHERE id = ? FOR UPDATE', [portfolioId]);
         if (!portfolio || Number(portfolio.cash_balance) < total) {
-          // Insufficient funds at fill time — cancel the order
+          // Insufficient funds at fill time - cancel the order
           await conn.query('UPDATE orders SET status = ? WHERE id = ?', ['cancelled', order.id]);
           await conn.commit();
           continue;

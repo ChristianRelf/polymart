@@ -5,7 +5,7 @@
  * sector definitions, stock definitions, and market events.
  *
  * Nothing here is mutable at runtime. All simulation state lives in
- * StockSimulation. Import these as constants — never modify them.
+ * StockSimulation. Import these as constants - never modify them.
  */
 
 // ── Validation helpers ────────────────────────────────────────────────────────
@@ -476,7 +476,7 @@ const _WEIGHTED_POOL = Object.freeze(
 
 /**
  * Sample a random event from the weighted pool.
- * Returns null to represent "no event this tick" — callers should call this
+ * Returns null to represent "no event this tick" - callers should call this
  * conditionally based on their desired event probability.
  * @returns {EventDef}
  */

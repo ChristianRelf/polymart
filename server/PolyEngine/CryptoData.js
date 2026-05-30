@@ -5,7 +5,7 @@
  * category definitions, coin definitions, and crypto events.
  *
  * Nothing here is mutable at runtime. All simulation state lives in
- * CryptoSimulation. Import these as constants — never modify them.
+ * CryptoSimulation. Import these as constants - never modify them.
  */
 
 // ── Validation helpers ────────────────────────────────────────────────────────
@@ -279,84 +279,84 @@ function validateCryptoEvent(e, i) {
 /** @type {CryptoEventDef[]} */
 const _CRYPTO_EVENTS_RAW = [
   // ── Macro / Market-wide ──────────────────────────────────────────────────────
-  {text:"Bitcoin halving event cuts block reward — supply shock rally",          effect:.10,  weight:2, category:"macro"},
-  {text:"Spot crypto ETF approved by regulator — institutional flood",           effect:.12,  weight:2, category:"macro"},
-  {text:"Fed signals rate cuts — risk-on surge boosts crypto markets",           effect:.06,  weight:2, category:"macro"},
-  {text:"Fed hikes 75bp — risk-off liquidations sweep leveraged longs",          effect:-.07, weight:2, category:"macro"},
-  {text:"Crypto fear & greed index hits extreme greed — parabolic phase",        effect:.08,  weight:2, category:"macro"},
-  {text:"Total crypto market cap breaks $3T — mainstream media frenzy",          effect:.07,  weight:1, category:"macro"},
-  {text:"Whale wallet moves $2B in BTCX — market speculation ignites",           effect:.04,  weight:3, category:"macro"},
-  {text:"Major exchange suffers $1.4B hack — withdrawal panic",                  effect:-.12, weight:3, category:"macro"},
-  {text:"Exchange collapse announced — contagion spreads across markets",         effect:-.18, weight:2, category:"macro"},
-  {text:"Stablecoin de-pegging crisis spreads fear — broad sell-off",            effect:-.10, weight:2, category:"macro"},
-  {text:"Crypto market crashes 40% — leveraged longs liquidated en masse",       effect:-.15, weight:2, category:"macro"},
-  {text:"Crypto bear market rally — shorts squeezed 20% in 24h",                effect:.09,  weight:2, category:"macro"},
+  {text:"Bitcoin halving event cuts block reward - supply shock rally",          effect:.10,  weight:2, category:"macro"},
+  {text:"Spot crypto ETF approved by regulator - institutional flood",           effect:.12,  weight:2, category:"macro"},
+  {text:"Fed signals rate cuts - risk-on surge boosts crypto markets",           effect:.06,  weight:2, category:"macro"},
+  {text:"Fed hikes 75bp - risk-off liquidations sweep leveraged longs",          effect:-.07, weight:2, category:"macro"},
+  {text:"Crypto fear & greed index hits extreme greed - parabolic phase",        effect:.08,  weight:2, category:"macro"},
+  {text:"Total crypto market cap breaks $3T - mainstream media frenzy",          effect:.07,  weight:1, category:"macro"},
+  {text:"Whale wallet moves $2B in BTCX - market speculation ignites",           effect:.04,  weight:3, category:"macro"},
+  {text:"Major exchange suffers $1.4B hack - withdrawal panic",                  effect:-.12, weight:3, category:"macro"},
+  {text:"Exchange collapse announced - contagion spreads across markets",         effect:-.18, weight:2, category:"macro"},
+  {text:"Stablecoin de-pegging crisis spreads fear - broad sell-off",            effect:-.10, weight:2, category:"macro"},
+  {text:"Crypto market crashes 40% - leveraged longs liquidated en masse",       effect:-.15, weight:2, category:"macro"},
+  {text:"Crypto bear market rally - shorts squeezed 20% in 24h",                effect:.09,  weight:2, category:"macro"},
   {text:"Record $5B in crypto futures liquidated in single hour",                effect:-.09, weight:2, category:"macro"},
   {text:"Global crypto adoption reaches 1B users milestone",                     effect:.06,  weight:1, category:"macro"},
-  {text:"Layer-0 interoperability breakthrough announced — ecosystem boom",      effect:.05,  weight:2, category:"macro"},
-  {text:"Quantum computing threat to elliptic curve crypto overstated — relief", effect:.03,  weight:2, category:"macro"},
-  {text:"Inflation spikes — crypto narrative as digital gold strengthens",       effect:.05,  weight:2, category:"macro"},
+  {text:"Layer-0 interoperability breakthrough announced - ecosystem boom",      effect:.05,  weight:2, category:"macro"},
+  {text:"Quantum computing threat to elliptic curve crypto overstated - relief", effect:.03,  weight:2, category:"macro"},
+  {text:"Inflation spikes - crypto narrative as digital gold strengthens",       effect:.05,  weight:2, category:"macro"},
   {text:"Deflationary crypto assets surge as fiat debasement fears rise",        effect:.04,  weight:2, category:"macro"},
-  {text:"Cross-chain bridge catastrophic exploit — $800M drained",               effect:-.09, weight:3, category:"macro"},
+  {text:"Cross-chain bridge catastrophic exploit - $800M drained",               effect:-.09, weight:3, category:"macro"},
   {text:"Central bank digital currency pilot threatens stablecoin dominance",    effect:-.05, weight:2, category:"macro"},
-  {text:"Crypto derivatives open interest hits ATH — volatility incoming",       effect:.03,  weight:2, category:"macro"},
-  {text:"Market-wide MEV attack drains gas — sentiment craters",                 effect:-.04, weight:2, category:"macro"},
+  {text:"Crypto derivatives open interest hits ATH - volatility incoming",       effect:.03,  weight:2, category:"macro"},
+  {text:"Market-wide MEV attack drains gas - sentiment craters",                 effect:-.04, weight:2, category:"macro"},
 
   // ── Regulation ────────────────────────────────────────────────────────────────
-  {text:"Major jurisdiction bans all crypto trading — market panic",             effect:-.14, weight:2, category:"regulation"},
-  {text:"G20 announces crypto regulatory framework — clarity rally",             effect:.08,  weight:2, category:"regulation"},
-  {text:"US Treasury sanctions major crypto mixer — privacy coin sell-off",      effect:-.06, weight:2, category:"regulation", sector:"privacy"},
+  {text:"Major jurisdiction bans all crypto trading - market panic",             effect:-.14, weight:2, category:"regulation"},
+  {text:"G20 announces crypto regulatory framework - clarity rally",             effect:.08,  weight:2, category:"regulation"},
+  {text:"US Treasury sanctions major crypto mixer - privacy coin sell-off",      effect:-.06, weight:2, category:"regulation", sector:"privacy"},
   {text:"SEC charges DeFi protocol as unregistered securities exchange",         effect:-.08, weight:2, category:"regulation", sector:"defi"},
-  {text:"MiCA crypto regulation passes EU — institutional confidence rises",     effect:.07,  weight:2, category:"regulation"},
-  {text:"CFTC approves crypto commodity status — derivatives market opens",      effect:.06,  weight:2, category:"regulation"},
-  {text:"Major bank freezes crypto business accounts — FUD spike",               effect:-.06, weight:3, category:"regulation"},
-  {text:"Crypto tax guidance released — compliance rally on certainty",          effect:.03,  weight:2, category:"regulation"},
+  {text:"MiCA crypto regulation passes EU - institutional confidence rises",     effect:.07,  weight:2, category:"regulation"},
+  {text:"CFTC approves crypto commodity status - derivatives market opens",      effect:.06,  weight:2, category:"regulation"},
+  {text:"Major bank freezes crypto business accounts - FUD spike",               effect:-.06, weight:3, category:"regulation"},
+  {text:"Crypto tax guidance released - compliance rally on certainty",          effect:.03,  weight:2, category:"regulation"},
   {text:"NFT securities classification ruling sparks panic",                     effect:-.07, weight:2, category:"regulation", sector:"metaverse"},
   {text:"GameFi tokens ruled as gambling instruments in major market",           effect:-.08, weight:2, category:"regulation", sector:"gamefi"},
-  {text:"Crypto-friendly presidential candidate wins — markets surge",           effect:.10,  weight:2, category:"regulation"},
+  {text:"Crypto-friendly presidential candidate wins - markets surge",           effect:.10,  weight:2, category:"regulation"},
   {text:"Privacy coins delisted by major exchanges under AML pressure",          effect:-.10, weight:3, category:"regulation", sector:"privacy"},
-  {text:"AI token regulation bill proposed — sector-wide uncertainty",           effect:-.05, weight:2, category:"regulation", sector:"ai"},
+  {text:"AI token regulation bill proposed - sector-wide uncertainty",           effect:-.05, weight:2, category:"regulation", sector:"ai"},
   {text:"Decentralised exchange regulatory exemption confirmed",                 effect:.07,  weight:2, category:"regulation", sector:"defi"},
-  {text:"Oracle data tampering criminalised — sector confidence boost",          effect:.05,  weight:1, category:"regulation", sector:"oracle"},
+  {text:"Oracle data tampering criminalised - sector confidence boost",          effect:.05,  weight:1, category:"regulation", sector:"oracle"},
 
   // ── L1 Events ────────────────────────────────────────────────────────────────
-  {text:"Major L1 mainnet upgrade goes live — throughput triples",              effect:.08,  weight:2, category:"event", sector:"l1"},
-  {text:"L1 chain suffers 6-hour outage — confidence shaken",                   effect:-.08, weight:2, category:"event", sector:"l1"},
-  {text:"Validator cartel detected on major L1 — decentralisation fear",        effect:-.06, weight:2, category:"event", sector:"l1"},
-  {text:"Top L1 announces EVM compatibility — developer migration begins",       effect:.07,  weight:2, category:"event", sector:"l1"},
-  {text:"L1 staking yield surges to 18% — massive validator inflow",            effect:.05,  weight:2, category:"event", sector:"l1"},
-  {text:"L1 ecosystem fund deploys $500M — DApp boom incoming",                 effect:.06,  weight:2, category:"event", sector:"l1"},
+  {text:"Major L1 mainnet upgrade goes live - throughput triples",              effect:.08,  weight:2, category:"event", sector:"l1"},
+  {text:"L1 chain suffers 6-hour outage - confidence shaken",                   effect:-.08, weight:2, category:"event", sector:"l1"},
+  {text:"Validator cartel detected on major L1 - decentralisation fear",        effect:-.06, weight:2, category:"event", sector:"l1"},
+  {text:"Top L1 announces EVM compatibility - developer migration begins",       effect:.07,  weight:2, category:"event", sector:"l1"},
+  {text:"L1 staking yield surges to 18% - massive validator inflow",            effect:.05,  weight:2, category:"event", sector:"l1"},
+  {text:"L1 ecosystem fund deploys $500M - DApp boom incoming",                 effect:.06,  weight:2, category:"event", sector:"l1"},
 
   // ── L2 Events ────────────────────────────────────────────────────────────────
-  {text:"L2 sequencer goes down — users stuck in withdrawal queue",             effect:-.06, weight:2, category:"event", sector:"l2"},
-  {text:"L2 ZK proof verification time cut by 90% — massive fee drop",         effect:.07,  weight:2, category:"event", sector:"l2"},
-  {text:"L2 token airdrop announced — massive activity spike",                  effect:.10,  weight:2, category:"event", sector:"l2"},
-  {text:"L2 centralized sequencer controversy — decentralisation debate heats", effect:-.05, weight:2, category:"event", sector:"l2"},
-  {text:"L2 TVL breaks $50B — scaling narrative dominates",                     effect:.06,  weight:2, category:"event", sector:"l2"},
+  {text:"L2 sequencer goes down - users stuck in withdrawal queue",             effect:-.06, weight:2, category:"event", sector:"l2"},
+  {text:"L2 ZK proof verification time cut by 90% - massive fee drop",         effect:.07,  weight:2, category:"event", sector:"l2"},
+  {text:"L2 token airdrop announced - massive activity spike",                  effect:.10,  weight:2, category:"event", sector:"l2"},
+  {text:"L2 centralized sequencer controversy - decentralisation debate heats", effect:-.05, weight:2, category:"event", sector:"l2"},
+  {text:"L2 TVL breaks $50B - scaling narrative dominates",                     effect:.06,  weight:2, category:"event", sector:"l2"},
 
   // ── DeFi Events ──────────────────────────────────────────────────────────────
   {text:"Top DeFi protocol hit by $200M flash loan exploit",                    effect:-.12, weight:3, category:"event", sector:"defi"},
   {text:"DeFi TVL breaks all-time high of $400B",                               effect:.08,  weight:2, category:"event", sector:"defi"},
-  {text:"Yield farming APY spike — liquidity mining wars intensify",            effect:.07,  weight:2, category:"event", sector:"defi"},
+  {text:"Yield farming APY spike - liquidity mining wars intensify",            effect:.07,  weight:2, category:"event", sector:"defi"},
   {text:"Rug pull drains $80M from anonymous DeFi protocol",                   effect:-.08, weight:3, category:"event", sector:"defi"},
   {text:"Oracle manipulation attack liquidates $120M in positions",             effect:-.09, weight:2, category:"event", sector:"defi"},
   {text:"DeFi blue-chip protocol achieves $10B in protocol revenue milestone",  effect:.05,  weight:1, category:"event", sector:"defi"},
   {text:"Governance attack captures major DeFi treasury",                       effect:-.08, weight:2, category:"event", sector:"defi"},
 
   // ── Meme Events ──────────────────────────────────────────────────────────────
-  {text:"Celebrity tweets meme coin — 10x in 10 minutes",                       effect:.25,  weight:4, category:"event", sector:"meme"},
-  {text:"Meme coin listed on top exchange — volume explodes 100x",              effect:.18,  weight:3, category:"event", sector:"meme"},
-  {text:"Meme coin community burns 30% of supply — price rockets",              effect:.15,  weight:3, category:"event", sector:"meme"},
-  {text:"Meme coin dev wallet dumped — community rug suspicion",                effect:-.20, weight:3, category:"event", sector:"meme"},
-  {text:"Meme supercycle begins — all dog coins surge simultaneously",          effect:.20,  weight:2, category:"event", sector:"meme"},
-  {text:"Meme coin bubble pops — 80% drawdown in 48 hours",                    effect:-.25, weight:3, category:"event", sector:"meme"},
+  {text:"Celebrity tweets meme coin - 10x in 10 minutes",                       effect:.25,  weight:4, category:"event", sector:"meme"},
+  {text:"Meme coin listed on top exchange - volume explodes 100x",              effect:.18,  weight:3, category:"event", sector:"meme"},
+  {text:"Meme coin community burns 30% of supply - price rockets",              effect:.15,  weight:3, category:"event", sector:"meme"},
+  {text:"Meme coin dev wallet dumped - community rug suspicion",                effect:-.20, weight:3, category:"event", sector:"meme"},
+  {text:"Meme supercycle begins - all dog coins surge simultaneously",          effect:.20,  weight:2, category:"event", sector:"meme"},
+  {text:"Meme coin bubble pops - 80% drawdown in 48 hours",                    effect:-.25, weight:3, category:"event", sector:"meme"},
 
   // ── GameFi Events ────────────────────────────────────────────────────────────
-  {text:"AAA studio announces GameFi integration — mass-market adoption",       effect:.10,  weight:2, category:"event", sector:"gamefi"},
-  {text:"GameFi economy collapses — play-to-earn model unsustainable",          effect:-.12, weight:2, category:"event", sector:"gamefi"},
+  {text:"AAA studio announces GameFi integration - mass-market adoption",       effect:.10,  weight:2, category:"event", sector:"gamefi"},
+  {text:"GameFi economy collapses - play-to-earn model unsustainable",          effect:-.12, weight:2, category:"event", sector:"gamefi"},
   {text:"Top esports tournament prizes paid in GameFi tokens",                  effect:.07,  weight:2, category:"event", sector:"gamefi"},
-  {text:"GameFi season 2 launch with NFT land sale — FOMO buying",              effect:.09,  weight:2, category:"event", sector:"gamefi"},
-  {text:"Mobile gaming giant partners with GameFi protocol — 100M players",    effect:.12,  weight:1, category:"event", sector:"gamefi"},
+  {text:"GameFi season 2 launch with NFT land sale - FOMO buying",              effect:.09,  weight:2, category:"event", sector:"gamefi"},
+  {text:"Mobile gaming giant partners with GameFi protocol - 100M players",    effect:.12,  weight:1, category:"event", sector:"gamefi"},
 
   // ── AI Events ────────────────────────────────────────────────────────────────
   {text:"Major AI breakthrough integrated with on-chain inference",             effect:.10,  weight:2, category:"event", sector:"ai"},
@@ -366,9 +366,9 @@ const _CRYPTO_EVENTS_RAW = [
   {text:"Decentralised AI network completes first autonomous governance vote",  effect:.06,  weight:2, category:"event", sector:"ai"},
 
   // ── Privacy Events ───────────────────────────────────────────────────────────
-  {text:"Privacy coin added to sanctions list — panic delistings",              effect:-.15, weight:3, category:"event", sector:"privacy"},
-  {text:"ZK-proof breakthrough cuts verification cost 99% — privacy boom",     effect:.12,  weight:2, category:"event", sector:"privacy"},
-  {text:"Privacy protocol adds compliance mode — institutional adoption",       effect:.08,  weight:2, category:"event", sector:"privacy"},
+  {text:"Privacy coin added to sanctions list - panic delistings",              effect:-.15, weight:3, category:"event", sector:"privacy"},
+  {text:"ZK-proof breakthrough cuts verification cost 99% - privacy boom",     effect:.12,  weight:2, category:"event", sector:"privacy"},
+  {text:"Privacy protocol adds compliance mode - institutional adoption",       effect:.08,  weight:2, category:"event", sector:"privacy"},
 
   // ── Infrastructure Events ────────────────────────────────────────────────────
   {text:"Cross-chain bridge sets record $10B daily volume",                     effect:.06,  weight:2, category:"event", sector:"infra"},
@@ -376,25 +376,25 @@ const _CRYPTO_EVENTS_RAW = [
   {text:"Restaking protocol accumulates $20B in restaked assets",               effect:.07,  weight:2, category:"event", sector:"infra"},
 
   // ── Oracle Events ────────────────────────────────────────────────────────────
-  {text:"Oracle front-running scandal liquidates $90M — trust crisis",         effect:-.09, weight:2, category:"event", sector:"oracle"},
-  {text:"Oracle network expands to 50 new data feeds — DeFi integration surge",effect:.06,  weight:2, category:"event", sector:"oracle"},
+  {text:"Oracle front-running scandal liquidates $90M - trust crisis",         effect:-.09, weight:2, category:"event", sector:"oracle"},
+  {text:"Oracle network expands to 50 new data feeds - DeFi integration surge",effect:.06,  weight:2, category:"event", sector:"oracle"},
 
   // ── Exchange Events ──────────────────────────────────────────────────────────
   {text:"Exchange token buyback programme burns 5% of supply",                  effect:.08,  weight:2, category:"event", sector:"exchange"},
-  {text:"Exchange token utility expanded — trading fee elimination",            effect:.07,  weight:2, category:"event", sector:"exchange"},
-  {text:"Exchange hacked — user funds at risk, token in freefall",             effect:-.18, weight:2, category:"event", sector:"exchange"},
+  {text:"Exchange token utility expanded - trading fee elimination",            effect:.07,  weight:2, category:"event", sector:"exchange"},
+  {text:"Exchange hacked - user funds at risk, token in freefall",             effect:-.18, weight:2, category:"event", sector:"exchange"},
 
   // ── Metaverse Events ─────────────────────────────────────────────────────────
-  {text:"Metaverse virtual land sold for $5M — mainstream media coverage",     effect:.10,  weight:2, category:"event", sector:"metaverse"},
-  {text:"Major fashion brand launches virtual store — wearable NFT surge",     effect:.08,  weight:2, category:"event", sector:"metaverse"},
-  {text:"Metaverse daily active users collapse — hype narrative dies",         effect:-.10, weight:2, category:"event", sector:"metaverse"},
-  {text:"Metaverse merger announcement — two top worlds combine ecosystems",   effect:.09,  weight:1, category:"event", sector:"metaverse"},
+  {text:"Metaverse virtual land sold for $5M - mainstream media coverage",     effect:.10,  weight:2, category:"event", sector:"metaverse"},
+  {text:"Major fashion brand launches virtual store - wearable NFT surge",     effect:.08,  weight:2, category:"event", sector:"metaverse"},
+  {text:"Metaverse daily active users collapse - hype narrative dies",         effect:-.10, weight:2, category:"event", sector:"metaverse"},
+  {text:"Metaverse merger announcement - two top worlds combine ecosystems",   effect:.09,  weight:1, category:"event", sector:"metaverse"},
 
   // ── Stablecoin Events ────────────────────────────────────────────────────────
-  {text:"Stablecoin loses $0.01 peg — algorithmic mechanism questioned",        effect:-.06, weight:3, category:"event", sector:"stablecoin"},
-  {text:"Stablecoin bank run — $8B redeemed in 24h, peg holds",               effect:-.04, weight:2, category:"event", sector:"stablecoin"},
-  {text:"Stablecoin issuer receives full banking licence — legitimacy boost",   effect:.05,  weight:2, category:"event", sector:"stablecoin"},
-  {text:"Yield-bearing stablecoin APY spikes to 22% — massive inflows",        effect:.04,  weight:2, category:"event", sector:"stablecoin"},
+  {text:"Stablecoin loses $0.01 peg - algorithmic mechanism questioned",        effect:-.06, weight:3, category:"event", sector:"stablecoin"},
+  {text:"Stablecoin bank run - $8B redeemed in 24h, peg holds",               effect:-.04, weight:2, category:"event", sector:"stablecoin"},
+  {text:"Stablecoin issuer receives full banking licence - legitimacy boost",   effect:.05,  weight:2, category:"event", sector:"stablecoin"},
+  {text:"Yield-bearing stablecoin APY spikes to 22% - massive inflows",        effect:.04,  weight:2, category:"event", sector:"stablecoin"},
 ];
 
 for (let i = 0; i < _CRYPTO_EVENTS_RAW.length; i++) {

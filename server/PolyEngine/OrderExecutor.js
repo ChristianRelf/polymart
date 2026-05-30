@@ -7,9 +7,9 @@
  * executeMarketOrder(conn, opts) → { total, realizedPnl, newCashBalance }
  *
  * Throws:
- *   { type: 'INSUFFICIENT_BALANCE' }      — buy: not enough cash
- *   { type: 'QUOTA_EXCEEDED' }            — buy: position limit reached
- *   { type: 'INSUFFICIENT_POSITION', held } — sell: not enough units
+ *   { type: 'INSUFFICIENT_BALANCE' }      - buy: not enough cash
+ *   { type: 'QUOTA_EXCEEDED' }            - buy: position limit reached
+ *   { type: 'INSUFFICIENT_POSITION', held } - sell: not enough units
  */
 
 export async function executeMarketOrder(conn, {

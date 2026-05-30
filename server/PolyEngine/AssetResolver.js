@@ -5,7 +5,7 @@
  * asset-type / symbol inputs before they reach the DB.
  *
  * Asset types are derived from tier-config so adding a new product only
- * requires adding it to TIER_CONFIG.basic.assets — no changes here needed.
+ * requires adding it to TIER_CONFIG.basic.assets - no changes here needed.
  *
  * Public API:
  *   isValidAssetType(asset_type)              → boolean

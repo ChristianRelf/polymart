@@ -2,18 +2,18 @@
  * PolyAPI · DiscordBotAPI
  *
  * Bot-facing endpoints for the Polymart Discord bot integration.
- * All routes require a pre-shared bot API key — NOT a Clerk JWT.
+ * All routes require a pre-shared bot API key - NOT a Clerk JWT.
  *
  * Authentication: Authorization: Bearer <BOT_API_KEY env var>
  *
  * Mount point: /api/v1/bot
  *
  * Routes:
- *   POST   /bot/discord/verify        — validate pairing code, link accounts
- *   GET    /bot/discord/user/:id      — fetch linked user profile + portfolios
- *   GET    /bot/discord/portfolio/:id — fetch positions + cash for default portfolio
- *   POST   /bot/discord/order         — execute a market order for a linked user
- *   DELETE /bot/discord/user/:id      — unlink a Discord account
+ *   POST   /bot/discord/verify        - validate pairing code, link accounts
+ *   GET    /bot/discord/user/:id      - fetch linked user profile + portfolios
+ *   GET    /bot/discord/portfolio/:id - fetch positions + cash for default portfolio
+ *   POST   /bot/discord/order         - execute a market order for a linked user
+ *   DELETE /bot/discord/user/:id      - unlink a Discord account
  */
 
 import { dbUser as pool, dbMarket } from '../db.js';
@@ -59,7 +59,7 @@ router.post('/discord/verify', guard(async (req, res) => {
     return fail(res, ERRORS.VALIDATION_ERROR, 'discordUsername is required');
 
   // Atomically claim the code and write the link in one transaction.
-  // The UPDATE with used=0 guard is the atomic claim — only one concurrent
+  // The UPDATE with used=0 guard is the atomic claim - only one concurrent
   // request can get affectedRows=1; all others get 0 and receive 404.
   const conn = await pool.getConnection();
   let clerkUserId;
@@ -173,7 +173,7 @@ router.get('/discord/portfolio/:discordId', guard(async (req, res) => {
   );
   if (!user) return fail(res, ERRORS.NOT_FOUND, 'No Polymart account linked to this Discord user', HTTP.NOT_FOUND);
 
-  // Resolve portfolio — use ?portfolioId= or fall back to oldest
+  // Resolve portfolio - use ?portfolioId= or fall back to oldest
   let portfolio;
   const requestedId = parseInt(req.query.portfolioId, 10);
   if (requestedId) {
@@ -314,7 +314,7 @@ router.post('/discord/order', guard(async (req, res) => {
   }
 }));
 
-// ── Shared helper — resolve clerk_id from discordId ──────────────────────────
+// ── Shared helper - resolve clerk_id from discordId ──────────────────────────
 
 async function requireLinked(discordId, res) {
   const [[user]] = await pool.query(
@@ -574,7 +574,7 @@ router.delete('/discord/alerts/:discordId/:alertId', guard(async (req, res) => {
 }));
 
 // ── GET /discord/alerts/pending ───────────────────────────────────────────────
-// All untriggered alerts for every linked user — used by the bot's alert poller.
+// All untriggered alerts for every linked user - used by the bot's alert poller.
 // Returns discord_user_id alongside each alert so the bot knows who to notify.
 
 router.get('/discord/alerts/pending', guard(async (req, res) => {

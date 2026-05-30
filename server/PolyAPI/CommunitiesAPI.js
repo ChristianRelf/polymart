@@ -380,7 +380,7 @@ router.post('/:slug/leave', requireAuth(), guard(async (req, res) => {
 
   const m = await getMembership(community.id, req.userId);
   if (!m) return fail(res, ERRORS.VALIDATION_ERROR, 'You are not a member', HTTP.BAD_REQUEST);
-  if (m.role === 'owner') return fail(res, ERRORS.VALIDATION_ERROR, 'Owners cannot leave — delete the community instead', HTTP.BAD_REQUEST);
+  if (m.role === 'owner') return fail(res, ERRORS.VALIDATION_ERROR, 'Owners cannot leave - delete the community instead', HTTP.BAD_REQUEST);
 
   const conn = await pool.getConnection();
   try {

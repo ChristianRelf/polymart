@@ -158,7 +158,7 @@ export default function ProductsPage({ onNavigate }: Props) {
         </h1>
         <p className="text-lg text-muted-foreground leading-relaxed max-w-2xl">
           Polymart is a growing suite of financial market simulations.
-          Stocks, forex, and crypto are live today — more markets are on the way.
+          Stocks, forex, and crypto are live today - more markets are on the way.
         </p>
       </div>
 
@@ -185,7 +185,7 @@ export default function ProductsPage({ onNavigate }: Props) {
           <ActiveProduct
             icon={Bitcoin}
             title="Cryptocurrency Simulation"
-            desc="132 fictional coins across 12 categories — Layer 1, DeFi, Meme, GameFi, AI, and more. 24/7 price engine with BTC dominance correlation, RSI, MACD, Bollinger Bands, and whale events. Open REST API, no auth required."
+            desc="132 fictional coins across 12 categories - Layer 1, DeFi, Meme, GameFi, AI, and more. 24/7 price engine with BTC dominance correlation, RSI, MACD, Bollinger Bands, and whale events. Open REST API, no auth required."
             badge="Live"
             onNavigate={onNavigate}
             route="crypto"

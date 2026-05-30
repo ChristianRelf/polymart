@@ -595,7 +595,7 @@ export default function DashboardPage({ onNavigate, onNavigateToPortfolio }: Pro
           </div>
           <div className="min-w-0">
             <p className="text-sm font-medium text-foreground">Trading Terminal</p>
-            <p className="text-xs text-muted-foreground truncate">Charts, drawing tools, R:R calculator, trade journal — all in one place</p>
+            <p className="text-xs text-muted-foreground truncate">Charts, drawing tools, R:R calculator, trade journal - all in one place</p>
           </div>
         </div>
         <Button size="sm" className="text-xs h-7 shrink-0 bg-emerald-600 hover:bg-emerald-500" tabIndex={-1}>

@@ -6,7 +6,7 @@
  * This file serves two route sets:
  *
  *   Legacy routes  (mounted at /api/v1)
- *     Preserved for frontend compatibility — same URLs as the old api.js.
+ *     Preserved for frontend compatibility - same URLs as the old api.js.
  *     Examples: /getMarket, /getStocks, /forex/getPairs, /rss
  *
  *   REST routes  (mounted at /api/v1/market)
@@ -14,8 +14,8 @@
  *     Examples: /market/stocks, /market/forex/:pair, /market/snapshot
  *
  * Data sources:
- *   DB   — dbMarket (polymart_market) via pool queries
- *   Meta — STOCK_DEFS, SECTORS from PolyEngine/StockData.js
+ *   DB   - dbMarket (polymart_market) via pool queries
+ *   Meta - STOCK_DEFS, SECTORS from PolyEngine/StockData.js
  *          PAIR_DEFS, COUNTRY_FLAGS from PolyEngine/ForexSimulation.js
  *          COMPANY_PROFILES, generateNews from company-data.js
  */

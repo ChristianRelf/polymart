@@ -39,7 +39,7 @@ async function getOwnedPortfolio(portfolioId, userId) {
 }
 
 // ── Clerk webhook handler ─────────────────────────────────────────────────────
-// Exported separately — mount with express.raw() before express.json() in server.js.
+// Exported separately - mount with express.raw() before express.json() in server.js.
 
 export async function clerkWebhookHandler(req, res) {
   const secret = process.env.CLERK_WEBHOOK_SECRET;

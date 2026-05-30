@@ -7,7 +7,7 @@ import type { Route } from "@/App"
 const CODE_TTL = 30 // seconds
 
 const FEATURES = [
-  "Trade with /buy and /sell — synced to your Polymart portfolio",
+  "Trade with /buy and /sell - synced to your Polymart portfolio",
   "Check positions and balance with /portfolio",
   "Order history unified across web and Discord",
   "Alerts and watchlists carry across both",
@@ -60,7 +60,7 @@ export default function AccountLinkPage({ onNavigate }: Props) {
     })
   }
 
-  // ── Countdown (text only — bar is CSS animated) ───────────────────────────
+  // ── Countdown (text only - bar is CSS animated) ───────────────────────────
 
   function startCountdown(expiry: Date) {
     if (timerRef.current) clearInterval(timerRef.current)
@@ -96,7 +96,7 @@ export default function AccountLinkPage({ onNavigate }: Props) {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [withToken])
 
-  // ── Status polling — runs while code is displayed, stops on link ──────────
+  // ── Status polling - runs while code is displayed, stops on link ──────────
 
   function startPolling() {
     if (pollRef.current) clearInterval(pollRef.current)
@@ -109,7 +109,7 @@ export default function AccountLinkPage({ onNavigate }: Props) {
           if (timerRef.current) { clearInterval(timerRef.current); timerRef.current = null }
           setStatus(data as DiscordStatus)
         }
-      } catch { /* silent — keep polling */ }
+      } catch { /* silent - keep polling */ }
     }, 3000)
   }
 
@@ -265,7 +265,7 @@ export default function AccountLinkPage({ onNavigate }: Props) {
         </div>
 
       ) : (
-        /* ── Unlinked — code ───────────────────────────────────────────────── */
+        /* ── Unlinked - code ───────────────────────────────────────────────── */
         <div className="w-full max-w-sm flex flex-col items-center gap-6 mt-4">
           <h2 className="text-2xl font-bold text-white">Pairing Code</h2>
 
@@ -284,16 +284,16 @@ export default function AccountLinkPage({ onNavigate }: Props) {
             ) : (
               <div className="flex items-center gap-5 select-all" aria-label={code ?? undefined}>
                 <span className="text-6xl font-mono font-bold tracking-[0.2em] text-white tabular-nums leading-none whitespace-nowrap">
-                  {code?.slice(0, 3) ?? "—"}
+                  {code?.slice(0, 3) ?? "-"}
                 </span>
                 <span className="text-zinc-600 text-2xl font-thin select-none leading-none">·</span>
                 <span className="text-6xl font-mono font-bold tracking-[0.2em] text-white tabular-nums leading-none whitespace-nowrap">
-                  {code?.slice(3) ?? "—"}
+                  {code?.slice(3) ?? "-"}
                 </span>
               </div>
             )}
 
-            {/* Countdown bar — CSS animated for perfect smoothness */}
+            {/* Countdown bar - CSS animated for perfect smoothness */}
             <div className="w-full space-y-2">
               <div className="w-full h-1 rounded-full bg-white/10 overflow-hidden">
                 {/* key=code restarts the CSS animation on every new code */}

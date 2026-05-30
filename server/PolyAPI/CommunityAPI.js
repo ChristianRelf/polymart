@@ -69,7 +69,7 @@ const router = createRouter({ label: '[community-api]' });
 router.post('/upload', requireAuth(), async (req, res) => {
   upload.single('image')(req, res, async err => {
     if (err) {
-      const msg = err.code === 'LIMIT_FILE_SIZE' ? 'File too large — maximum 10 MB' : (err.message || 'Upload error');
+      const msg = err.code === 'LIMIT_FILE_SIZE' ? 'File too large - maximum 10 MB' : (err.message || 'Upload error');
       return fail(res, ERRORS.VALIDATION_ERROR, msg, HTTP.BAD_REQUEST);
     }
     if (!req.file) return fail(res, ERRORS.MISSING_FIELD, 'No valid image provided (jpeg/png/gif/webp, max 10 MB)', HTTP.BAD_REQUEST);

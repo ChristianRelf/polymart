@@ -634,7 +634,7 @@ const PRODUCTS: Product[] = [
           { name: "description", type: "string", desc: "Short description of the coin's purpose" },
           { name: "circulatingSupply / totalSupply", type: "number", desc: "Token supply figures" },
           { name: "history", type: "number[]", desc: "Price history (up to 400 entries, oldest first)" },
-          { name: "candles", type: "object[]", desc: "OHLCV candles: { o, h, l, c, v, t } — each candle spans 18 ticks (~3 min)" },
+          { name: "candles", type: "object[]", desc: "OHLCV candles: { o, h, l, c, v, t } - each candle spans 18 ticks (~3 min)" },
           { name: "categoryPeers", type: "string[]", desc: "Symbols of other coins in the same category" },
         ],
         example: `${BASE}/api/v1/crypto/getCoin?symbol=SOLX`,

@@ -12,7 +12,7 @@ const PREMIUM_FEATURES: { Icon: LucideIcon; title: string; desc: string }[] = [
   {
     Icon: BarChart2,
     title: "5 portfolios",
-    desc: "Run multiple strategies in parallel — growth, income, swing trading — each with a $100,000 starting balance.",
+    desc: "Run multiple strategies in parallel - growth, income, swing trading - each with a $100,000 starting balance.",
   },
   {
     Icon: Layers,
@@ -75,7 +75,7 @@ export default function SponsorPage({ onNavigate: _onNavigate }: Props) {
 
         <p className="text-base text-muted-foreground leading-relaxed max-w-xl mb-8">
           Polymart is free for everyone. Premium unlocks higher limits, forex markets,
-          multiple portfolios, and more — and directly funds the platform staying live.
+          multiple portfolios, and more - and directly funds the platform staying live.
         </p>
 
         <div className="flex flex-wrap gap-3">
@@ -200,7 +200,7 @@ export default function SponsorPage({ onNavigate: _onNavigate }: Props) {
           <p className="text-base font-bold text-foreground mb-1.5">Ready to upgrade?</p>
           <p className="text-sm text-muted-foreground leading-relaxed">
             Sign in or create a free account, then upgrade to Premium from your account settings.
-            Cancel anytime — no lock-in.
+            Cancel anytime - no lock-in.
           </p>
         </div>
         <a
