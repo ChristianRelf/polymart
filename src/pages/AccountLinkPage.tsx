@@ -49,7 +49,7 @@ export default function AccountLinkPage({ onNavigate }: Props) {
 
   // ── API helpers ───────────────────────────────────────────────────────────
 
-  const withToken = useCallback(async <T>(fn: (t: string) => Promise<T>): Promise<T> => {
+  const withToken = useCallback(async <T,>(fn: (t: string) => Promise<T>): Promise<T> => {
     let token = await getToken()
     if (!token) {
       await new Promise(r => setTimeout(r, 300))
@@ -207,6 +207,7 @@ export default function AccountLinkPage({ onNavigate }: Props) {
         {/* Back link */}
         <div className="w-full max-w-sm mb-6">
           <button
+            type="button"
             onClick={() => onNavigate("account")}
             className="flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground transition-colors cursor-pointer bg-transparent border-0 p-0"
           >
@@ -317,17 +318,21 @@ export default function AccountLinkPage({ onNavigate }: Props) {
 
               {/* Countdown bar */}
               <div className="w-full space-y-2">
-                <div className="w-full h-1.5 rounded-full bg-muted overflow-hidden">
+                {/* eslint-disable-next-line react/forbid-component-props */}
+                <div
+                  className="w-full h-1.5 rounded-full bg-muted overflow-hidden"
+                  style={{ '--bar-pct': `${pct}%` } as React.CSSProperties}
+                >
                   <div
-                    className={`h-full rounded-full transition-all duration-500 ${
+                    className={`h-full w-[var(--bar-pct)] rounded-full transition-all duration-500 ${
                       secondsLeft > 10 ? "bg-[#5865F2]" : "bg-amber-500"
                     }`}
-                    style={{ width: `${pct}%` }}
                   />
                 </div>
                 <div className="flex items-center justify-between text-[11px] text-muted-foreground">
                   <span>Expires in {secondsLeft}s</span>
                   <button
+                    type="button"
                     onClick={() => generateCode()}
                     disabled={generating}
                     className="flex items-center gap-1 hover:text-foreground transition-colors disabled:opacity-40 cursor-pointer bg-transparent border-0 p-0"
@@ -341,16 +346,16 @@ export default function AccountLinkPage({ onNavigate }: Props) {
 
             {/* Step instructions */}
             <ol className="space-y-3">
-              {[
-                <>Open any Discord server with <strong className="text-foreground">Polymart Bot</strong>.</>,
-                <>Type <code className="bg-muted px-1.5 py-0.5 rounded text-xs font-mono">/link {code ?? "######"}</code> and send.</>,
-                <>This page will update automatically once linked.</>,
-              ].map((step, i) => (
-                <li key={i} className="flex items-start gap-3 text-sm text-muted-foreground">
+              {([
+                { n: 1, body: <span>Open any Discord server with <strong className="text-foreground">Polymart Bot</strong>.</span> },
+                { n: 2, body: <span>Type <code className="bg-muted px-1.5 py-0.5 rounded text-xs font-mono">/link {code ?? "######"}</code> and send.</span> },
+                { n: 3, body: <span>This page will update automatically once linked.</span> },
+              ] as const).map(({ n, body }) => (
+                <li key={n} className="flex items-start gap-3 text-sm text-muted-foreground">
                   <span className="shrink-0 w-5 h-5 rounded-full bg-muted flex items-center justify-center text-[10px] font-bold text-foreground mt-0.5">
-                    {i + 1}
+                    {n}
                   </span>
-                  <span className="leading-relaxed">{step}</span>
+                  {body}
                 </li>
               ))}
             </ol>
