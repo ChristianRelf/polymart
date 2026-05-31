@@ -4,7 +4,7 @@ import { Separator } from "@/components/ui/separator"
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet"
 import { cn } from "@/lib/utils"
 import { ArrowUpRight, X, Menu, Coffee } from "lucide-react"
-import { useAuth, UserButton } from "@clerk/clerk-react"
+import { useAuth, useUser } from "@clerk/clerk-react"
 import { SimulationProvider, useSimulation } from "@/lib/SimulationContext"
 import ProtectedRoute from "@/components/ProtectedRoute"
 import HomePage from "@/pages/HomePage"
@@ -283,6 +283,7 @@ const NAV_LINKS: [Route, string][] = [
 function Navbar({ route, setRoute }: { route: Route; setRoute: (r: Route) => void }) {
   const [mobileOpen, setMobileOpen] = useState(false)
   const { isSignedIn, isLoaded } = useAuth()
+  const { user } = useUser()
   const go = (r: Route) => { navigate(r); setRoute(r); setMobileOpen(false) }
   const isMarket = route === "market"
   const isDashboardRoute = route === "dashboard" || route === "portfolio" || route === "account" || route === "admin" || route === "trading-terminal"
@@ -334,7 +335,20 @@ function Navbar({ route, setRoute }: { route: Route; setRoute: (r: Route) => voi
         <div className="ml-auto hidden md:flex items-center gap-2">
           {isLoaded && (
             isSignedIn ? (
-              <UserButton afterSignOutUrl="/#/" />
+              <button
+                type="button"
+                onClick={() => go("account")}
+                title="Account settings"
+                className="w-8 h-8 rounded-full overflow-hidden border border-border hover:ring-2 hover:ring-primary/20 transition-all cursor-pointer focus:outline-none"
+              >
+                {user?.imageUrl ? (
+                  <img src={user.imageUrl} alt="" className="w-full h-full object-cover" />
+                ) : (
+                  <div className="w-full h-full bg-muted flex items-center justify-center text-xs font-bold text-muted-foreground">
+                    {user?.firstName?.[0]?.toUpperCase() ?? "U"}
+                  </div>
+                )}
+              </button>
             ) : (
               <>
                 <Button
@@ -359,7 +373,21 @@ function Navbar({ route, setRoute }: { route: Route; setRoute: (r: Route) => voi
 
         {/* Mobile: right-side controls */}
         <div className="ml-auto flex items-center gap-2 md:hidden">
-          {isLoaded && isSignedIn && <UserButton afterSignOutUrl="/#/" />}
+          {isLoaded && isSignedIn && (
+            <button
+              onClick={() => go("account")}
+              title="Account settings"
+              className="w-8 h-8 rounded-full overflow-hidden border border-border hover:ring-2 hover:ring-primary/20 transition-all cursor-pointer focus:outline-none"
+            >
+              {user?.imageUrl ? (
+                <img src={user.imageUrl} alt="" className="w-full h-full object-cover" />
+              ) : (
+                <div className="w-full h-full bg-muted flex items-center justify-center text-xs font-bold text-muted-foreground">
+                  {user?.firstName?.[0]?.toUpperCase() ?? "U"}
+                </div>
+              )}
+            </button>
+          )}
           <Sheet open={mobileOpen} onOpenChange={setMobileOpen}>
             <SheetTrigger asChild>
               <Button variant="ghost" size="icon" className="h-9 w-9">
