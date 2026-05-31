@@ -10,8 +10,11 @@ import { cn } from "@/lib/utils"
 import {
   Loader2, AlertCircle, CheckCircle2, Camera, CreditCard, ShieldCheck,
   TrendingUp, TrendingDown, Activity, Clock, Ticket, Users, Flag, Shield,
-  User, LogOut, Link2, BarChart3, Lock, ExternalLink,
+  User, LogOut, Link2, BarChart3, Lock, ExternalLink, AlertTriangle, Trash2,
 } from "lucide-react"
+import {
+  Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter,
+} from "@/components/ui/dialog"
 import { useAccount } from "@/hooks/useAccount"
 import { DiscordLinkSection } from "@/components/account/DiscordLinkSection"
 import type { Route } from "@/App"
@@ -117,15 +120,16 @@ function ticketStatusBadge(status: SupportTicket["status"]) {
 }
 
 // ── Section nav ────────────────────────────────────────────────────────────────
-type Section = "overview" | "profile" | "plan" | "integrations" | "support" | "community"
+type Section = "overview" | "profile" | "plan" | "integrations" | "support" | "community" | "danger"
 
-const SECTIONS: { id: Section; label: string; icon: React.ComponentType<{ className?: string }> }[] = [
+const SECTIONS: { id: Section; label: string; icon: React.ComponentType<{ className?: string }>; danger?: true }[] = [
   { id: "overview",     label: "Overview",       icon: BarChart3 },
   { id: "profile",      label: "Profile",        icon: User },
   { id: "plan",         label: "Plan & Billing",  icon: CreditCard },
   { id: "integrations", label: "Integrations",   icon: Link2 },
   { id: "support",      label: "Support",        icon: Ticket },
   { id: "community",    label: "Community",      icon: Users },
+  { id: "danger",       label: "Danger Zone",    icon: AlertTriangle, danger: true },
 ]
 
 // ── Trading overview card ──────────────────────────────────────────────────────
@@ -404,6 +408,14 @@ export default function AccountPage({ onNavigate, onNavigateToCommunity }: Props
   const [avatarUploading, setAvatarUploading] = useState(false)
   const [checkingOut, setCheckingOut] = useState(false)
 
+  // Danger zone
+  const [showResetDialog, setShowResetDialog] = useState(false)
+  const [showDeleteDialog, setShowDeleteDialog] = useState(false)
+  const [deleteConfirmText, setDeleteConfirmText] = useState("")
+  const [resetting, setResetting] = useState(false)
+  const [deleting, setDeleting] = useState(false)
+  const [dangerError, setDangerError] = useState<string | null>(null)
+
   const load = useCallback(async () => {
     try {
       const [me, bill, st, orders, tix, reports, modActs, comms] = await Promise.all([
@@ -488,6 +500,47 @@ export default function AccountPage({ onNavigate, onNavigateToCommunity }: Props
   async function handleSignOut() {
     await signOut()
     window.location.hash = "/"
+  }
+
+  async function handleResetTrading() {
+    setResetting(true)
+    setDangerError(null)
+    try {
+      const { getToken } = { getToken: async () => null as string | null }
+      void getToken
+      throw new Error("not_implemented")
+    } catch (e: unknown) {
+      const msg = e instanceof Error ? e.message : ""
+      if (msg === "not_implemented") {
+        setDangerError("Reset is not yet available. Please contact support.")
+      } else {
+        setDangerError(msg || "Failed to reset trading data.")
+      }
+    } finally {
+      setResetting(false)
+      setShowResetDialog(false)
+    }
+  }
+
+  async function handleDeleteAccount() {
+    if (!user) return
+    setDeleting(true)
+    setDangerError(null)
+    try {
+      await user.delete()
+      window.location.hash = "/"
+    } catch (e: unknown) {
+      const msg = e instanceof Error ? e.message : ""
+      setDangerError(
+        msg.toLowerCase().includes("not allowed") || msg.toLowerCase().includes("permission")
+          ? "Account deletion is not available self-service. Please contact support to delete your account."
+          : msg || "Failed to delete account."
+      )
+    } finally {
+      setDeleting(false)
+      setShowDeleteDialog(false)
+      setDeleteConfirmText("")
+    }
   }
 
   function goToPortfolio(id: number) {
@@ -606,9 +659,13 @@ export default function AccountPage({ onNavigate, onNavigateToCommunity }: Props
             onClick={() => setSection(s.id)}
             className={cn(
               "flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-medium whitespace-nowrap transition-colors cursor-pointer border",
-              section === s.id
-                ? "bg-foreground text-background border-foreground"
-                : "text-muted-foreground border-border bg-transparent hover:bg-accent hover:text-foreground"
+              s.danger
+                ? section === s.id
+                  ? "bg-destructive text-destructive-foreground border-destructive"
+                  : "text-destructive/70 border-destructive/30 bg-transparent hover:bg-destructive/10 hover:text-destructive"
+                : section === s.id
+                  ? "bg-foreground text-background border-foreground"
+                  : "text-muted-foreground border-border bg-transparent hover:bg-accent hover:text-foreground"
             )}
           >
             <s.icon className="w-3 h-3 shrink-0" />
@@ -622,7 +679,7 @@ export default function AccountPage({ onNavigate, onNavigateToCommunity }: Props
 
         {/* Sidebar — desktop only */}
         <aside className="hidden md:flex flex-col w-48 shrink-0 gap-0.5 sticky top-24">
-          {SECTIONS.map(s => (
+          {SECTIONS.filter(s => !s.danger).map(s => (
             <button
               key={s.id}
               onClick={() => setSection(s.id)}
@@ -637,6 +694,21 @@ export default function AccountPage({ onNavigate, onNavigateToCommunity }: Props
               {s.label}
             </button>
           ))}
+
+          <Separator className="my-3" />
+
+          <button
+            onClick={() => setSection("danger")}
+            className={cn(
+              "flex items-center gap-2.5 px-3 py-2 rounded-md text-sm font-medium transition-colors cursor-pointer bg-transparent border-0 text-left w-full",
+              section === "danger"
+                ? "bg-destructive/10 text-destructive"
+                : "text-destructive/70 hover:bg-destructive/10 hover:text-destructive"
+            )}
+          >
+            <AlertTriangle className="w-4 h-4 shrink-0" />
+            Danger Zone
+          </button>
 
           <Separator className="my-3" />
 
@@ -949,8 +1021,163 @@ export default function AccountPage({ onNavigate, onNavigateToCommunity }: Props
             />
           )}
 
+          {/* ── Danger Zone ──────────────────────────────────────────────── */}
+          {section === "danger" && (
+            <div className="space-y-4">
+              {dangerError && (
+                <div className="flex items-start gap-2 rounded-md border border-destructive/40 bg-destructive/10 px-4 py-3 text-sm text-destructive">
+                  <AlertCircle className="w-4 h-4 shrink-0 mt-0.5" />
+                  {dangerError}
+                </div>
+              )}
+
+              <div className="rounded-xl border border-destructive/50 overflow-hidden">
+                {/* Header */}
+                <div className="flex items-center gap-2 px-5 py-3 bg-destructive/5 border-b border-destructive/30">
+                  <AlertTriangle className="w-4 h-4 text-destructive shrink-0" />
+                  <h2 className="text-sm font-semibold text-destructive">Danger Zone</h2>
+                </div>
+
+                {/* Reset paper trading */}
+                <div className="flex items-center justify-between gap-6 px-5 py-4 border-b border-destructive/20">
+                  <div className="min-w-0">
+                    <p className="text-sm font-medium text-foreground">Reset paper trading data</p>
+                    <p className="text-xs text-muted-foreground mt-0.5">
+                      Permanently delete all portfolios, positions, and order history. This cannot be undone.
+                    </p>
+                  </div>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    className="shrink-0 border-destructive/50 text-destructive hover:bg-destructive hover:text-destructive-foreground hover:border-destructive transition-colors"
+                    onClick={() => { setDangerError(null); setShowResetDialog(true) }}
+                  >
+                    Reset trading data
+                  </Button>
+                </div>
+
+                {/* Delete account */}
+                <div className="flex items-center justify-between gap-6 px-5 py-4">
+                  <div className="min-w-0">
+                    <p className="text-sm font-medium text-foreground">Delete this account</p>
+                    <p className="text-xs text-muted-foreground mt-0.5">
+                      Permanently remove your account and all associated data from Polymart. This action is irreversible.
+                    </p>
+                  </div>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    className="shrink-0 border-destructive/50 text-destructive hover:bg-destructive hover:text-destructive-foreground hover:border-destructive transition-colors"
+                    onClick={() => { setDangerError(null); setDeleteConfirmText(""); setShowDeleteDialog(true) }}
+                  >
+                    <Trash2 className="w-3.5 h-3.5 mr-1.5" />
+                    Delete account
+                  </Button>
+                </div>
+              </div>
+            </div>
+          )}
+
         </div>
       </div>
+
+      {/* ── Reset trading data dialog ──────────────────────────────────────── */}
+      <Dialog open={showResetDialog} onOpenChange={setShowResetDialog}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2 text-destructive">
+              <AlertTriangle className="w-4 h-4" />
+              Reset paper trading data?
+            </DialogTitle>
+          </DialogHeader>
+          <div className="space-y-3 py-2">
+            <p className="text-sm text-muted-foreground">
+              This will permanently delete <span className="font-semibold text-foreground">all portfolios, open positions, and order history</span> on your account.
+            </p>
+            <p className="text-sm text-muted-foreground">
+              You'll start fresh with the default cash balance. This cannot be undone.
+            </p>
+          </div>
+          <DialogFooter className="gap-2 sm:gap-0">
+            <Button
+              type="button"
+              variant="ghost"
+              size="sm"
+              onClick={() => setShowResetDialog(false)}
+              disabled={resetting}
+            >
+              Cancel
+            </Button>
+            <Button
+              type="button"
+              variant="destructive"
+              size="sm"
+              onClick={handleResetTrading}
+              disabled={resetting}
+              className="gap-1.5"
+            >
+              {resetting ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : null}
+              Yes, reset all trading data
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* ── Delete account dialog ──────────────────────────────────────────── */}
+      <Dialog open={showDeleteDialog} onOpenChange={open => { setShowDeleteDialog(open); if (!open) setDeleteConfirmText("") }}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2 text-destructive">
+              <Trash2 className="w-4 h-4" />
+              Delete account?
+            </DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4 py-2">
+            <p className="text-sm text-muted-foreground">
+              This will permanently delete your account, all portfolios, order history, community posts, and every other piece of data tied to <span className="font-semibold text-foreground">{profile?.email}</span>.
+            </p>
+            <p className="text-sm font-medium text-foreground">
+              There is no going back.
+            </p>
+            <div>
+              <label className="text-xs text-muted-foreground mb-1.5 block">
+                Type <span className="font-mono font-bold text-foreground">DELETE</span> to confirm
+              </label>
+              <Input
+                value={deleteConfirmText}
+                onChange={e => setDeleteConfirmText(e.target.value)}
+                placeholder="DELETE"
+                className="font-mono"
+              />
+            </div>
+          </div>
+          <DialogFooter className="gap-2 sm:gap-0">
+            <Button
+              type="button"
+              variant="ghost"
+              size="sm"
+              onClick={() => { setShowDeleteDialog(false); setDeleteConfirmText("") }}
+              disabled={deleting}
+            >
+              Cancel
+            </Button>
+            <Button
+              type="button"
+              variant="destructive"
+              size="sm"
+              onClick={handleDeleteAccount}
+              disabled={deleteConfirmText !== "DELETE" || deleting}
+              className="gap-1.5"
+            >
+              {deleting ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Trash2 className="w-3.5 h-3.5" />}
+              Delete my account
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
     </div>
   )
 }
